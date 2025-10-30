@@ -1,0 +1,8 @@
+# Ignore Bun artifacts
+bun.lock
+bun.lockb
+.bun
+
+# Ignore local build artifacts
+android/
+ios/

@@ -4,8 +4,22 @@ import { Home, Search, Bell, User, MessageCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function FloatingTabBar({ state, descriptors, navigation }: any) {
+	const { t } = useLanguage();
+	
+	// Map route names to translation keys
+	const getTabLabel = (routeName: string) => {
+		switch (routeName) {
+			case 'feed': return t('nav.home');
+			case 'discover': return t('nav.search');
+			case 'notifications': return t('nav.alerts');
+			case 'profile': return t('nav.profile');
+			default: return routeName;
+		}
+	};
+	
 	return (
 		<BlurView
 			intensity={40}
@@ -34,12 +48,7 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 		>
 			{state.routes.map((route: any, index: number) => {
 				const { options } = descriptors[route.key];
-				const label =
-					options.tabBarLabel !== undefined
-						? options.tabBarLabel
-						: options.title !== undefined
-						? options.title
-						: route.name;
+				const label = getTabLabel(route.name);
 
 				const isFocused = state.index === index;
 
@@ -121,7 +130,6 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="feed"
 				options={{
-					title: 'Home',
 					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
 						<Home color={color} size={size} />
 					),
@@ -130,7 +138,6 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="discover"
 				options={{
-					title: 'Search',
 					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
 						<Search color={color} size={size} />
 					),
@@ -139,7 +146,6 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="notifications"
 				options={{
-					title: 'Alerts',
 					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
 						<Bell color={color} size={size} />
 					),
@@ -148,7 +154,6 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="profile"
 				options={{
-					title: 'Profile',
 					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
 						<User color={color} size={size} />
 					),

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,94 +6,271 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Animated,
+  Image,
+  RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TrendingUp, Search as SearchIcon, SlidersHorizontal } from 'lucide-react-native';
+import { Search as SearchIcon, ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
-import { TRENDING_TOPICS } from '@/constants/mockData';
-import { TrendingTopic } from '@/types';
-import { LinearGradient } from 'expo-linear-gradient';
-import RuvoButton from '@/components/RuvoButton';
-import RuvoIcon from '@/components/RuvoIcon';
-import { Animated } from 'react-native';
+import { INTERESTS } from '@/constants/mockData';
+import { useApp } from '@/contexts/AppContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTrendingByCategory, useSearchArticles } from '@/lib/hooks';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width * 0.75;
 
 export default function DiscoverScreen() {
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
+  const { user } = useApp();
+  const { t, language } = useLanguage();
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const filteredTopics = TRENDING_TOPICS.filter((topic) =>
-    topic.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const formatCount = (count: number): string => {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
+  // Map interests to News API categories
+  const categoryMap: { [key: string]: string } = {
+    'Tech': 'technology',
+    'Finance': 'business',
+    'Sports': 'sports',
+    'Health': 'health',
+    'Science': 'science',
+    'Entertainment': 'entertainment',
+    'Music': 'entertainment',
+    'Gaming': 'technology',
+    'Fashion': 'entertainment',
+    'K-Pop': 'entertainment',
+    'Food': 'general',
+    'Travel': 'general',
+    'Local Events': 'general',
   };
 
-  const renderTrendingTopic = (topic: TrendingTopic) => (
-    <TouchableOpacity key={topic.id} style={styles.topicCard} activeOpacity={0.9}>
-      <View style={styles.topicHeader}>
-        <RuvoIcon>
-          <TrendingUp size={20} color={Colors.text.inverse} />
-        </RuvoIcon>
-        <View style={styles.topicInfo}>
-          <Text style={styles.topicCategory}>{topic.category}</Text>
-          <Text style={styles.topicName}>{topic.name}</Text>
-          <Text style={styles.topicCount}>{formatCount(topic.count)} mentions</Text>
-        </View>
-        <RuvoButton title="Follow" variant="secondary" style={{ paddingVertical: 8, paddingHorizontal: 12 }} textStyle={{ fontSize: 12 }} />
-      </View>
-    </TouchableOpacity>
+  // Map interest names to translation keys
+  const getInterestTranslation = (interestName: string) => {
+    const translationMap: { [key: string]: string } = {
+      'Tech': 'category.tech',
+      'Finance': 'category.finance',
+      'Sports': 'category.sports',
+      'Health': 'category.health',
+      'Science': 'category.science',
+      'Entertainment': 'category.entertainment',
+      'Music': 'category.music',
+      'Gaming': 'category.gaming',
+      'Fashion': 'category.fashion',
+      'K-Pop': 'category.kpop',
+      'Food': 'category.food',
+      'Travel': 'category.travel',
+      'Local Events': 'category.localEvents',
+    };
+    return translationMap[interestName] || interestName;
+  };
+
+  // Get user's interests
+  const userInterests = useMemo(() => {
+    const interests = user?.interests || [];
+    return interests
+      .map(interestId => INTERESTS.find(i => i.id === interestId))
+      .filter(Boolean);
+  }, [user?.interests]);
+
+  // Search articles when user types in search bar (only when query length > 2)
+  const { data: searchResults = [], isLoading: searchLoading } = useSearchArticles(
+    searchQuery.length > 2 ? searchQuery : '',
+    undefined,
+    language
   );
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const formatTimeAgo = (publishedAt: string) => {
+    try {
+      const date = new Date(publishedAt);
+      const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+      
+      if (seconds < 60) return `${seconds}s ago`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      return `${Math.floor(seconds / 86400)}d ago`;
+    } catch (error) {
+      return 'Just now';
+    }
+  };
+
+  const InterestSection = ({ interest, apiCategory, formatTimeAgo }: any) => {
+    const { data: articles = [], isLoading } = useTrendingByCategory(apiCategory, language);
+
+    if (isLoading) {
+      return (
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionEmoji}>{interest.emoji}</Text>
+              <Text style={styles.sectionTitle}>{t(getInterestTranslation(interest.name))}</Text>
+            </View>
+          </View>
+          <Text style={styles.loadingText}>{t('feed.loading')}</Text>
+        </View>
+      );
+    }
+
+    if (articles.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionEmoji}>{interest.emoji}</Text>
+            <Text style={styles.sectionTitle}>{t(getInterestTranslation(interest.name))}</Text>
+          </View>
+          <TouchableOpacity style={styles.seeAllButton}>
+            <Text style={styles.seeAllText}>{t('actions.view')} All</Text>
+            <ChevronRight size={16} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScrollContent}
+        >
+                 {articles.map((article: any, index: number) => (
+                   <TouchableOpacity
+                     key={`${article.url}-${index}`}
+                     style={styles.articleCard}
+                     onPress={() => router.push(`/article-detail?url=${encodeURIComponent(article.url)}`)}
+                   >
+                     <Image 
+                       source={{ 
+                         uri: article.imageUrl || article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop'
+                       }} 
+                       style={styles.articleImage}
+                       defaultSource={{ uri: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop' }}
+                     />
+                     <View style={styles.articleContent}>
+                       <Text style={styles.articleTitle} numberOfLines={3}>
+                         {article.title}
+                       </Text>
+                       <Text style={styles.articleDescription} numberOfLines={2}>
+                         {article.description}
+                       </Text>
+                       <View style={styles.articleMeta}>
+                         <Text style={styles.articleSource}>{article.source?.name || article.source || 'Unknown'}</Text>
+                         <Text style={styles.articleTime}>
+                           {formatTimeAgo(new Date(article.publishedAt))}
+                         </Text>
+                       </View>
+                     </View>
+                   </TouchableOpacity>
+                 ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderInterestSection = (interest: any) => {
+    const apiCategory = categoryMap[interest.name] || 'general';
+    
+    return (
+      <InterestSection
+        key={interest.id}
+        interest={interest}
+        apiCategory={apiCategory}
+        formatTimeAgo={formatTimeAgo}
+      />
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>RUVO</Text>
-        <Text style={styles.headerTagline}>Cut the Noise. Catch the Signal.</Text>
-        <Text style={styles.headerSubtitle}>Discover trending topics and new sources</Text>
+        <Text style={styles.headerTitle}>{t('discover.title')}</Text>
+        <Text style={styles.headerSubtitle}>Explore news by your interests</Text>
       </View>
 
-      <View style={styles.searchContainer}>
-        <SearchIcon size={20} color={Colors.text.tertiary} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search"
-          placeholderTextColor={Colors.text.tertiary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <SlidersHorizontal size={18} color={Colors.text.tertiary} />
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.chipsRow}>
-          {['All','Politic','Sport','Education','Games'].map((l, i) => (
-            <View key={i} style={[styles.chip, i===0 && styles.chipActive]}>
-              <Text style={[styles.chipText, i===0 && styles.chipTextActive]}>{l}</Text>
-            </View>
-          ))}
+      <Animated.ScrollView 
+        style={[styles.scrollView, { opacity: fadeAnim }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+        }
+      >
+        <View style={styles.searchContainer}>
+          <SearchIcon size={18} color={Colors.text.tertiary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('discover.search')}
+            placeholderTextColor={Colors.text.tertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
 
-        <View style={styles.list}>
-          {filteredTopics.slice(0,5).map((t) => (
-            <View key={t.id} style={styles.listItem}>
-              <View style={styles.thumb} />
-              <View style={styles.listContent}>
-                <Text style={styles.listSection}>{t.category}</Text>
-                <Text numberOfLines={2} style={styles.listTitle}>{t.name}</Text>
-                <View style={styles.listMetaRow}>
-                  <View style={styles.metaAvatar} />
-                  <Text style={styles.listMetaText}>McKindney · Feb 27,2023</Text>
-                </View>
+        {searchQuery.length > 2 ? (
+          // Search Results
+          <View style={styles.content}>
+            <Text style={styles.sectionTitle}>{t('discover.search')} Results</Text>
+            {searchLoading ? (
+              <Text style={styles.loadingText}>{t('feed.loading')}</Text>
+            ) : searchResults.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No results found</Text>
+                <Text style={styles.emptyStateSubtext}>Try different keywords</Text>
               </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+            ) : (
+              <View style={styles.searchResultsList}>
+                {searchResults.slice(0, 20).map((article) => (
+                  <TouchableOpacity key={article.id} style={styles.searchResultCard} activeOpacity={0.9}>
+                    {article.imageUrl && (
+                      <Image source={{ uri: article.imageUrl }} style={styles.searchResultImage} resizeMode="cover" />
+                    )}
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultCategory}>{article.category}</Text>
+                      <Text numberOfLines={2} style={styles.searchResultTitle}>{article.title}</Text>
+                      <View style={styles.searchResultMeta}>
+                        <Text style={styles.searchResultSource}>{article.source}</Text>
+                        <Text style={styles.newsDot}>•</Text>
+                        <Text style={styles.searchResultTime}>{formatTimeAgo(article.publishedAt)}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : userInterests.length === 0 ? (
+          // No interests selected
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No interests selected</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Go to your profile and select interests to see personalized content
+            </Text>
+          </View>
+        ) : (
+          // Show articles grouped by interests
+          <>
+            {userInterests.map(interest => renderInterestSection(interest))}
+          </>
+        )}
+
+        <View style={styles.bottomPadding} />
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -104,249 +281,221 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.light,
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: Colors.background.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
-  },
-  largeHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 10,
-  },
-  largeTitle: {
-    fontSize: 34,
-    fontWeight: '800' as const,
-    letterSpacing: -0.8,
-    color: Colors.text.primary,
-  },
-  largeSubtitle: {
-    marginTop: 4,
-    color: Colors.text.secondary,
+    paddingBottom: 12,
+    backgroundColor: Colors.background.light,
   },
   headerTitle: {
-    fontSize: 36,
-    fontWeight: '800' as const,
+    fontSize: 24,
+    fontWeight: '700',
     fontFamily: Fonts.bold,
-    color: Colors.text.onLight,
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  headerTagline: {
-    fontSize: 16,
-    fontWeight: '400' as const,
-    fontFamily: Fonts.regular,
-    color: Colors.text.secondary,
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    color: Colors.text.primary,
+    letterSpacing: -0.5,
+    marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 15,
-    fontFamily: Fonts.regular,
+    fontSize: 13,
     color: Colors.text.tertiary,
+    fontFamily: Fonts.regular,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
-    backgroundColor: Colors.card.secondary,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchIcon: {
-    marginRight: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.text.primary,
+    fontFamily: Fonts.regular,
   },
   scrollView: {
     flex: 1,
   },
-  section: {
-    marginBottom: 28,
+  content: {
+    paddingHorizontal: 16,
   },
-  chipsRow: {
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-    backgroundColor: Colors.background.white,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-  },
-  chipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: {
-    color: Colors.text.onLight,
-    fontWeight: '700' as const,
-  },
-  chipTextActive: {
-    color: Colors.text.inverse,
-  },
-  list: {
-    paddingHorizontal: 16,
-    gap: 14,
-  },
-  listItem: {
+  sectionTitleRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionEmoji: {
+    fontSize: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    fontFamily: Fonts.bold,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+    fontFamily: Fonts.semiBold,
+  },
+  articlesRow: {
+    paddingHorizontal: 16,
     gap: 12,
-    backgroundColor: Colors.card.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    padding: 10,
   },
-  thumb: {
-    width: 86,
-    height: 86,
+  articleCard: {
+    width: CARD_WIDTH * 0.9,
+    backgroundColor: Colors.background.white,
     borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  articleImage: {
+    width: '100%',
+    height: 140,
     backgroundColor: Colors.background.secondary,
   },
-  listContent: {
-    flex: 1,
+  articleContent: {
+    padding: 12,
   },
-  listSection: {
-    color: Colors.primary,
+  articleSource: {
     fontSize: 12,
-    fontWeight: '700' as const,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 8,
+    fontFamily: Fonts.semiBold,
   },
-  listTitle: {
-    marginTop: 4,
+  articleTitle: {
+    fontSize: 15,
+    fontWeight: '700',
     color: Colors.text.primary,
-    fontWeight: '700' as const,
-    letterSpacing: -0.3,
+    lineHeight: 20,
+    marginBottom: 6,
+    fontFamily: Fonts.bold,
   },
-  listMetaRow: {
-    marginTop: 6,
+  articleDescription: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+    marginBottom: 8,
+    fontFamily: Fonts.regular,
+  },
+  articleTime: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    fontFamily: Fonts.regular,
+  },
+  searchResultsList: {
+    gap: 16,
+  },
+  searchResultCard: {
+    flexDirection: 'row',
+    backgroundColor: Colors.background.white,
+    borderRadius: 12,
+    overflow: 'hidden',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchResultImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: Colors.background.secondary,
+  },
+  searchResultContent: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+  },
+  searchResultCategory: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.text.tertiary,
+    marginBottom: 4,
+    fontFamily: Fonts.semiBold,
+  },
+  searchResultTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    lineHeight: 20,
+    marginBottom: 6,
+    fontFamily: Fonts.semiBold,
+  },
+  searchResultMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  metaAvatar: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.border.primary,
-  },
-  listMetaText: {
-    color: Colors.text.tertiary,
+  searchResultSource: {
     fontSize: 12,
+    color: Colors.text.tertiary,
+    fontFamily: Fonts.regular,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: Colors.text.primary,
-    marginHorizontal: 20,
-    marginBottom: 14,
-    letterSpacing: -0.4,
+  newsDot: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
   },
-  topicsContainer: {
-    paddingHorizontal: 20,
-    gap: 10,
+  searchResultTime: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    fontFamily: Fonts.regular,
   },
-  topicCard: {
-    backgroundColor: Colors.card.white,
-    borderRadius: 18,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
+  loadingText: {
+    fontSize: 15,
+    color: Colors.text.tertiary,
+    textAlign: 'center',
+    paddingVertical: 40,
+    fontFamily: Fonts.regular,
   },
-  topicHeader: {
-    flexDirection: 'row',
+  emptyState: {
     alignItems: 'center',
-    gap: 14,
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  topicIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F0F4FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.secondary,
+    marginBottom: 8,
+    fontFamily: Fonts.semiBold,
+    textAlign: 'center',
   },
-  topicInfo: {
-    flex: 1,
-  },
-  topicCategory: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: Colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  topicName: {
-    fontSize: 17,
-    fontWeight: '600' as const,
-    color: Colors.text.primary,
-    marginTop: 4,
-    letterSpacing: -0.3,
-  },
-  topicCount: {
+  emptyStateSubtext: {
     fontSize: 14,
     color: Colors.text.tertiary,
-    marginTop: 2,
-  },
-  recommendationsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  recommendationCard: {
-    flex: 1,
-    backgroundColor: Colors.card.white,
-    borderRadius: 18,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-  },
-  recommendationEmoji: {
-    fontSize: 36,
-    marginBottom: 10,
-  },
-  recommendationTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: Colors.text.primary,
-    marginBottom: 6,
+    fontFamily: Fonts.regular,
     textAlign: 'center',
-    letterSpacing: -0.2,
+    lineHeight: 20,
   },
-  recommendationDescription: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 18,
+  bottomPadding: {
+    height: 100,
   },
 });

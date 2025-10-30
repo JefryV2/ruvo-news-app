@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
   Text,
@@ -14,9 +15,10 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, ArrowRight, Sparkles } from 'lucide-react-native';
+import { Mail, Lock, ArrowRight, Sparkles, AlertCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
+import { authService } from '@/lib/authService';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -24,71 +26,177 @@ export default function SignInScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 40,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 40,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim, scaleAnim]);
+    let isMounted = true;
+
+    // Start animations only if component is still mounted
+    if (isMounted) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 40,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 40,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Pulsating animation
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(pulseAnim, {
+              toValue: 1.3,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(glowAnim, {
+              toValue: 0.6,
+              duration: 2000,
+              useNativeDriver: false,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(glowAnim, {
+              toValue: 0.3,
+              duration: 2000,
+              useNativeDriver: false,
+            }),
+          ]),
+        ])
+      );
+      pulseAnimation.start();
+
+      // Cleanup function to stop animations when component unmounts
+      return () => {
+        isMounted = false;
+        pulseAnimation.stop();
+      };
+    }
+  }, []);
 
   const handleSignIn = async () => {
+    if (!isFormValid) return;
+    
     setIsLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const result = await authService.signIn({ email, password });
+      
+      if (result.user) {
+        // Check if user has completed onboarding
+        const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+        
+        if (onboardingComplete === 'true') {
+          router.replace('/(tabs)/feed');
+        } else {
+          router.replace('/onboarding');
+        }
+      }
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } finally {
       setIsLoading(false);
-      router.push('/onboarding');
-    }, 1500);
+    }
   };
 
   const isFormValid = email.length > 0 && password.length > 0;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.hero, { paddingTop: insets.top + 24 }]}>
-        <View style={styles.heroBadge}>
-          <Image source={require('@/assets/images/icon.png')} style={styles.heroLogo} resizeMode="contain" />
-        </View>
-        <Text style={styles.heroTitle}>RUVO</Text>
-        <Text style={styles.heroTagline}>Cut the Noise. Catch the Signal.</Text>
-        <Text style={styles.heroSubtitle}>Welcome back to Ruvo</Text>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
+    <View style={styles.container}>
+      {/* Animated Background */}
+      <View style={styles.backgroundContainer}>
+        <Animated.View 
           style={[
-            styles.card,
+            styles.gradientOrb1,
             {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              transform: [{ scale: pulseAnim }],
+              opacity: glowAnim,
             },
           ]}
         >
+          <LinearGradient
+            colors={['rgba(93, 202, 218, 0.3)', 'rgba(93, 202, 218, 0.15)', 'rgba(93, 202, 218, 0)']}  
+            style={styles.orbGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+        </Animated.View>
+        
+        <Animated.View 
+          style={[
+            styles.gradientOrb2,
+            {
+              transform: [{ scale: pulseAnim.interpolate({
+                inputRange: [1, 1.3],
+                outputRange: [1.1, 1.4],
+              })}],
+              opacity: glowAnim.interpolate({
+                inputRange: [0.3, 0.6],
+                outputRange: [0.4, 0.7],
+              }),
+            },
+          ]} 
+        >
+          <LinearGradient
+            colors={['rgba(127, 234, 255, 0.4)', 'rgba(127, 234, 255, 0.2)', 'rgba(127, 234, 255, 0)']}  
+            style={styles.orbGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+        </Animated.View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
+          <Image source={require('@/assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.headerTitle}>Welcome Back</Text>
+          <Text style={styles.headerSubtitle}>Sign in to continue</Text>
+        </View>
+
+              <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View
+            style={[
+              styles.card,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              },
+            ]}  
+          >
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
@@ -126,6 +234,13 @@ export default function SignInScreen() {
               <Text style={styles.forgotButtonText}>Forgot password?</Text>
             </TouchableOpacity>
 
+            {error ? (
+              <View style={styles.errorContainer}>
+                <AlertCircle size={16} color={Colors.alert} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
             <TouchableOpacity
               style={[styles.signInButton, !isFormValid && styles.signInButtonDisabled]}
               onPress={handleSignIn}
@@ -151,58 +266,69 @@ export default function SignInScreen() {
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
+    backgroundColor: '#000000',
   },
-  hero: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
   },
-  heroBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+  gradientOrb1: {
+    position: 'absolute',
+    width: 350,
+    height: 350,
+    top: -100,
+    right: -80,
+  },
+  gradientOrb2: {
+    position: 'absolute',
+    width: 400,
+    height: 400,
+    bottom: -150,
+    left: -100,
+  },
+  orbGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 999,
+  },
+  content: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 32,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 40,
   },
-  heroLogo: {
-    width: 22,
-    height: 22,
+  logo: {
+    width: 60,
+    height: 60,
+    marginBottom: 24,
   },
-  heroTitle: {
-    fontSize: 36,
-    fontWeight: '800' as const,
-    fontFamily: 'PlayfairDisplay_700Bold',
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
     color: Colors.text.inverse,
-    letterSpacing: -1,
     marginBottom: 8,
+    fontFamily: Fonts.bold,
   },
-  heroTagline: {
+  headerSubtitle: {
     fontSize: 16,
-    fontWeight: '400' as const,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: Fonts.regular,
-    color: Colors.text.inverse,
-    opacity: 0.9,
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  heroSubtitle: {
-    color: Colors.text.inverse,
-    opacity: 0.9,
-    marginTop: 2,
   },
   scrollView: {
     flex: 1,
@@ -213,16 +339,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: Colors.background.white,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    padding: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 32,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
+    elevation: 10,
   },
   formContainer: {
     gap: 16,
@@ -309,5 +433,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700' as const,
     color: Colors.primary,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.3)',
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.alert,
   },
 });

@@ -1,18 +1,18 @@
 import { Interest, Signal, Notification, TrendingTopic, Source } from '@/types';
 
 export const INTERESTS: Interest[] = [
-  { id: '1', name: 'Tech', emoji: '💻' },
-  { id: '2', name: 'Finance', emoji: '💰' },
-  { id: '3', name: 'K-Pop', emoji: '🎵' },
-  { id: '4', name: 'Local Events', emoji: '🎪' },
-  { id: '5', name: 'Science', emoji: '🔬' },
-  { id: '6', name: 'Sports', emoji: '⚽' },
-  { id: '7', name: 'Food', emoji: '🍜' },
-  { id: '8', name: 'Travel', emoji: '✈️' },
-  { id: '9', name: 'Gaming', emoji: '🎮' },
-  { id: '10', name: 'Fashion', emoji: '👗' },
-  { id: '11', name: 'Health', emoji: '🏥' },
-  { id: '12', name: 'Music', emoji: '🎸' },
+  { id: '1', name: 'Tech', emoji: '💻', imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop' },
+  { id: '2', name: 'Finance', emoji: '💰', imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800&auto=format&fit=crop' },
+  { id: '3', name: 'K-Pop', emoji: '🎵', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=800&auto=format&fit=crop' },
+  { id: '4', name: 'Local Events', emoji: '🎪', imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800&auto=format&fit=crop' },
+  { id: '5', name: 'Science', emoji: '🔬', imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=800&auto=format&fit=crop' },
+  { id: '6', name: 'Sports', emoji: '⚽', imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=800&auto=format&fit=crop' },
+  { id: '7', name: 'Food', emoji: '🍜', imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
+  { id: '8', name: 'Travel', emoji: '✈️', imageUrl: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=800&auto=format&fit=crop' },
+  { id: '9', name: 'Gaming', emoji: '🎮', imageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800&auto=format&fit=crop' },
+  { id: '10', name: 'Fashion', emoji: '👗', imageUrl: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop' },
+  { id: '11', name: 'Health', emoji: '🏥', imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=800&auto=format&fit=crop' },
+  { id: '12', name: 'Music', emoji: '🎸', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=800&auto=format&fit=crop' },
 ];
 
 export const SOURCES: Source[] = [
@@ -31,6 +31,7 @@ export const MOCK_SIGNALS: Signal[] = [
     id: '1',
     title: 'Apple announces new Vision Pro features at WWDC',
     summary: 'Apple unveiled significant updates to Vision Pro including improved hand tracking and new productivity apps designed for spatial computing.',
+    content: 'Apple unveiled significant updates to Vision Pro including improved hand tracking and new productivity apps designed for spatial computing.\n\nThe new features include enhanced gesture recognition that allows users to interact with virtual objects more naturally. Apple demonstrated how users can now pinch, swipe, and manipulate 3D objects with unprecedented precision.\n\nAdditionally, the company announced partnerships with major software developers to bring professional-grade applications to the Vision Pro platform. These include 3D modeling tools, collaborative workspaces, and immersive creative applications.\n\nThe updates will be available as part of visionOS 2.0, rolling out to all Vision Pro users in the coming months.',
     sourceId: '1',
     sourceName: 'TechCrunch',
     verified: true,
@@ -46,6 +47,7 @@ export const MOCK_SIGNALS: Signal[] = [
     id: '2',
     title: 'BTS announces surprise comeback album',
     summary: 'The global K-pop sensation BTS revealed plans for a new album release next month, sending fans into a frenzy across social media.',
+    content: 'The global K-pop sensation BTS revealed plans for a new album release next month, sending fans into a frenzy across social media.\n\nIn a surprise announcement during their latest livestream, the seven-member group confirmed they have been working on new music throughout the year. The album, their first group project in over 18 months, will feature collaborations with renowned producers and artists from around the world.\n\nFans, known as ARMY, immediately trended multiple hashtags worldwide, with #BTSComeback reaching the top spot within minutes. Pre-order information and the official release date are expected to be announced in the coming days.',
     sourceId: '5',
     sourceName: 'Allkpop',
     verified: true,
@@ -61,6 +63,7 @@ export const MOCK_SIGNALS: Signal[] = [
     id: '3',
     title: 'Bitcoin surges past $50K on ETF approval news',
     summary: 'Cryptocurrency markets rallied today as major financial institutions received approval to launch Bitcoin ETFs, marking a significant milestone.',
+    content: 'Cryptocurrency markets rallied today as major financial institutions received approval to launch Bitcoin ETFs, marking a significant milestone for digital asset adoption.\n\nBitcoin jumped more than 12% in early trading, breaking through the $50,000 barrier for the first time since 2022. The surge followed the U.S. Securities and Exchange Commission\'s decision to approve applications from several major asset managers.\n\nIndustry experts believe this approval will open the floodgates for institutional investment, potentially bringing billions of dollars into the cryptocurrency market.',
     sourceId: '3',
     sourceName: 'Bloomberg',
     verified: true,
@@ -291,11 +294,64 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
 ];
 
 export const TRENDING_TOPICS: TrendingTopic[] = [
+  // Tech
   { id: '1', name: 'Vision Pro', count: 12500, category: 'Tech' },
-  { id: '2', name: 'BTS Comeback', count: 45000, category: 'K-Pop' },
-  { id: '3', name: 'Bitcoin ETF', count: 8900, category: 'Finance' },
-  { id: '4', name: 'Seoul Tech Hub', count: 5600, category: 'Local' },
   { id: '5', name: 'AI Funding', count: 3200, category: 'Tech' },
+  { id: '9', name: 'ChatGPT 5', count: 18900, category: 'Tech' },
+  { id: '14', name: 'iPhone 16', count: 24300, category: 'Tech' },
+  
+  // Finance
+  { id: '3', name: 'Bitcoin ETF', count: 8900, category: 'Finance' },
+  { id: '10', name: 'Stock Market Rally', count: 7800, category: 'Finance' },
+  { id: '15', name: 'Fed Interest Rates', count: 9200, category: 'Finance' },
+  
+  // K-Pop
+  { id: '2', name: 'BTS Comeback', count: 45000, category: 'K-Pop' },
+  { id: '11', name: 'Blackpink World Tour', count: 32000, category: 'K-Pop' },
+  { id: '16', name: 'NewJeans Debut', count: 28500, category: 'K-Pop' },
+  
+  // Sports
   { id: '6', name: 'Premier League', count: 21400, category: 'Sports' },
+  { id: '12', name: 'NBA Finals', count: 19800, category: 'Sports' },
+  { id: '17', name: 'World Cup Qualifiers', count: 16700, category: 'Sports' },
+  
+  // Health
   { id: '7', name: 'Sleep Science', count: 6300, category: 'Health' },
+  { id: '13', name: 'Mental Health Awareness', count: 8100, category: 'Health' },
+  { id: '18', name: 'Weight Loss Study', count: 5400, category: 'Health' },
+  
+  // Science
+  { id: '19', name: 'Mars Mission', count: 11200, category: 'Science' },
+  { id: '20', name: 'Climate Change Report', count: 9600, category: 'Science' },
+  { id: '21', name: 'Quantum Computing', count: 7300, category: 'Science' },
+  
+  // Food
+  { id: '22', name: 'Michelin Stars 2024', count: 4800, category: 'Food' },
+  { id: '23', name: 'Plant-Based Trends', count: 6200, category: 'Food' },
+  { id: '24', name: 'Korean Street Food', count: 5100, category: 'Food' },
+  
+  // Gaming
+  { id: '25', name: 'GTA 6 Release', count: 42000, category: 'Gaming' },
+  { id: '26', name: 'Esports Championship', count: 15300, category: 'Gaming' },
+  { id: '27', name: 'Nintendo Switch 2', count: 19400, category: 'Gaming' },
+  
+  // Fashion
+  { id: '28', name: 'Paris Fashion Week', count: 13700, category: 'Fashion' },
+  { id: '29', name: 'Sustainable Fashion', count: 7900, category: 'Fashion' },
+  { id: '30', name: 'Y2K Comeback', count: 9300, category: 'Fashion' },
+  
+  // Travel
+  { id: '31', name: 'Best Destinations 2024', count: 8600, category: 'Travel' },
+  { id: '32', name: 'Digital Nomad Visas', count: 6700, category: 'Travel' },
+  { id: '33', name: 'Solo Travel Safety', count: 5900, category: 'Travel' },
+  
+  // Music
+  { id: '34', name: 'Grammy Awards', count: 17200, category: 'Music' },
+  { id: '35', name: 'Taylor Swift Tour', count: 29800, category: 'Music' },
+  { id: '36', name: 'Hip Hop Revival', count: 8400, category: 'Music' },
+  
+  // Local Events
+  { id: '4', name: 'Seoul Tech Hub', count: 5600, category: 'Local Events' },
+  { id: '37', name: 'City Festival', count: 4300, category: 'Local Events' },
+  { id: '38', name: 'Community Cleanup', count: 3200, category: 'Local Events' },
 ];

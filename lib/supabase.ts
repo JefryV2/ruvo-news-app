@@ -45,9 +45,8 @@ export interface UserSignal {
   signal_id: string;
   liked: boolean;
   saved: boolean;
-  dismissed: boolean;
-  read: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Notification {

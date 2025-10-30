@@ -1,15 +1,8 @@
-declare module 'expo-router' {
-  // Minimal type shims to satisfy the TypeScript compiler in editor
-  export const Tabs: any;
-  export const Stack: any;
-  export const router: any;
-  export function useRouter(): any;
-}
-
 export type Interest = {
   id: string;
   name: string;
   emoji: string;
+  imageUrl?: string;
 };
 
 export type Source = {
@@ -23,6 +16,7 @@ export type Signal = {
   id: string;
   title: string;
   summary: string;
+  content?: string;
   sourceId: string;
   sourceName: string;
   verified: boolean;
@@ -62,4 +56,48 @@ export type UserProfile = {
   profileImage?: string;
   isPremium: boolean;
   language: 'en' | 'ko';
+  location?: {
+    latitude: number;
+    longitude: number;
+    country: string;
+    countryCode: string;
+    region: string;
+    city: string;
+    timezone: string;
+  };
+};
+
+export type CustomAlertType = 'album_release' | 'product_announcement' | 'earnings_report' | 'price_change' | 'event' | 'news_mention' | 'general';
+
+export type CustomAlert = {
+  id: string;
+  userId: string;
+  type: CustomAlertType;
+  title: string;
+  description: string;
+  keywords: string[];
+  entities: {
+    artists?: string[];
+    companies?: string[];
+    products?: string[];
+    people?: string[];
+    topics?: string[];
+  };
+  conditions?: {
+    priceThreshold?: number;
+    dateRange?: { start: Date; end: Date };
+    sources?: string[];
+  };
+  isActive: boolean;
+  createdAt: Date;
+  triggeredCount: number;
+  lastTriggered?: Date;
+};
+
+export type AlertMatch = {
+  alertId: string;
+  signalId: string;
+  matchScore: number;
+  matchedKeywords: string[];
+  timestamp: Date;
 };

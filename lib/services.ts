@@ -7,7 +7,6 @@ export const userService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     
-    if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -95,6 +94,7 @@ export const signalService = {
   },
 
   async searchSignals(query: string, limit = 20): Promise<Signal[]> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
     const { data, error } = await supabase
       .from('signals')
       .select('*')
@@ -135,9 +135,7 @@ export const userSignalService = {
           user_id: userId,
           signal_id: signalId,
           liked: true,
-          saved: false,
-          dismissed: false,
-          read: false
+          saved: false
         })
         .select()
         .single();
@@ -173,9 +171,7 @@ export const userSignalService = {
           user_id: userId,
           signal_id: signalId,
           liked: false,
-          saved: true,
-          dismissed: false,
-          read: false
+          saved: true
         })
         .select()
         .single();
@@ -187,6 +183,7 @@ export const userSignalService = {
 
   async dismissSignal(userId: string, signalId: string): Promise<UserSignal> {
     if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
+    // Simple schema doesn't have dismissed column, so we'll just delete the row or do nothing
     const { data: existing } = await supabase
       .from('user_signals')
       .select('*')
@@ -195,32 +192,68 @@ export const userSignalService = {
       .single();
 
     if (existing) {
-      const { data, error } = await supabase
+      // In simple schema, dismissing = deleting the interaction
+      const { error } = await supabase
         .from('user_signals')
-        .update({ dismissed: true })
-        .eq('id', existing.id)
-        .select()
-        .single();
+        .delete()
+        .eq('id', existing.id);
       
       if (error) throw error;
-      return data;
+      return existing;
     } else {
-      const { data, error } = await supabase
-        .from('user_signals')
-        .insert({
-          user_id: userId,
-          signal_id: signalId,
-          liked: false,
-          saved: false,
-          dismissed: true,
-          read: false
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      // No existing interaction, nothing to dismiss
+      return {
+        id: '',
+        user_id: userId,
+        signal_id: signalId,
+        liked: false,
+        saved: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as UserSignal;
     }
+  },
+
+  async getUserSignalInteractions(userId: string): Promise<Record<string, UserSignal>> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) return {};
+    const { data, error } = await supabase
+      .from('user_signals')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    
+    // Convert to a map keyed by signal_id for easy lookup
+    const interactions: Record<string, UserSignal> = {};
+    (data || []).forEach(interaction => {
+      interactions[interaction.signal_id] = interaction;
+    });
+    
+    return interactions;
+  },
+
+  async getLikedSignals(userId: string): Promise<string[]> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) return [];
+    const { data, error } = await supabase
+      .from('user_signals')
+      .select('signal_id')
+      .eq('user_id', userId)
+      .eq('liked', true);
+    
+    if (error) throw error;
+    return (data || []).map(item => item.signal_id);
+  },
+
+  async getSavedSignals(userId: string): Promise<string[]> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) return [];
+    const { data, error } = await supabase
+      .from('user_signals')
+      .select('signal_id')
+      .eq('user_id', userId)
+      .eq('saved', true);
+    
+    if (error) throw error;
+    return (data || []).map(item => item.signal_id);
   }
 };
 
@@ -297,5 +330,160 @@ export const metadataService = {
     
     if (error) throw error;
     return data || [];
+  }
+};
+
+// Account Settings Management
+export const accountSettingsService = {
+  async getAccountSettings(userId: string): Promise<any> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      // Return default settings if backend not configured
+      return {
+        pushNotifications: true,
+        emailNotifications: true,
+        smsNotifications: false,
+        language: 'en',
+        isActive: true
+      };
+    }
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('is_premium, language, created_at')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    // Return settings with defaults
+    return {
+      pushNotifications: true,
+      emailNotifications: true,
+      smsNotifications: false,
+      language: data?.language || 'en',
+      isActive: true,
+      isPremium: data?.is_premium || false,
+      joinedDate: data?.created_at
+    };
+  },
+
+  async updateAccountSettings(userId: string, settings: any): Promise<any> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      // Mock update for development
+      return { ...settings, updated: true };
+    }
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        language: settings.language,
+        is_premium: settings.isPremium,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getProfileStats(userId: string): Promise<any> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      // Return mock stats for development
+      return {
+        totalLikes: 0,
+        totalSaved: 0,
+        joinedDate: new Date().toISOString()
+      };
+    }
+    
+    // Get user's signal interactions (simple schema: only liked and saved)
+    const { data: userSignals, error: signalsError } = await supabase
+      .from('user_signals')
+      .select('liked, saved')
+      .eq('user_id', userId);
+    
+    if (signalsError) {
+      console.error('Error fetching profile stats:', signalsError);
+      return {
+        totalLikes: 0,
+        totalSaved: 0,
+        joinedDate: new Date().toISOString()
+      };
+    }
+    
+    // Calculate stats from user_signals table
+    const totalLikes = userSignals?.filter(s => s.liked).length || 0;
+    const totalSaved = userSignals?.filter(s => s.saved).length || 0;
+    
+    console.log('📊 Profile Stats:', { totalLikes, totalSaved, userId });
+    
+    return {
+      totalLikes,
+      totalSaved,
+      joinedDate: new Date().toISOString() // We don't have users table in simple schema
+    };
+  },
+
+  async deleteAccount(userId: string): Promise<void> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      throw new Error('Backend not configured');
+    }
+    
+    // Delete user and all related data (cascade will handle user_signals and notifications)
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+    
+    if (error) throw error;
+  },
+
+  async exportUserData(userId: string): Promise<any> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      // Return mock data for development
+      return {
+        user: { id: userId, username: 'mock_user' },
+        signals: [],
+        settings: { language: 'en' },
+        exportedAt: new Date().toISOString()
+      };
+    }
+    
+    // Get user data
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (userError) throw userError;
+    
+    // Get user's signal interactions
+    const { data: userSignals, error: signalsError } = await supabase
+      .from('user_signals')
+      .select(`
+        *,
+        signals(*)
+      `)
+      .eq('user_id', userId);
+    
+    if (signalsError) throw signalsError;
+    
+    // Get user's notifications
+    const { data: notifications, error: notificationsError } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (notificationsError) throw notificationsError;
+    
+    return {
+      user,
+      signals: userSignals || [],
+      notifications: notifications || [],
+      exportedAt: new Date().toISOString()
+    };
   }
 };

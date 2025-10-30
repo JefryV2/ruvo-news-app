@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+
+
 import {
   StyleSheet,
   Text,
@@ -11,12 +13,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Heart, Bookmark, X, MessageCircle } from 'lucide-react-native';
+
+import { Heart, Bookmark, X, ExternalLink } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Signal } from '@/types';
-import RuvoButton from '@/components/RuvoButton';
+
+
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Constants
@@ -27,9 +32,11 @@ const CAROUSEL_SPACING = 12;
 
 export default function FeedScreen() {
   const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals } = useApp();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
+  const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,21 +52,59 @@ export default function FeedScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const formatTimeAgo = (date: Date) => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
+
+
+
+
+
+
+
+    const formatTimeAgo = (date: Date | string | undefined) => {
+    if (!date) return 'Just now';
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
+      
+      if (seconds < 60) return `${seconds}s ago`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      return `${Math.floor(seconds / 86400)}d ago`;
+    } catch (error) {
+      return 'Just now';
+    }
   };
 
-  const renderSignalCard = (signal: Signal) => (
-    <View key={signal.id} style={styles.card}>
-      {signal.imageUrl && (
-        <Image source={{ uri: signal.imageUrl }} style={styles.cardImage} resizeMode="cover" />
-      )}
-      <View style={styles.cardContent}>
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+    const renderSignalCard = (signal: Signal) => {
+    const isExpanded = expandedArticleId === signal.id;
+    
+    return (
+      <View key={signal.id} style={styles.card}>
+        {signal.imageUrl && (
+          <TouchableOpacity onPress={() => router.push(`/article-detail?id=${signal.id}`)}>
+            <Image source={{ uri: signal.imageUrl }} style={styles.cardImage} resizeMode="cover" />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity 
+          style={styles.cardContent}
+          activeOpacity={0.95}
+          onPress={() => router.push(`/article-detail?id=${signal.id}`)}
+        >
         <View style={styles.cardHeader}>
           <View style={styles.sourceInfo}>
             <Text style={styles.sourceName}>{signal.sourceName}</Text>
@@ -72,8 +117,38 @@ export default function FeedScreen() {
           <Text style={styles.timestamp}>{formatTimeAgo(signal.timestamp)}</Text>
         </View>
 
-        <Text style={styles.title}>{signal.title}</Text>
-        <Text style={styles.summary}>{signal.summary}</Text>
+
+
+                  <Text style={styles.title}>{signal.title}</Text>
+          
+          <Text style={styles.summary} numberOfLines={isExpanded ? undefined : 3}>
+            {signal.summary}
+          </Text>
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    {isExpanded && signal.content && signal.content !== signal.summary && (
+            <View style={styles.expandedContent}>
+              <Text style={styles.fullText}>{signal.content}</Text>
+            </View>
+          )}
+          
+          {!isExpanded && (
+            <Text style={styles.tapToExpand}>Tap to read more...</Text>
+          )}
 
         <View style={styles.tagsContainer}>
           {signal.tags.map((tag, index) => (
@@ -83,26 +158,44 @@ export default function FeedScreen() {
           ))}
         </View>
 
+
+                </TouchableOpacity>
+        
         <View style={styles.reactionsRow}>
-          <TouchableOpacity style={styles.reactionPill} activeOpacity={0.9} onPress={() => toggleSignalLike(signal.id)}>
+          <TouchableOpacity 
+            style={styles.reactionPill} 
+            activeOpacity={0.9} 
+            onPress={() => {
+              console.log('Like button pressed for signal:', signal.id, 'Current liked state:', signal.liked);
+              toggleSignalLike(signal.id);
+            }}
+          >
             <Heart size={18} color={signal.liked ? Colors.alert : Colors.text.tertiary} fill={signal.liked ? Colors.alert : 'transparent'} />
             <Text style={styles.reactionText}>{signal.liked ? 1 : 0}</Text>
           </TouchableOpacity>
-          <View style={styles.reactionPill}>
-            <MessageCircle size={18} color={Colors.text.tertiary} />
-            <Text style={styles.reactionText}>1</Text>
-          </View>
-          <TouchableOpacity style={styles.reactionPill} activeOpacity={0.9} onPress={() => toggleSignalSave(signal.id)}>
+
+          <TouchableOpacity 
+            style={styles.reactionPill} 
+            activeOpacity={0.9} 
+            onPress={() => {
+              console.log('Save button pressed for signal:', signal.id, 'Current saved state:', signal.saved);
+              toggleSignalSave(signal.id);
+            }}
+          >
             <Bookmark size={18} color={signal.saved ? Colors.primary : Colors.text.tertiary} fill={signal.saved ? Colors.primary : 'transparent'} />
             <Text style={styles.reactionText}>{signal.saved ? 1 : 0}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.morePill} activeOpacity={0.8} onPress={() => dismissSignal(signal.id)}>
             <X size={18} color={Colors.text.tertiary} />
           </TouchableOpacity>
-        </View>
+
+
+
+
+                </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const breakingSignals = signals.slice(0, Math.min(3, signals.length));
   const recommendations = signals.slice(Math.min(3, signals.length));
@@ -148,9 +241,9 @@ export default function FeedScreen() {
         {breakingSignals.length > 0 && (
           <View style={styles.carouselSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Breaking News</Text>
+              <Text style={styles.sectionTitle}>{t('feed.breakingNews')}</Text>
               <TouchableOpacity activeOpacity={0.8}>
-                <Text style={styles.sectionLink}>View all</Text>
+                <Text style={styles.sectionLink}>{t('actions.view')} all</Text>
               </TouchableOpacity>
             </View>
 
@@ -183,7 +276,7 @@ export default function FeedScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recommendations</Text>
               <TouchableOpacity activeOpacity={0.8}>
-                <Text style={styles.sectionLink}>View all</Text>
+                <Text style={styles.sectionLink}>{t('actions.view')} all</Text>
               </TouchableOpacity>
             </View>
 
@@ -196,13 +289,14 @@ export default function FeedScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      <RuvoButton
-        title="Ask Ruvo"
-        onPress={() => router.push('/ask-ruvo')}
-        leftIcon={<MessageCircle size={20} color={Colors.text.inverse} />}
-        style={styles.fab}
-        textStyle={{ color: Colors.text.inverse }}
-      />
+
+
+
+
+
+
+
+      
     </View>
   );
 }
@@ -452,25 +546,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 20,
   },
-  reactionText: {
+
+
+
+    reactionText: {
     color: Colors.text.onLight,
     fontWeight: '700',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: 20,
-    backgroundColor: Colors.text.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-    gap: 8,
+  expandedContent: {
+    marginTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.lighter,
   },
+
+
+
+
+
+    fullText: {
+    fontSize: 15,
+    color: Colors.text.primary,
+    lineHeight: 24,
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  tapToExpand: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 });

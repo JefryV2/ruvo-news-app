@@ -1,20 +1,211 @@
-import React from 'react';
+
+
+import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
+  Animated,
+  Alert,
+  ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User as UserIcon, ChevronLeft, Moon, Sun, Settings, LogOut, Info, MessageCircle } from 'lucide-react-native';
+import { router } from 'expo-router';
+
+
+import { 
+  User as UserIcon, 
+  ChevronLeft, 
+  Moon, 
+  Sun, 
+  Settings as SettingsIcon, 
+  LogOut, 
+  Info, 
+  MessageCircle, 
+  Heart, 
+  ChevronRight,
+  Bell,
+  Mail,
+  Smartphone,
+  Globe,
+  TrendingUp,
+  Bookmark,
+  Eye,
+  Calendar,
+  Download,
+  Trash2,
+  Clock,
+  Shield
+} from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { INTERESTS } from '@/constants/mockData';
+import { 
+  useProfileStats, 
+  useAccountSettings, 
+  useUpdateAccountSettings,
+  useSignOut,
+  useDeleteAccount,
+  useExportUserData
+} from '@/lib/hooks';
+
 
 export default function ProfileScreen() {
-  const { user } = useApp();
+  const { user, updateUserInterests } = useApp();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const [showInterests, setShowInterests] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isActive, setIsActive] = useState(true);
+  
+  // Backend hooks
+  const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
+  const { data: accountSettings, isLoading: settingsLoading } = useAccountSettings();
+  const updateSettings = useUpdateAccountSettings();
+  const signOutMutation = useSignOut();
+  const deleteAccountMutation = useDeleteAccount();
+  const exportDataMutation = useExportUserData();
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const avatarScale = useRef(new Animated.Value(0)).current;
+
+  const userInterestCount = user?.interests?.length || 0;
+  
+  const toggleInterest = (interestId: string) => {
+    const currentInterests = user?.interests || [];
+    let newInterests: string[];
+    
+    if (currentInterests.includes(interestId)) {
+      newInterests = currentInterests.filter(id => id !== interestId);
+    } else {
+      newInterests = [...currentInterests, interestId];
+    }
+    
+    updateUserInterests(newInterests);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOutMutation.mutateAsync();
+              router.replace('/auth/sign-in');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirm Deletion',
+              'This will permanently delete all your data. Are you absolutely sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Permanently',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      if (user?.id) {
+                        await deleteAccountMutation.mutateAsync(user.id);
+                        router.replace('/auth/sign-in');
+                      }
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'Failed to delete account');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleExportData = async () => {
+    try {
+      if (user?.id) {
+        const data = await exportDataMutation.mutateAsync(user.id);
+        Alert.alert(
+          'Export Complete',
+          'Your data has been exported. Check your downloads folder.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to export data');
+    }
+  };
+
+  const handleToggleSetting = async (setting: string, value: boolean) => {
+    try {
+      await updateSettings.mutateAsync({ [setting]: value });
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update setting');
+    }
+  };
+
+  const handleToggleStatus = () => {
+    setIsActive(!isActive);
+    // Here you could also save to backend if needed
+  };
+
+  const handleAccountSettings = () => {
+    router.push('/account-settings');
+  };
+
+  useEffect(() => {
+    // Stagger animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(avatarScale, {
+        toValue: 1,
+        tension: 40,
+        friction: 5,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -27,44 +218,323 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.navIcon}>
           <ChevronLeft size={22} color={Colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Me</Text>
+        <Text style={styles.topTitle}>{t('profile.me')}</Text>
         <TouchableOpacity style={styles.navIcon}>
           <Moon size={18} color={Colors.text.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 28 }}>
-        <View style={styles.headerCard}>
-          <View style={styles.avatar}> 
+
+
+        <Animated.View 
+          style={[
+            styles.headerCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Animated.View 
+            style={[
+              styles.avatar,
+              {
+                transform: [{ scale: avatarScale }],
+              },
+            ]}
+          > 
             <UserIcon size={28} color={Colors.primary} />
-          </View>
-          <Text style={styles.username}>{user?.username || 'Swathi Krishnan'}</Text>
-        </View>
 
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionLabel}>Profile</Text>
-          <View style={styles.listCard}>
-            <Row icon={<Dot />} title="Active Status" subtitle="On" />
-            <Row icon={<Dot />} title="Username" subtitle={user?.username ? `anonymous.me/${user.username}` : 'anonymous.me/username'} trailing={<Info size={16} color={Colors.text.secondary} />} />
-          </View>
-        </View>
 
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionLabel}>Preferences</Text>
-          <View style={styles.listCard}>
-            <Row icon={<Dot />} title="SMS" />
-            <Row icon={<Dot />} title="Help" trailing={<MessageCircle size={16} color={Colors.text.secondary} />} />
-          </View>
-        </View>
 
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionLabel}>Account</Text>
+          </Animated.View>
+          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          
+          {profileStats && (
+            <TouchableOpacity 
+              style={styles.statsButton}
+              onPress={() => setShowStats(!showStats)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.statsButtonText}>
+                {showStats ? t('profile.hideStats') : t('profile.viewStats')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+
+        {showStats && profileStats && (
+          <Animated.View 
+            style={[styles.sectionBlock, { opacity: fadeAnim }]}
+          >
+            <Text style={styles.sectionLabel}>Activity Stats</Text>
+            <View style={styles.statsCard}>
+              <View style={styles.statItem}>
+                <Heart size={20} color={Colors.primary} />
+                <Text style={styles.statValue}>{profileStats.totalLikes}</Text>
+                <Text style={styles.statLabel}>Likes</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Bookmark size={20} color={Colors.primary} />
+                <Text style={styles.statValue}>{profileStats.totalSaved}</Text>
+                <Text style={styles.statLabel}>Saved</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Eye size={20} color={Colors.primary} />
+                <Text style={styles.statValue}>{profileStats.totalRead}</Text>
+                <Text style={styles.statLabel}>Read</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Calendar size={20} color={Colors.primary} />
+                <Text style={styles.statValue}>
+                  {new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </Text>
+                <Text style={styles.statLabel}>Joined</Text>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
           <View style={styles.listCard}>
-            <Row icon={<Dot />} title="Account Settings" trailing={<Settings size={16} color={Colors.text.secondary} />} />
-            <Row icon={<Dot />} title="Help" />
-            <Row icon={<Dot />} title="Logout" trailing={<LogOut size={16} color={Colors.alert} />} titleStyle={{ color: Colors.alert }} />
+            <TouchableOpacity onPress={handleToggleStatus}>
+              <Row 
+                icon={<Dot />} 
+                title={t('profile.activeStatus')} 
+                subtitle={isActive ? t('profile.online') : t('profile.offline')} 
+                trailing={<Switch
+                  value={isActive}
+                  onValueChange={handleToggleStatus}
+                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
+                  thumbColor={Colors.background.white}
+                />}
+              />
+            </TouchableOpacity>
+            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} trailing={<Info size={16} color={Colors.text.secondary} />} />
           </View>
-        </View>
+
+        </Animated.View>
+
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionLabel}>Library</Text>
+          <View style={styles.listCard}>
+            <TouchableOpacity onPress={() => router.push('/liked-articles')}>
+              <Row 
+                icon={<Heart size={16} color={Colors.alert} />} 
+                title="Liked Articles" 
+                subtitle={`${profileStats?.totalLikes || 0} articles`}
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/saved-articles')}>
+              <Row 
+                icon={<Bookmark size={16} color={Colors.primary} />} 
+                title="Saved Articles" 
+                subtitle={`${profileStats?.totalSaved || 0} articles`}
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
+          <View style={styles.listCard}>
+            <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
+              <Row 
+                icon={<Heart size={16} color={Colors.primary} />} 
+                title={t('profile.interests')} 
+                subtitle={`${userInterestCount} ${t('profile.selected')}`}
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          {showInterests && (
+            <View style={styles.interestsGrid}>
+              {INTERESTS.map((interest) => {
+                const isSelected = user?.interests?.includes(interest.id);
+                return (
+                  <TouchableOpacity
+                    key={interest.id}
+                    style={[styles.interestChip, isSelected && styles.interestChipSelected]}
+                    onPress={() => toggleInterest(interest.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.interestEmoji}>{interest.emoji}</Text>
+                    <Text style={[styles.interestText, isSelected && styles.interestTextSelected]}>
+                      {interest.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
+          <View style={styles.listCard}>
+
+
+            <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
+              <Row 
+                icon={<Bell size={16} color={Colors.primary} />} 
+                title={t('profile.notifications')} 
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/screen-time-settings')}>
+              <Row 
+                icon={<Clock size={16} color={Colors.primary} />} 
+                title="Screen Time" 
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/content-wellness-settings')}>
+              <Row 
+                icon={<Shield size={16} color={Colors.primary} />} 
+                title="Content Wellness" 
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+            <Row 
+              icon={<Globe size={16} color={Colors.primary} />} 
+              title={t('profile.language')} 
+              subtitle={accountSettings?.language === 'en' ? 'English' : '한국어'}
+            />
+            <Row 
+              icon={<MessageCircle size={16} color={Colors.primary} />} 
+              title={t('profile.help')} 
+              trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+            />
+          </View>
+
+          {showSettings && accountSettings && (
+            <View style={styles.settingsCard}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Smartphone size={18} color={Colors.primary} />
+                  <Text style={styles.settingText}>Push Notifications</Text>
+                </View>
+                <Switch
+                  value={accountSettings.pushNotifications}
+                  onValueChange={(value) => handleToggleSetting('pushNotifications', value)}
+                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
+                  thumbColor={Colors.background.white}
+                />
+              </View>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Mail size={18} color={Colors.primary} />
+                  <Text style={styles.settingText}>Email Notifications</Text>
+                </View>
+                <Switch
+                  value={accountSettings.emailNotifications}
+                  onValueChange={(value) => handleToggleSetting('emailNotifications', value)}
+                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
+                  thumbColor={Colors.background.white}
+                />
+              </View>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Smartphone size={18} color={Colors.primary} />
+                  <Text style={styles.settingText}>SMS Notifications</Text>
+                </View>
+                <Switch
+                  value={accountSettings.smsNotifications}
+                  onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
+                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
+                  thumbColor={Colors.background.white}
+                />
+              </View>
+            </View>
+          )}
+        </Animated.View>
+
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
+          <View style={styles.listCard}>
+
+
+
+            <TouchableOpacity onPress={handleAccountSettings}>
+              <Row 
+                icon={<SettingsIcon size={16} color={Colors.primary} />} 
+                title={t('profile.accountSettings')} 
+                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleExportData} disabled={exportDataMutation.isPending}>
+              <Row 
+                icon={<Download size={16} color={Colors.primary} />} 
+                title={t('profile.exportData')} 
+                trailing={exportDataMutation.isPending ? <ActivityIndicator size="small" color={Colors.primary} /> : <ChevronRight size={16} color={Colors.text.secondary} />}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDeleteAccount}>
+              <Row 
+                icon={<Trash2 size={16} color={Colors.alert} />} 
+                title={t('profile.deleteAccount')} 
+                titleStyle={{ color: Colors.alert }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+              <Row 
+                icon={<LogOut size={16} color={Colors.alert} />} 
+                title={t('profile.logout')} 
+                titleStyle={{ color: Colors.alert }}
+              />
+            </TouchableOpacity>
+          </View>
+
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -168,6 +638,74 @@ const styles = StyleSheet.create({
     fontFamily: 'PlayfairDisplay_700Bold',
     color: Colors.text.primary,
   },
+  userEmail: {
+    fontSize: 14,
+    color: Colors.text.tertiary,
+    marginTop: 4,
+  },
+  statsButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.primary + '20',
+    borderRadius: 12,
+  },
+  statsButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: Colors.background.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border.lighter,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    marginTop: 4,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: Colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  settingsCard: {
+    marginTop: 12,
+    backgroundColor: Colors.background.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border.lighter,
+    padding: 16,
+    gap: 16,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  settingText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.text.primary,
+  },
   sectionBlock: {
     paddingHorizontal: 16,
     marginBottom: 18,
@@ -223,4 +761,41 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     marginTop: 2,
   },
+  interestsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  interestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.secondary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 2,
+    borderColor: Colors.background.secondary,
+  },
+  interestChipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  interestEmoji: {
+    fontSize: 16,
+  },
+  interestText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  interestTextSelected: {
+    color: Colors.text.inverse,
+  },
 });
+
+// Remove last border from rows
+const removeLastBorder = (index: number, total: number) => {
+  return index === total - 1 ? { borderBottomWidth: 0 } : {};
+};

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { GeolocationService } from './geolocationService';
 
 export interface NewsArticle {
   id: string;
@@ -58,19 +59,46 @@ class NewsService {
     'wired.com', 'arstechnica.com', 'verge.com'
   ];
 
-  // Get personalized news based on user interests
+  // Get personalized news based on user interests and location
   async getPersonalizedNews(
     userId: string,
     interests: UserInterest[],
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    includeLocation: boolean = true
   ): Promise<PersonalizedNewsResponse> {
     try {
       // Get user's preferred sources
       const userSources = await this.getUserSources(userId);
       
+      // Get location-based sources if enabled
+      let allSources = [...userSources];
+      if (includeLocation) {
+        try {
+          const countryCode = await GeolocationService.getCountryCodeForNews();
+          const regionalSources = await GeolocationService.getRegionalNewsSources(countryCode);
+          
+          // Add regional sources that aren't already included
+          const regionalSourceObjects = regionalSources
+            .filter(sourceId => !userSources.some(s => s.id === sourceId))
+            .map(sourceId => ({
+              id: sourceId,
+              name: sourceId.replace('-', ' ').toUpperCase(),
+              domain: `${sourceId}.com`,
+              credibilityScore: 0.8,
+              category: 'regional',
+              isActive: true,
+              lastUpdated: new Date().toISOString()
+            }));
+          
+          allSources = [...userSources, ...regionalSourceObjects];
+        } catch (error) {
+          console.warn('Could not get location-based sources:', error);
+        }
+      }
+      
       // Get news from multiple sources
-      const newsPromises = userSources.map(source => 
+      const newsPromises = allSources.map(source => 
         this.fetchNewsFromSource(source, interests, page, limit)
       );
       
@@ -276,16 +304,34 @@ class NewsService {
     }
   }
 
-  // Get trending topics
-  async getTrendingTopics(limit: number = 10): Promise<string[]> {
+  // Get trending topics (location-aware)
+  async getTrendingTopics(limit: number = 10, includeLocation: boolean = true): Promise<string[]> {
     try {
-      // This would typically come from a trending topics API or analytics
-      // For now, return some sample trending topics
-      return [
+      let trendingTopics: string[] = [];
+      
+      // Get global trending topics
+      const globalTopics = [
         'AI Technology', 'Climate Change', 'Space Exploration', 'Cryptocurrency',
         'Healthcare Innovation', 'Renewable Energy', 'Global Economy', 'Cybersecurity',
         'Social Media', 'Electric Vehicles'
-      ].slice(0, limit);
+      ];
+      
+      trendingTopics = [...globalTopics];
+      
+      // Add location-specific topics if enabled
+      if (includeLocation) {
+        try {
+          const countryCode = await GeolocationService.getCountryCodeForNews();
+          const regionalTopics = await GeolocationService.getRegionalTrendingTopics(countryCode);
+          
+          // Mix regional topics with global ones
+          trendingTopics = [...regionalTopics.slice(0, 3), ...globalTopics.slice(0, 7)];
+        } catch (error) {
+          console.warn('Could not get regional trending topics:', error);
+        }
+      }
+      
+      return trendingTopics.slice(0, limit);
     } catch (error) {
       console.error('Error fetching trending topics:', error);
       return [];
