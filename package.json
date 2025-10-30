@@ -9,7 +9,8 @@
     "start-web-dev": "DEBUG=expo* expo start --web",
     "lint": "expo lint",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "build:web": "expo build:web"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.4.2",
