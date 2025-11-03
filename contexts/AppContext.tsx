@@ -5,7 +5,6 @@ import { UserProfile, Signal, Notification } from '@/types';
 import { MOCK_SIGNALS, MOCK_NOTIFICATIONS } from '@/constants/mockData';
 import { useCurrentUser, useSignalsForUser, useNotificationsForUser, useToggleLike, useToggleSave, useDismissSignal, useMarkNotificationAsRead, useAIPersonalizedNews, useNewsAPIPersonalized, useTopHeadlines, useUpdateInterests, useUpdateSources, useWebzioPersonalized, useUserSignalInteractions } from '@/lib/hooks';
 import { NotificationGeneratorService } from '@/lib/notificationGeneratorService';
-import { screenTimeService } from '@/lib/screenTimeService';
 
 type AppState = {
   user: UserProfile | null;
@@ -13,6 +12,12 @@ type AppState = {
   notifications: Notification[];
   hasCompletedOnboarding: boolean;
   isLoading: boolean;
+  echoControlEnabled: boolean;
+  echoControlGrouping: 'source' | 'topic' | 'title' | 'keyword';
+  customKeywords: string[];
+  setEchoControlEnabled: (enabled: boolean) => void;
+  setEchoControlGrouping: (grouping: 'source' | 'topic' | 'title' | 'keyword') => void;
+  setCustomKeywords: (keywords: string[]) => void;
   setUser: (user: UserProfile | null) => void;
   updateUserInterests: (interests: string[]) => void;
   updateUserSources: (sources: string[]) => void;
@@ -29,6 +34,14 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [localSignals, setLocalSignals] = useState<Signal[]>(MOCK_SIGNALS);
   const [generatedNotifications, setGeneratedNotifications] = useState<Notification[]>([]);
+  const [echoControlEnabled, setEchoControlEnabled] = useState<boolean>(true);
+  const [echoControlGrouping, setEchoControlGrouping] = useState<'source' | 'topic' | 'title' | 'keyword'>('topic');
+  const [customKeywords, setCustomKeywords] = useState<string[]>([]);
+  
+  // Debug log for echo control state
+  console.log('AppContext - Echo Control Enabled:', echoControlEnabled);
+  console.log('AppContext - Echo Control Grouping:', echoControlGrouping);
+  console.log('AppContext - Custom Keywords:', customKeywords);
   
   // Backend integration hooks
   const { data: backendUser, isLoading: userLoading } = useCurrentUser();
@@ -323,6 +336,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     notifications: notifications as Notification[],
     hasCompletedOnboarding,
     isLoading: combinedIsLoading,
+    echoControlEnabled,
+    echoControlGrouping,
+    customKeywords,
+    setEchoControlEnabled,
+    setEchoControlGrouping,
+    setCustomKeywords,
     setUser,
     updateUserInterests,
     updateUserSources,
@@ -338,6 +357,9 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     notifications,
     hasCompletedOnboarding,
     combinedIsLoading,
+    echoControlEnabled,
+    echoControlGrouping,
+    customKeywords,
     setUser,
     updateUserInterests,
     updateUserSources,

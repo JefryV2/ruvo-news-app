@@ -1,5 +1,3 @@
-
-
 import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -11,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -36,9 +35,7 @@ import {
   Eye,
   Calendar,
   Download,
-  Trash2,
-  Clock,
-  Shield
+  Trash2
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
@@ -56,13 +53,14 @@ import {
 
 
 export default function ProfileScreen() {
-  const { user, updateUserInterests } = useApp();
+  const { user, updateUserInterests, echoControlEnabled, setEchoControlEnabled, echoControlGrouping, setEchoControlGrouping, customKeywords, setCustomKeywords } = useApp();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [showInterests, setShowInterests] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [newKeyword, setNewKeyword] = useState('');
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -176,6 +174,29 @@ export default function ProfileScreen() {
 
   const handleToggleStatus = () => {
     setIsActive(!isActive);
+    // Here you could also save to backend if needed
+  };
+
+  const handleToggleEchoControl = (value: boolean) => {
+    setEchoControlEnabled(value);
+    // Here you could also save to backend if needed
+  };
+
+  const handleGroupingChange = (grouping: 'source' | 'topic' | 'title' | 'keyword') => {
+    setEchoControlGrouping(grouping);
+    // Here you could also save to backend if needed
+  };
+
+  const handleAddKeyword = () => {
+    if (newKeyword.trim() && !customKeywords.includes(newKeyword.trim())) {
+      setCustomKeywords([...customKeywords, newKeyword.trim()]);
+      setNewKeyword('');
+      // Here you could also save to backend if needed
+    }
+  };
+
+  const handleRemoveKeyword = (keyword: string) => {
+    setCustomKeywords(customKeywords.filter(k => k !== keyword));
     // Here you could also save to backend if needed
   };
 
@@ -421,25 +442,85 @@ export default function ProfileScreen() {
                 trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/screen-time-settings')}>
-              <Row 
-                icon={<Clock size={16} color={Colors.primary} />} 
-                title="Screen Time" 
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/content-wellness-settings')}>
-              <Row 
-                icon={<Shield size={16} color={Colors.primary} />} 
-                title="Content Wellness" 
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
-              />
-            </TouchableOpacity>
             <Row 
               icon={<Globe size={16} color={Colors.primary} />} 
               title={t('profile.language')} 
               subtitle={accountSettings?.language === 'en' ? 'English' : '한국어'}
             />
+            <Row 
+              icon={<TrendingUp size={16} color={Colors.primary} />} 
+              title="Echo Control" 
+              subtitle={echoControlEnabled ? "Enabled" : "Disabled"}
+              trailing={<Switch
+                value={echoControlEnabled}
+                onValueChange={handleToggleEchoControl}
+                trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
+                thumbColor={Colors.background.white}
+              />}
+            />
+            {echoControlEnabled && (
+              <>
+                <View style={styles.settingsCard}>
+                  <View style={styles.settingRow}>
+                    <Text style={styles.settingText}>Grouping Method</Text>
+                    <View style={styles.settingsGroupingOptions}>
+                      <TouchableOpacity 
+                        style={[styles.settingsGroupingOption, echoControlGrouping === 'source' && styles.settingsGroupingOptionSelected]}
+                        onPress={() => handleGroupingChange('source')}
+                      >
+                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'source' && styles.settingsGroupingOptionTextSelected]}>Source</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.settingsGroupingOption, echoControlGrouping === 'topic' && styles.settingsGroupingOptionSelected]}
+                        onPress={() => handleGroupingChange('topic')}
+                      >
+                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'topic' && styles.settingsGroupingOptionTextSelected]}>Topic</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.settingsGroupingOption, echoControlGrouping === 'title' && styles.settingsGroupingOptionSelected]}
+                        onPress={() => handleGroupingChange('title')}
+                      >
+                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'title' && styles.settingsGroupingOptionTextSelected]}>Title</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.settingsGroupingOption, echoControlGrouping === 'keyword' && styles.settingsGroupingOptionSelected]}
+                        onPress={() => handleGroupingChange('keyword')}
+                      >
+                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'keyword' && styles.settingsGroupingOptionTextSelected]}>Keyword</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  {echoControlGrouping === 'keyword' && (
+                    <View style={styles.settingsKeywordSection}>
+                      <Text style={styles.settingText}>Custom Keywords</Text>
+                      <View style={styles.settingsKeywordInputContainer}>
+                        <TextInput
+                          style={styles.settingsKeywordInput}
+                          value={newKeyword}
+                          onChangeText={setNewKeyword}
+                          placeholder="Add keyword..."
+                          placeholderTextColor={Colors.text.tertiary}
+                        />
+                        <TouchableOpacity style={styles.settingsKeywordAddButton} onPress={handleAddKeyword}>
+                          <Text style={styles.settingsKeywordAddButtonText}>Add</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.settingsKeywordList}>
+                        {customKeywords.map((keyword, index) => (
+                          <View key={index} style={styles.settingsKeywordChip}>
+                            <Text style={styles.settingsKeywordChipText}>{keyword}</Text>
+                            <TouchableOpacity onPress={() => handleRemoveKeyword(keyword)}>
+                              <Text style={styles.settingsKeywordChipRemove}>×</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
             <Row 
               icon={<MessageCircle size={16} color={Colors.primary} />} 
               title={t('profile.help')} 
@@ -792,6 +873,88 @@ const styles = StyleSheet.create({
   },
   interestTextSelected: {
     color: Colors.text.inverse,
+  },
+  settingsGroupingOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  settingsGroupingOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.background.secondary,
+  },
+  settingsGroupingOptionSelected: {
+    backgroundColor: Colors.primary,
+  },
+  settingsGroupingOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.text.primary,
+  },
+  settingsGroupingOptionTextSelected: {
+    color: Colors.text.inverse,
+  },
+  settingsKeywordSection: {
+    padding: 16,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  settingsKeywordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  settingsKeywordInput: {
+    flex: 1,
+    backgroundColor: Colors.background.white,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.lighter,
+  },
+  settingsKeywordAddButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 8,
+  },
+  settingsKeywordAddButtonText: {
+    color: Colors.text.inverse,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  settingsKeywordList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  settingsKeywordChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  settingsKeywordChipText: {
+    color: Colors.text.inverse,
+    fontSize: 13,
+    fontWeight: '500',
+    marginRight: 6,
+  },
+  settingsKeywordChipRemove: {
+    color: Colors.text.inverse,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

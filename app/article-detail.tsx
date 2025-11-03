@@ -14,15 +14,38 @@ import { X, ExternalLink, Heart, Bookmark, Share2 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { echoControlService } from '@/lib/echoControlService';
 
 export default function ArticleDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { signals, toggleSignalLike, toggleSignalSave } = useApp();
+  const { signals, toggleSignalLike, toggleSignalSave, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
   
   // Find the signal by ID
   const signal = signals.find(s => s.id === id);
+
+  // Find related articles using the improved service based on user's grouping preference
+  const relatedArticles = signal && echoControlEnabled ? 
+    echoControlService.findRelatedArticles(signal, signals, echoControlGrouping, customKeywords, 5) : [];
+  
+  // Debug logs
+  console.log('=== Article Detail Debug Info ===');
+  console.log('Echo Control Enabled:', echoControlEnabled);
+  console.log('Echo Control Grouping:', echoControlGrouping);
+  console.log('Custom Keywords:', customKeywords);
+  console.log('Total Signals Available:', signals.length);
+  console.log('Current Signal:', signal?.title);
+  console.log('Current Signal Tags:', signal?.tags);
+  console.log('Related Articles Count:', relatedArticles.length);
+  if (relatedArticles.length > 0) {
+    console.log('Related Articles:', relatedArticles.map(a => ({
+      title: a.title,
+      tags: a.tags,
+      source: a.sourceName
+    })));
+  }
+  console.log('==============================');
 
   if (!signal) {
     return (
@@ -122,6 +145,50 @@ export default function ArticleDetailScreen() {
             <View style={styles.fullContentSection}>
               <Text style={styles.fullContentLabel}>Full Article</Text>
               <Text style={styles.fullContent}>{signal.content}</Text>
+            </View>
+          )}
+
+          {/* Related Articles Section */}
+          {relatedArticles.length > 0 && echoControlEnabled && (
+            <View style={styles.relatedArticlesSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Different Perspectives</Text>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{relatedArticles.length}</Text>
+                </View>
+              </View>
+              <Text style={styles.relatedArticlesDescription}>
+                See how other sources are covering this story
+              </Text>
+              
+              <View style={styles.relatedArticlesList}>
+                {relatedArticles.map((article, index) => (
+                  <TouchableOpacity 
+                    key={article.id} 
+                    style={styles.relatedArticle}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/article-detail',
+                        params: { id: article.id }
+                      });
+                    }}
+                  >
+                    <View style={styles.relatedArticleContent}>
+                      <Text style={styles.relatedArticleSource} numberOfLines={1}>
+                        {article.sourceName}
+                      </Text>
+                      <Text style={styles.relatedArticleTitle} numberOfLines={2}>
+                        {article.title}
+                      </Text>
+                    </View>
+                    {article.verified && (
+                      <View style={styles.verifiedBadgeSmall}>
+                        <Text style={styles.verifiedTextSmall}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
 
@@ -353,5 +420,83 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 60,
+  },
+  relatedArticlesSection: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.lighter,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    fontFamily: Fonts.bold,
+  },
+  badge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 12,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text.inverse,
+  },
+  relatedArticlesDescription: {
+    fontSize: 14,
+    color: Colors.text.tertiary,
+    marginBottom: 16,
+  },
+  relatedArticlesList: {
+    gap: 12,
+  },
+  relatedArticle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border.lighter,
+  },
+  relatedArticleContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  relatedArticleSource: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  relatedArticleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  verifiedBadgeSmall: {
+    backgroundColor: Colors.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifiedTextSmall: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.text.inverse,
   },
 });

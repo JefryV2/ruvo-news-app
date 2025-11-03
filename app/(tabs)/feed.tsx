@@ -20,8 +20,7 @@ import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Signal } from '@/types';
-
-
+import { echoControlService } from '@/lib/echoControlService';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Constants
@@ -31,7 +30,7 @@ const CAROUSEL_SLIDE_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 const CAROUSEL_SPACING = 12;
 
 export default function FeedScreen() {
-  const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals } = useApp();
+  const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
   const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
@@ -93,6 +92,18 @@ export default function FeedScreen() {
     const renderSignalCard = (signal: Signal) => {
     const isExpanded = expandedArticleId === signal.id;
     
+    // Find related articles using the improved service based on user's grouping preference
+    const relatedArticles = echoControlEnabled ? 
+      echoControlService.findRelatedArticles(signal, signals, echoControlGrouping, customKeywords, 3) : [];
+    
+    // Debug logs
+    if (relatedArticles.length > 0) {
+      console.log('Feed - Found related articles for:', signal.title);
+      console.log('Feed - Related articles count:', relatedArticles.length);
+      console.log('Feed - Current article tags:', signal.tags);
+      console.log('Feed - Grouping method:', echoControlGrouping);
+    }
+
     return (
       <View key={signal.id} style={styles.card}>
         {signal.imageUrl && (
@@ -114,7 +125,14 @@ export default function FeedScreen() {
               </View>
             )}
           </View>
-          <Text style={styles.timestamp}>{formatTimeAgo(signal.timestamp)}</Text>
+          <View style={styles.headerRight}>
+            <Text style={styles.timestamp}>{formatTimeAgo(signal.timestamp)}</Text>
+            {relatedArticles.length > 0 && echoControlEnabled && (
+              <View style={styles.relatedBadge}>
+                <Text style={styles.relatedBadgeText}>{relatedArticles.length}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
 
@@ -491,6 +509,24 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 13,
     color: Colors.text.tertiary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  relatedBadge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  relatedBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.text.inverse,
   },
   title: {
     fontSize: 20,
