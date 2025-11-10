@@ -10,27 +10,33 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search as SearchIcon, ChevronRight } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Search as SearchIcon, ChevronRight, X, Check } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { INTERESTS } from '@/constants/mockData';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useTrendingByCategory, useSearchArticles } from '@/lib/hooks';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
 
 export default function DiscoverScreen() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
   const { user } = useApp();
   const { t, language } = useLanguage();
+  const { colors } = useTheme();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Map interests to News API categories
   const categoryMap: { [key: string]: string } = {
@@ -111,7 +117,7 @@ export default function DiscoverScreen() {
     }
   };
 
-  const InterestSection = ({ interest, apiCategory, formatTimeAgo }: any) => {
+  const InterestSection = ({ interest, apiCategory, formatTimeAgo, colors }: any) => {
     const { data: articles = [], isLoading } = useTrendingByCategory(apiCategory, language);
 
     if (isLoading) {
@@ -123,7 +129,7 @@ export default function DiscoverScreen() {
               <Text style={styles.sectionTitle}>{t(getInterestTranslation(interest.name))}</Text>
             </View>
           </View>
-          <Text style={styles.loadingText}>{t('feed.loading')}</Text>
+          <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('feed.loading')}</Text>
         </View>
       );
     }
@@ -137,42 +143,41 @@ export default function DiscoverScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionEmoji}>{interest.emoji}</Text>
-            <Text style={styles.sectionTitle}>{t(getInterestTranslation(interest.name))}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>{t(getInterestTranslation(interest.name))}</Text>
           </View>
           <TouchableOpacity style={styles.seeAllButton}>
-            <Text style={styles.seeAllText}>{t('actions.view')} All</Text>
-            <ChevronRight size={16} color={Colors.primary} />
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>{t('actions.view')} All</Text>
+            <ChevronRight size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalScrollContent}
+          contentContainerStyle={styles.articlesRow}
         >
                  {articles.map((article: any, index: number) => (
                    <TouchableOpacity
                      key={`${article.url}-${index}`}
-                     style={styles.articleCard}
+                     style={[styles.articleCard, { backgroundColor: colors.card.secondary }]}
                      onPress={() => router.push(`/article-detail?url=${encodeURIComponent(article.url)}`)}
                    >
-                     <Image 
-                       source={{ 
-                         uri: article.imageUrl || article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop'
-                       }} 
-                       style={styles.articleImage}
-                       defaultSource={{ uri: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop' }}
-                     />
+                    <Image 
+                      source={{ 
+                        uri: article.imageUrl || article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop'
+                      }} 
+                      style={styles.articleImage}
+                    />
                      <View style={styles.articleContent}>
-                       <Text style={styles.articleTitle} numberOfLines={3}>
+                       <Text style={[styles.articleTitle, { color: colors.text.primary }]} numberOfLines={3}>
                          {article.title}
                        </Text>
-                       <Text style={styles.articleDescription} numberOfLines={2}>
+                       <Text style={[styles.articleDescription, { color: colors.text.secondary }]} numberOfLines={2}>
                          {article.description}
                        </Text>
-                       <View style={styles.articleMeta}>
-                         <Text style={styles.articleSource}>{article.source?.name || article.source || 'Unknown'}</Text>
-                         <Text style={styles.articleTime}>
+                       <View style={styles.articleTimeContainer}>
+                         <Text style={[styles.articleSource, { color: colors.primary }]}>{article.source?.name || article.source || 'Unknown'}</Text>
+                         <Text style={[styles.articleTime, { color: colors.text.tertiary }]}> 
                            {formatTimeAgo(new Date(article.publishedAt))}
                          </Text>
                        </View>
@@ -193,84 +198,103 @@ export default function DiscoverScreen() {
         interest={interest}
         apiCategory={apiCategory}
         formatTimeAgo={formatTimeAgo}
+        colors={colors}
       />
     );
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('discover.title')}</Text>
-        <Text style={styles.headerSubtitle}>Explore news by your interests</Text>
-      </View>
-
-      <Animated.ScrollView 
-        style={[styles.scrollView, { opacity: fadeAnim }]}
-        showsVerticalScrollIndicator={false}
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        <View style={styles.searchContainer}>
-          <SearchIcon size={18} color={Colors.text.tertiary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('discover.search')}
-            placeholderTextColor={Colors.text.tertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+        <View style={[styles.header, { backgroundColor: colors.background.light }]}> 
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>Cut the Noise. Catch the Signal.</Text>
+        </View>
+
+        <View style={styles.content}>
+          <View style={[styles.searchContainer, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}> 
+            <SearchIcon size={20} color={colors.text.tertiary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text.primary }]}
+              placeholder={t('discover.searchPlaceholder')}
+              placeholderTextColor={colors.text.tertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={20} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {searchQuery.length > 2 ? (
-          // Search Results
           <View style={styles.content}>
-            <Text style={styles.sectionTitle}>{t('discover.search')} Results</Text>
             {searchLoading ? (
-              <Text style={styles.loadingText}>{t('feed.loading')}</Text>
-            ) : searchResults.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No results found</Text>
-                <Text style={styles.emptyStateSubtext}>Try different keywords</Text>
-              </View>
-            ) : (
+              <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('feed.loading')}</Text>
+            ) : searchResults.length > 0 ? (
               <View style={styles.searchResultsList}>
-                {searchResults.slice(0, 20).map((article) => (
-                  <TouchableOpacity key={article.id} style={styles.searchResultCard} activeOpacity={0.9}>
-                    {article.imageUrl && (
-                      <Image source={{ uri: article.imageUrl }} style={styles.searchResultImage} resizeMode="cover" />
-                    )}
+                {searchResults.map((article: any, index: number) => (
+                  <TouchableOpacity
+                    key={`${article.url}-${index}`}
+                    style={[styles.searchResultCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}
+                    onPress={() => router.push(`/article-detail?url=${encodeURIComponent(article.url)}`)}
+                  >
+                    <Image 
+                      source={{ 
+                        uri: article.imageUrl || article.urlToImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop'
+                      }} 
+                      style={styles.searchResultImage}
+                    />
                     <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultCategory}>{article.category}</Text>
-                      <Text numberOfLines={2} style={styles.searchResultTitle}>{article.title}</Text>
+                      <Text style={[styles.searchResultCategory, { color: colors.text.tertiary }]}> 
+                        {article.source?.name || article.source || 'News'}
+                      </Text>
+                      <Text style={[styles.searchResultTitle, { color: colors.text.primary }]} numberOfLines={3}>
+                        {article.title}
+                      </Text>
                       <View style={styles.searchResultMeta}>
-                        <Text style={styles.searchResultSource}>{article.source}</Text>
-                        <Text style={styles.newsDot}>•</Text>
-                        <Text style={styles.searchResultTime}>{formatTimeAgo(article.publishedAt)}</Text>
+                        <Text style={[styles.searchResultSource, { color: colors.text.tertiary }]}> 
+                          {article.source?.name || article.source || 'Unknown'}
+                        </Text>
+                        <Text style={[styles.newsDot, { color: colors.text.tertiary }]}>•</Text>
+                        <Text style={[styles.searchResultTime, { color: colors.text.tertiary }]}> 
+                          {formatTimeAgo(article.publishedAt)}
+                        </Text>
                       </View>
                     </View>
                   </TouchableOpacity>
                 ))}
               </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colors.text.primary }]}>{t('discover.noResults')}</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.text.secondary }]}>{t('discover.tryDifferent')}</Text>
+              </View>
             )}
           </View>
-        ) : userInterests.length === 0 ? (
-          // No interests selected
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No interests selected</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Go to your profile and select interests to see personalized content
-            </Text>
-          </View>
         ) : (
-          // Show articles grouped by interests
           <>
-            {userInterests.map(interest => renderInterestSection(interest))}
+            {userInterests.length > 0 ? (
+              userInterests.map((interest: any) => renderInterestSection(interest))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colors.text.primary }]}>{t('discover.noInterests')}</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.text.secondary }]}>{t('discover.addInterests')}</Text>
+              </View>
+            )}
           </>
         )}
 
-        <View style={styles.bottomPadding} />
-      </Animated.ScrollView>
+        <View style={[styles.bottomPadding, { height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom) }]} />
+      </ScrollView>
     </View>
   );
 }
@@ -278,26 +302,27 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: Colors.background.light,
+    backgroundColor: 'transparent',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     fontFamily: Fonts.bold,
-    color: Colors.text.primary,
-    letterSpacing: -0.5,
-    marginBottom: 2,
+    color: 'inherit',
+    letterSpacing: -1,
+    marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: Colors.text.tertiary,
+    fontSize: 15,
+    color: 'inherit',
     fontFamily: Fonts.regular,
+    letterSpacing: 0.2,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -305,33 +330,37 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderWidth: 1,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
-    color: Colors.text.primary,
+    fontSize: 16,
+    color: 'inherit',
     fontFamily: Fonts.regular,
+    paddingVertical: 0,
   },
   scrollView: {
     flex: 1,
   },
   content: {
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   sectionContainer: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 16,
+    marginTop: 8,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -342,10 +371,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text.primary,
+    fontSize: 20,
+    fontWeight: '800',
+    color: 'inherit',
     fontFamily: Fonts.bold,
+    letterSpacing: -0.3,
   },
   seeAllButton: {
     flexDirection: 'row',
@@ -353,149 +383,169 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'inherit',
     fontFamily: Fonts.semiBold,
   },
   articlesRow: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 16,
+    paddingVertical: 8,
   },
   articleCard: {
     width: CARD_WIDTH * 0.9,
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   articleImage: {
     width: '100%',
-    height: 140,
-    backgroundColor: Colors.background.secondary,
+    height: 160,
+    backgroundColor: 'transparent',
   },
   articleContent: {
-    padding: 12,
+    padding: 16,
   },
   articleSource: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'inherit',
     marginBottom: 8,
     fontFamily: Fonts.semiBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   articleTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text.primary,
-    lineHeight: 20,
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: '800',
+    color: 'inherit',
+    lineHeight: 22,
+    marginBottom: 8,
     fontFamily: Fonts.bold,
+    letterSpacing: -0.2,
   },
   articleDescription: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-    lineHeight: 18,
-    marginBottom: 8,
+    fontSize: 14,
+    color: 'inherit',
+    lineHeight: 20,
+    marginBottom: 10,
     fontFamily: Fonts.regular,
   },
+  articleTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
   articleTime: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
+    fontSize: 13,
+    color: 'inherit',
     fontFamily: Fonts.regular,
   },
   searchResultsList: {
-    gap: 16,
+    gap: 20,
+    paddingTop: 8,
   },
   searchResultCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
     overflow: 'hidden',
-    gap: 12,
+    gap: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
   },
   searchResultImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: Colors.background.secondary,
+    width: 120,
+    height: 120,
+    backgroundColor: 'transparent',
   },
   searchResultContent: {
     flex: 1,
-    paddingVertical: 8,
-    paddingRight: 12,
+    paddingVertical: 12,
+    paddingRight: 16,
     justifyContent: 'center',
   },
   searchResultCategory: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.text.tertiary,
-    marginBottom: 4,
-    fontFamily: Fonts.semiBold,
-  },
-  searchResultTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.text.primary,
-    lineHeight: 20,
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'inherit',
     marginBottom: 6,
     fontFamily: Fonts.semiBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  searchResultTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: 'inherit',
+    lineHeight: 22,
+    marginBottom: 8,
+    fontFamily: Fonts.semiBold,
+    letterSpacing: -0.2,
   },
   searchResultMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    marginTop: 4,
   },
   searchResultSource: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
+    fontSize: 13,
+    color: 'inherit',
     fontFamily: Fonts.regular,
   },
   newsDot: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
+    fontSize: 13,
+    color: 'inherit',
   },
   searchResultTime: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
+    fontSize: 13,
+    color: 'inherit',
     fontFamily: Fonts.regular,
   },
   loadingText: {
-    fontSize: 15,
-    color: Colors.text.tertiary,
+    fontSize: 16,
+    color: 'inherit',
     textAlign: 'center',
-    paddingVertical: 40,
+    paddingVertical: 50,
     fontFamily: Fonts.regular,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
     paddingHorizontal: 40,
+    marginTop: 20,
   },
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text.secondary,
-    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: '800',
+    color: 'inherit',
+    marginBottom: 12,
     fontFamily: Fonts.semiBold,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   emptyStateSubtext: {
-    fontSize: 14,
-    color: Colors.text.tertiary,
+    fontSize: 16,
+    color: 'inherit',
     fontFamily: Fonts.regular,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   bottomPadding: {
-    height: 100,
+    height: 140,
+    backgroundColor: 'transparent',
   },
 });

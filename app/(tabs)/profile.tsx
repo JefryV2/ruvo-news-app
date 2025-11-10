@@ -10,10 +10,11 @@ import {
   ActivityIndicator,
   Switch,
   TextInput,
+  Pressable,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-
 
 import { 
   User as UserIcon, 
@@ -35,12 +36,16 @@ import {
   Eye,
   Calendar,
   Download,
-  Trash2
+  Trash2,
+  Plus,
+  X,
+  Clock
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { INTERESTS } from '@/constants/mockData';
 import { 
   useProfileStats, 
@@ -51,10 +56,10 @@ import {
   useExportUserData
 } from '@/lib/hooks';
 
-
 export default function ProfileScreen() {
-  const { user, updateUserInterests, echoControlEnabled, setEchoControlEnabled, echoControlGrouping, setEchoControlGrouping, customKeywords, setCustomKeywords } = useApp();
+  const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
   const { t } = useLanguage();
+  const { mode, colors, toggle } = useTheme();
   const insets = useSafeAreaInsets();
   const [showInterests, setShowInterests] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -74,6 +79,9 @@ export default function ProfileScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const avatarScale = useRef(new Animated.Value(0)).current;
+  const interestsAnim = useRef(new Animated.Value(0)).current;
+  const settingsAnim = useRef(new Animated.Value(0)).current;
+  const statsAnim = useRef(new Animated.Value(0)).current;
 
   const userInterestCount = user?.interests?.length || 0;
   
@@ -228,26 +236,69 @@ export default function ProfileScreen() {
     ]).start();
   }, []);
 
+  // Animate interests section
+  useEffect(() => {
+    Animated.timing(interestsAnim, {
+      toValue: showInterests ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showInterests]);
+
+  // Animate settings section
+  useEffect(() => {
+    Animated.timing(settingsAnim, {
+      toValue: showSettings ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showSettings]);
+
+  // Animate stats section
+  useEffect(() => {
+    Animated.timing(statsAnim, {
+      toValue: showStats ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showStats]);
+
+  // Filter liked and saved signals
+  const likedSignals = signals.filter(signal => signal.liked).slice(0, 3); // Show only first 3
+  const savedSignals = signals.filter(signal => signal.saved).slice(0, 3); // Show only first 3
+
+  const formatTimeAgo = (date: Date | string | undefined) => {
+    if (!date) return 'Just now';
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
+      if (seconds < 60) return `${seconds}s ago`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      return `${Math.floor(seconds / 86400)}d ago`;
+    } catch {
+      return 'Just now';
+    }
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>RUVO</Text>
-        <Text style={styles.headerTagline}>Cut the Noise. Catch the Signal.</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
+        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
       </View>
       
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.navIcon}>
-          <ChevronLeft size={22} color={Colors.text.primary} />
+          <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.topTitle}>{t('profile.me')}</Text>
-        <TouchableOpacity style={styles.navIcon}>
-          <Moon size={18} color={Colors.text.primary} />
+        <TouchableOpacity style={styles.navIcon} onPress={toggle}>
+          {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 28 }}>
-
-
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
         <Animated.View 
           style={[
             styles.headerCard,
@@ -262,13 +313,11 @@ export default function ProfileScreen() {
               styles.avatar,
               {
                 transform: [{ scale: avatarScale }],
+                backgroundColor: colors.card.secondary,
               },
             ]}
           > 
-            <UserIcon size={28} color={Colors.primary} />
-
-
-
+            <UserIcon size={28} color={colors.primary} />
           </Animated.View>
           <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
           <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
@@ -286,38 +335,46 @@ export default function ProfileScreen() {
           )}
         </Animated.View>
 
-        {showStats && profileStats && (
-          <Animated.View 
-            style={[styles.sectionBlock, { opacity: fadeAnim }]}
-          >
-            <Text style={styles.sectionLabel}>Activity Stats</Text>
-            <View style={styles.statsCard}>
-              <View style={styles.statItem}>
-                <Heart size={20} color={Colors.primary} />
-                <Text style={styles.statValue}>{profileStats.totalLikes}</Text>
-                <Text style={styles.statLabel}>Likes</Text>
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: statsAnim,
+              maxHeight: showStats ? 200 : 0,
+              overflow: 'hidden',
+            }
+          ]}
+        >
+          {profileStats && (
+            <>
+              <Text style={styles.sectionLabel}>Activity Stats</Text>
+              <View style={[styles.statsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+                <View style={styles.statItem}>
+                  <Heart size={20} color={colors.alert} />
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalLikes || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Likes</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Bookmark size={20} color={colors.primary} />
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalSaved || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Saved</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Eye size={20} color={colors.primary} />
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalRead || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Read</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Calendar size={20} color={colors.primary} />
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}> 
+                    {profileStats.joinedDate ? new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Joined</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Bookmark size={20} color={Colors.primary} />
-                <Text style={styles.statValue}>{profileStats.totalSaved}</Text>
-                <Text style={styles.statLabel}>Saved</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Eye size={20} color={Colors.primary} />
-                <Text style={styles.statValue}>{profileStats.totalRead}</Text>
-                <Text style={styles.statLabel}>Read</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Calendar size={20} color={Colors.primary} />
-                <Text style={styles.statValue}>
-                  {new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                </Text>
-                <Text style={styles.statLabel}>Joined</Text>
-              </View>
-            </View>
-          </Animated.View>
-        )}
-
+            </>
+          )}
+        </Animated.View>
 
         <Animated.View 
           style={[
@@ -329,7 +386,7 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
-          <View style={styles.listCard}>
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleToggleStatus}>
               <Row 
                 icon={<Dot />} 
@@ -338,16 +395,14 @@ export default function ProfileScreen() {
                 trailing={<Switch
                   value={isActive}
                   onValueChange={handleToggleStatus}
-                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                  thumbColor={Colors.background.white}
+                  trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                  thumbColor={colors.background.white}
                 />}
               />
             </TouchableOpacity>
-            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} trailing={<Info size={16} color={Colors.text.secondary} />} />
+            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} trailing={<Info size={16} color={colors.text.secondary} />} />
           </View>
-
         </Animated.View>
-
 
         <Animated.View 
           style={[
@@ -359,25 +414,123 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={styles.sectionLabel}>Library</Text>
-          <View style={styles.listCard}>
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => router.push('/liked-articles')}>
               <Row 
-                icon={<Heart size={16} color={Colors.alert} />} 
+                icon={<Heart size={16} color={colors.alert} />} 
                 title="Liked Articles" 
                 subtitle={`${profileStats?.totalLikes || 0} articles`}
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/saved-articles')}>
               <Row 
-                icon={<Bookmark size={16} color={Colors.primary} />} 
+                icon={<Bookmark size={16} color={colors.primary} />} 
                 title="Saved Articles" 
                 subtitle={`${profileStats?.totalSaved || 0} articles`}
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
           </View>
         </Animated.View>
+
+        {/* Liked Articles Preview */}
+        {likedSignals.length > 0 && (
+          <Animated.View 
+            style={[
+              styles.sectionBlock,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Liked</Text>
+              <TouchableOpacity onPress={() => router.push('/liked-articles')}>
+                <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.articlesPreviewContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+              {likedSignals.map((signal) => (
+                <TouchableOpacity
+                  key={signal.id}
+                  style={styles.articlePreviewCard}
+                  onPress={() => router.push(`/article-detail?id=${signal.id}`)}
+                >
+                  <View style={styles.articlePreviewContent}>
+                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                      {signal.title}
+                    </Text>
+                    <View style={styles.articlePreviewMeta}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                        {signal.sourceName}
+                      </Text>
+                      <View style={styles.timeContainer}>
+                        <Clock size={11} color={colors.text.tertiary} />
+                        <Text style={[styles.articlePreviewTime, { color: colors.text.tertiary }]}>
+                          {formatTimeAgo(signal.timestamp)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={[styles.likedBadgeSmall, { backgroundColor: colors.card.light }]}>
+                    <Heart size={12} color={colors.alert} fill={colors.alert} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Saved Articles Preview */}
+        {savedSignals.length > 0 && (
+          <Animated.View 
+            style={[
+              styles.sectionBlock,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Saved</Text>
+              <TouchableOpacity onPress={() => router.push('/saved-articles')}>
+                <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.articlesPreviewContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+              {savedSignals.map((signal) => (
+                <TouchableOpacity
+                  key={signal.id}
+                  style={styles.articlePreviewCard}
+                  onPress={() => router.push(`/article-detail?id=${signal.id}`)}
+                >
+                  <View style={styles.articlePreviewContent}>
+                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                      {signal.title}
+                    </Text>
+                    <View style={styles.articlePreviewMeta}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                        {signal.sourceName}
+                      </Text>
+                      <View style={styles.timeContainer}>
+                        <Clock size={11} color={colors.text.tertiary} />
+                        <Text style={[styles.articlePreviewTime, { color: colors.text.tertiary }]}>
+                          {formatTimeAgo(signal.timestamp)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={[styles.savedBadgeSmall, { backgroundColor: colors.card.light }]}>
+                    <Bookmark size={12} color={colors.primary} fill={colors.primary} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        )}
 
         <Animated.View 
           style={[
@@ -389,37 +542,52 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
-          <View style={styles.listCard}>
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
               <Row 
-                icon={<Heart size={16} color={Colors.primary} />} 
+                icon={<Heart size={16} color={colors.primary} />} 
                 title={t('profile.interests')} 
                 subtitle={`${userInterestCount} ${t('profile.selected')}`}
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
           </View>
           
-          {showInterests && (
+          <Animated.View 
+            style={[
+              {
+                opacity: interestsAnim,
+                maxHeight: showInterests ? 500 : 0,
+                overflow: 'hidden',
+              }
+            ]}
+          >
             <View style={styles.interestsGrid}>
               {INTERESTS.map((interest) => {
                 const isSelected = user?.interests?.includes(interest.id);
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={interest.id}
-                    style={[styles.interestChip, isSelected && styles.interestChipSelected]}
+                    style={[styles.interestChip, 
+                      { backgroundColor: colors.background.tertiary, borderColor: colors.border.light },
+                      isSelected && [styles.interestChipSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                    ]}
                     onPress={() => toggleInterest(interest.id)}
-                    activeOpacity={0.7}
+                    android_ripple={{ color: colors.primary + '40' }}
                   >
                     <Text style={styles.interestEmoji}>{interest.emoji}</Text>
-                    <Text style={[styles.interestText, isSelected && styles.interestTextSelected]}>
+                    <Text style={[styles.interestText, 
+                      { color: colors.text.primary },
+                      isSelected && styles.interestTextSelected, 
+                      isSelected && { color: colors.text.inverse }
+                    ]}>
                       {interest.name}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
-          )}
+          </Animated.View>
         </Animated.View>
 
         <Animated.View 
@@ -432,86 +600,112 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
-          <View style={styles.listCard}>
-
-
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
               <Row 
-                icon={<Bell size={16} color={Colors.primary} />} 
+                icon={<Bell size={16} color={colors.primary} />} 
                 title={t('profile.notifications')} 
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
             <Row 
-              icon={<Globe size={16} color={Colors.primary} />} 
+              icon={<Globe size={16} color={colors.primary} />} 
               title={t('profile.language')} 
               subtitle={accountSettings?.language === 'en' ? 'English' : '한국어'}
             />
             <Row 
-              icon={<TrendingUp size={16} color={Colors.primary} />} 
+              icon={<TrendingUp size={16} color={colors.primary} />} 
               title="Echo Control" 
               subtitle={echoControlEnabled ? "Enabled" : "Disabled"}
               trailing={<Switch
                 value={echoControlEnabled}
                 onValueChange={handleToggleEchoControl}
-                trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                thumbColor={Colors.background.white}
+                trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                thumbColor={colors.background.white}
               />}
             />
             {echoControlEnabled && (
               <>
-                <View style={styles.settingsCard}>
+                <View style={[styles.settingsCard, { backgroundColor: colors.card.elevated, borderColor: colors.border.lighter }]}> 
                   <View style={styles.settingRow}>
-                    <Text style={styles.settingText}>Grouping Method</Text>
+                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Grouping Method</Text>
                     <View style={styles.settingsGroupingOptions}>
                       <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, echoControlGrouping === 'source' && styles.settingsGroupingOptionSelected]}
+                        style={[styles.settingsGroupingOption, 
+                          { backgroundColor: colors.background.tertiary },
+                          echoControlGrouping === 'source' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
+                        ]}
                         onPress={() => handleGroupingChange('source')}
                       >
-                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'source' && styles.settingsGroupingOptionTextSelected]}>Source</Text>
+                        <Text style={[styles.settingsGroupingOptionText, 
+                          { color: colors.text.primary },
+                          echoControlGrouping === 'source' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
+                        ]}>Source</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, echoControlGrouping === 'topic' && styles.settingsGroupingOptionSelected]}
+                        style={[styles.settingsGroupingOption, 
+                          { backgroundColor: colors.background.tertiary },
+                          echoControlGrouping === 'topic' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
+                        ]}
                         onPress={() => handleGroupingChange('topic')}
                       >
-                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'topic' && styles.settingsGroupingOptionTextSelected]}>Topic</Text>
+                        <Text style={[styles.settingsGroupingOptionText, 
+                          { color: colors.text.primary },
+                          echoControlGrouping === 'topic' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
+                        ]}>Topic</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, echoControlGrouping === 'title' && styles.settingsGroupingOptionSelected]}
+                        style={[styles.settingsGroupingOption, 
+                          { backgroundColor: colors.background.tertiary },
+                          echoControlGrouping === 'title' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
+                        ]}
                         onPress={() => handleGroupingChange('title')}
                       >
-                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'title' && styles.settingsGroupingOptionTextSelected]}>Title</Text>
+                        <Text style={[styles.settingsGroupingOptionText, 
+                          { color: colors.text.primary },
+                          echoControlGrouping === 'title' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
+                        ]}>Title</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, echoControlGrouping === 'keyword' && styles.settingsGroupingOptionSelected]}
+                        style={[styles.settingsGroupingOption, 
+                          { backgroundColor: colors.background.tertiary },
+                          echoControlGrouping === 'keyword' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
+                        ]}
                         onPress={() => handleGroupingChange('keyword')}
                       >
-                        <Text style={[styles.settingsGroupingOptionText, echoControlGrouping === 'keyword' && styles.settingsGroupingOptionTextSelected]}>Keyword</Text>
+                        <Text style={[styles.settingsGroupingOptionText, 
+                          { color: colors.text.primary },
+                          echoControlGrouping === 'keyword' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
+                        ]}>Keyword</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                   
                   {echoControlGrouping === 'keyword' && (
-                    <View style={styles.settingsKeywordSection}>
-                      <Text style={styles.settingText}>Custom Keywords</Text>
+                    <View style={[styles.settingsKeywordSection, { backgroundColor: colors.background.light }]}> 
+                      <Text style={[styles.settingText, { color: colors.text.primary }]}>Custom Keywords</Text>
                       <View style={styles.settingsKeywordInputContainer}>
                         <TextInput
-                          style={styles.settingsKeywordInput}
+                          style={[styles.settingsKeywordInput, { 
+                            backgroundColor: colors.background.white, 
+                            color: colors.text.primary, 
+                            borderColor: colors.border.lighter 
+                          }]}
                           value={newKeyword}
                           onChangeText={setNewKeyword}
                           placeholder="Add keyword..."
-                          placeholderTextColor={Colors.text.tertiary}
+                          placeholderTextColor={colors.text.tertiary}
                         />
-                        <TouchableOpacity style={styles.settingsKeywordAddButton} onPress={handleAddKeyword}>
-                          <Text style={styles.settingsKeywordAddButtonText}>Add</Text>
+                        <TouchableOpacity style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary }]} onPress={handleAddKeyword}>
+                          <Plus size={16} color={colors.text.inverse} />
                         </TouchableOpacity>
                       </View>
                       <View style={styles.settingsKeywordList}>
                         {customKeywords.map((keyword, index) => (
-                          <View key={index} style={styles.settingsKeywordChip}>
+                          <View key={index} style={[styles.settingsKeywordChip, { backgroundColor: colors.primary }]}> 
                             <Text style={styles.settingsKeywordChipText}>{keyword}</Text>
                             <TouchableOpacity onPress={() => handleRemoveKeyword(keyword)}>
-                              <Text style={styles.settingsKeywordChipRemove}>×</Text>
+                              <X size={14} color={colors.text.inverse} />
                             </TouchableOpacity>
                           </View>
                         ))}
@@ -522,54 +716,63 @@ export default function ProfileScreen() {
               </>
             )}
             <Row 
-              icon={<MessageCircle size={16} color={Colors.primary} />} 
+              icon={<MessageCircle size={16} color={colors.primary} />} 
               title={t('profile.help')} 
-              trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+              trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
             />
           </View>
 
-          {showSettings && accountSettings && (
-            <View style={styles.settingsCard}>
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Smartphone size={18} color={Colors.primary} />
-                  <Text style={styles.settingText}>Push Notifications</Text>
+          <Animated.View 
+            style={[
+              {
+                opacity: settingsAnim,
+                maxHeight: showSettings ? 500 : 0,
+                overflow: 'hidden',
+              }
+            ]}
+          >
+            {accountSettings && (
+              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+                <View style={styles.settingRow}>
+                  <View style={styles.settingLeft}>
+                    <Smartphone size={18} color={colors.primary} />
+                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Push Notifications</Text>
+                  </View>
+                  <Switch
+                    value={accountSettings.pushNotifications}
+                    onValueChange={(value) => handleToggleSetting('pushNotifications', value)}
+                    trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                    thumbColor={colors.background.white}
+                  />
                 </View>
-                <Switch
-                  value={accountSettings.pushNotifications}
-                  onValueChange={(value) => handleToggleSetting('pushNotifications', value)}
-                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                  thumbColor={Colors.background.white}
-                />
-              </View>
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Mail size={18} color={Colors.primary} />
-                  <Text style={styles.settingText}>Email Notifications</Text>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingLeft}>
+                    <Mail size={18} color={colors.primary} />
+                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Email Notifications</Text>
+                  </View>
+                  <Switch
+                    value={accountSettings.emailNotifications}
+                    onValueChange={(value) => handleToggleSetting('emailNotifications', value)}
+                    trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                    thumbColor={colors.background.white}
+                  />
                 </View>
-                <Switch
-                  value={accountSettings.emailNotifications}
-                  onValueChange={(value) => handleToggleSetting('emailNotifications', value)}
-                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                  thumbColor={Colors.background.white}
-                />
-              </View>
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Smartphone size={18} color={Colors.primary} />
-                  <Text style={styles.settingText}>SMS Notifications</Text>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingLeft}>
+                    <Smartphone size={18} color={colors.primary} />
+                    <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
+                  </View>
+                  <Switch
+                    value={accountSettings.smsNotifications}
+                    onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
+                    trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                    thumbColor={colors.background.white}
+                  />
                 </View>
-                <Switch
-                  value={accountSettings.smsNotifications}
-                  onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
-                  trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                  thumbColor={Colors.background.white}
-                />
               </View>
-            </View>
-          )}
+            )}
+          </Animated.View>
         </Animated.View>
-
 
         <Animated.View 
           style={[
@@ -581,42 +784,39 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
-          <View style={styles.listCard}>
-
-
-
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleAccountSettings}>
               <Row 
-                icon={<SettingsIcon size={16} color={Colors.primary} />} 
+                icon={<SettingsIcon size={16} color={colors.primary} />} 
                 title={t('profile.accountSettings')} 
-                trailing={<ChevronRight size={16} color={Colors.text.secondary} />} 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleExportData} disabled={exportDataMutation.isPending}>
               <Row 
-                icon={<Download size={16} color={Colors.primary} />} 
+                icon={<Download size={16} color={colors.primary} />} 
                 title={t('profile.exportData')} 
-                trailing={exportDataMutation.isPending ? <ActivityIndicator size="small" color={Colors.primary} /> : <ChevronRight size={16} color={Colors.text.secondary} />}
+                trailing={exportDataMutation.isPending ? <ActivityIndicator size="small" color={colors.primary} /> : <ChevronRight size={16} color={colors.text.secondary} />}
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDeleteAccount}>
               <Row 
-                icon={<Trash2 size={16} color={Colors.alert} />} 
+                icon={<Trash2 size={16} color={colors.alert} />} 
                 title={t('profile.deleteAccount')} 
-                titleStyle={{ color: Colors.alert }}
+                titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleLogout}>
               <Row 
-                icon={<LogOut size={16} color={Colors.alert} />} 
+                icon={<LogOut size={16} color={colors.alert} />} 
                 title={t('profile.logout')} 
-                titleStyle={{ color: Colors.alert }}
+                titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
           </View>
-
         </Animated.View>
       </ScrollView>
+      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );
 }
@@ -653,7 +853,9 @@ function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent',
+    // Ensure full height on web to avoid mid-page cutoff
+    minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
   },
   topBar: {
     flexDirection: 'row',
@@ -668,7 +870,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: 20,
@@ -676,10 +878,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: Platform.OS === 'web' ? 28 : 36,
     fontWeight: '800' as const,
     fontFamily: Fonts.bold,
-    color: Colors.text.onLight,
+    color: 'inherit',
     letterSpacing: -1,
     marginBottom: 8,
   },
@@ -687,7 +889,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400' as const,
     fontFamily: Fonts.regular,
-    color: Colors.text.secondary,
+    color: 'inherit',
     letterSpacing: 0.5,
   },
   topTitle: {
@@ -796,10 +998,11 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     marginBottom: 8,
     letterSpacing: 0.3,
+    fontWeight: '600',
   },
   listCard: {
     backgroundColor: Colors.background.white,
-    borderRadius: 18,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border.lighter,
     overflow: 'hidden',
@@ -808,8 +1011,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.lighter,
   },
@@ -834,7 +1037,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    fontWeight: '600',
     color: Colors.text.primary,
   },
   rowSubtitle: {
@@ -847,6 +1050,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   interestChip: {
     flexDirection: 'row',
@@ -926,6 +1131,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   settingsKeywordAddButtonText: {
     color: Colors.text.inverse,
@@ -944,17 +1151,89 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    gap: 6,
   },
   settingsKeywordChipText: {
     color: Colors.text.inverse,
     fontSize: 13,
     fontWeight: '500',
-    marginRight: 6,
   },
   settingsKeywordChipRemove: {
     color: Colors.text.inverse,
     fontSize: 16,
     fontWeight: '700',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionLink: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  articlesPreviewContainer: {
+    backgroundColor: Colors.background.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border.lighter,
+    padding: 12,
+  },
+  articlePreviewCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.lighter,
+  },
+  articlePreviewContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  articlePreviewTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  articlePreviewMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  articlePreviewSource: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.text.tertiary,
+    flex: 1,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  articlePreviewTime: {
+    fontSize: 11,
+    color: Colors.text.tertiary,
+  },
+  likedBadgeSmall: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  savedBadgeSmall: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background.white,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

@@ -24,39 +24,57 @@ export class NotificationGeneratorService {
     newSignals: Signal[],
     preferences?: NotificationPreferences
   ): Promise<Notification[]> {
-    if (!user || !user.interests || user.interests.length === 0) {
+    // Validate inputs
+    if (!user || !Array.isArray(user.interests) || user.interests.length === 0) {
+      console.warn('Invalid user or no interests provided');
+      return [];
+    }
+
+    // Validate signals
+    if (!Array.isArray(newSignals) || newSignals.length === 0) {
+      console.warn('No signals provided');
       return [];
     }
 
     const notifications: Notification[] = [];
     const now = new Date();
 
-    // Filter signals that match user interests
-    const relevantSignals = newSignals.filter(signal =>
-      this.signalMatchesUserInterests(signal, user.interests)
-    );
+    try {
+      // Filter signals that match user interests
+      const relevantSignals = newSignals.filter(signal =>
+        this.signalMatchesUserInterests(signal, user.interests)
+      );
 
-    for (const signal of relevantSignals) {
-      // Determine urgency based on relevance score and tags
-      const urgency = this.determineUrgency(signal, user.interests);
-      
-      // Skip low priority if user has breaking news only enabled
-      if (preferences?.breakingNews && urgency === 'low') {
-        continue;
+      for (const signal of relevantSignals) {
+        try {
+          // Determine urgency based on relevance score and tags
+          const urgency = this.determineUrgency(signal, user.interests);
+          
+          // Skip low priority if user has breaking news only enabled
+          if (preferences?.breakingNews && urgency === 'low') {
+            continue;
+          }
+
+          const notification: Notification = {
+            id: `notif_${signal.id}_${Date.now()}`,
+            title: this.generateTitle(signal, user.interests),
+            message: signal.summary || signal.title || 'No content available',
+            category: this.determineCategory(signal, user.interests),
+            urgency,
+            timestamp: now,
+            read: false,
+            signalId: signal.id,
+          };
+
+          notifications.push(notification);
+        } catch (signalError) {
+          console.error('Error processing signal:', signalError);
+          // Continue with other signals instead of crashing
+          continue;
+        }
       }
-
-      const notification: Notification = {
-        id: `notif_${signal.id}_${Date.now()}`,
-        title: this.generateTitle(signal, user.interests),
-        message: signal.summary || signal.title,
-        category: this.determineCategory(signal, user.interests),
-        urgency,
-        timestamp: now,
-        read: false,
-        signalId: signal.id,
-      };
-
-      notifications.push(notification);
+    } catch (error) {
+      console.error('Error in generateNotificationsForSignals:', error);
     }
 
     return notifications;
@@ -66,21 +84,30 @@ export class NotificationGeneratorService {
    * Check if a signal matches user interests
    */
   private static signalMatchesUserInterests(signal: Signal, userInterests: string[]): boolean {
-    // Check if signal tags match any user interests
-    const signalTags = signal.tags?.map(t => t.toLowerCase()) || [];
-    const interests = userInterests.map(i => i.toLowerCase());
-
-    for (const interest of interests) {
-      // Check tags
-      if (signalTags.some(tag => tag.includes(interest) || interest.includes(tag))) {
-        return true;
+    try {
+      // Validate inputs
+      if (!signal || !Array.isArray(userInterests) || userInterests.length === 0) {
+        return false;
       }
 
-      // Check title and summary
-      const content = `${signal.title} ${signal.summary || ''}`.toLowerCase();
-      if (content.includes(interest)) {
-        return true;
+      // Check if signal tags match any user interests
+      const signalTags = (signal.tags && Array.isArray(signal.tags)) ? signal.tags.map(t => t.toLowerCase()) : [];
+      const interests = userInterests.map(i => i.toLowerCase());
+
+      for (const interest of interests) {
+        // Check tags
+        if (signalTags.some(tag => tag.includes(interest) || interest.includes(tag))) {
+          return true;
+        }
+
+        // Check title and summary
+        const content = `${signal.title || ''} ${signal.summary || ''}`.toLowerCase();
+        if (content.includes(interest)) {
+          return true;
+        }
       }
+    } catch (error) {
+      console.error('Error in signalMatchesUserInterests:', error);
     }
 
     return false;
@@ -90,19 +117,23 @@ export class NotificationGeneratorService {
    * Determine notification urgency
    */
   private static determineUrgency(signal: Signal, userInterests: string[]): 'low' | 'medium' | 'high' {
-    const relevanceScore = signal.relevanceScore || 0;
-    
-    // High urgency: Very relevant (score > 0.9) or breaking news
-    if (relevanceScore > 0.9 || signal.tags?.some(tag => 
-      tag.toLowerCase().includes('breaking') || 
-      tag.toLowerCase().includes('urgent')
-    )) {
-      return 'high';
-    }
+    try {
+      const relevanceScore = (signal as any).relevanceScore || 0;
+      
+      // High urgency: Very relevant (score > 0.9) or breaking news
+      if (relevanceScore > 0.9 || (signal.tags && Array.isArray(signal.tags) && signal.tags.some(tag => 
+        tag.toLowerCase().includes('breaking') || 
+        tag.toLowerCase().includes('urgent')
+      ))) {
+        return 'high';
+      }
 
-    // Medium urgency: Good relevance (score > 0.7)
-    if (relevanceScore > 0.7) {
-      return 'medium';
+      // Medium urgency: Good relevance (score > 0.7)
+      if (relevanceScore > 0.7) {
+        return 'medium';
+      }
+    } catch (error) {
+      console.error('Error in determineUrgency:', error);
     }
 
     // Low urgency: Default
@@ -113,11 +144,15 @@ export class NotificationGeneratorService {
    * Generate notification title based on signal and user interests
    */
   private static generateTitle(signal: Signal, userInterests: string[]): string {
-    const matchedInterest = this.findMatchedInterest(signal, userInterests);
-    
-    if (matchedInterest) {
-      const interest = matchedInterest.charAt(0).toUpperCase() + matchedInterest.slice(1);
-      return `${interest} Update`;
+    try {
+      const matchedInterest = this.findMatchedInterest(signal, userInterests);
+      
+      if (matchedInterest) {
+        const interest = matchedInterest.charAt(0).toUpperCase() + matchedInterest.slice(1);
+        return `${interest} Update`;
+      }
+    } catch (error) {
+      console.error('Error in generateTitle:', error);
     }
 
     return 'New Signal';
@@ -127,19 +162,28 @@ export class NotificationGeneratorService {
    * Find which user interest this signal matches
    */
   private static findMatchedInterest(signal: Signal, userInterests: string[]): string | null {
-    const signalTags = signal.tags?.map(t => t.toLowerCase()) || [];
-    const content = `${signal.title} ${signal.summary || ''}`.toLowerCase();
+    try {
+      // Validate inputs
+      if (!signal || !Array.isArray(userInterests) || userInterests.length === 0) {
+        return null;
+      }
 
-    for (const interest of userInterests) {
-      const lowerInterest = interest.toLowerCase();
-      
-      if (signalTags.some(tag => tag.includes(lowerInterest))) {
-        return interest;
+      const signalTags = (signal.tags && Array.isArray(signal.tags)) ? signal.tags.map(t => t.toLowerCase()) : [];
+      const content = `${signal.title || ''} ${signal.summary || ''}`.toLowerCase();
+
+      for (const interest of userInterests) {
+        const lowerInterest = interest.toLowerCase();
+        
+        if (signalTags.some(tag => tag.includes(lowerInterest))) {
+          return interest;
+        }
+        
+        if (content.includes(lowerInterest)) {
+          return interest;
+        }
       }
-      
-      if (content.includes(lowerInterest)) {
-        return interest;
-      }
+    } catch (error) {
+      console.error('Error in findMatchedInterest:', error);
     }
 
     return null;
@@ -149,25 +193,44 @@ export class NotificationGeneratorService {
    * Determine notification category
    */
   private static determineCategory(signal: Signal, userInterests: string[]): string {
-    const matchedInterest = this.findMatchedInterest(signal, userInterests);
-    return matchedInterest || signal.tags?.[0] || 'General';
+    try {
+      const matchedInterest = this.findMatchedInterest(signal, userInterests);
+      if (matchedInterest) {
+        return matchedInterest;
+      }
+      
+      if (signal.tags && Array.isArray(signal.tags) && signal.tags.length > 0) {
+        return signal.tags[0];
+      }
+    } catch (error) {
+      console.error('Error in determineCategory:', error);
+    }
+
+    return 'General';
   }
 
   /**
    * Save notifications to database
    */
   static async saveNotifications(userId: string, notifications: Notification[]): Promise<void> {
-    if (!IS_SUPABASE_CONFIGURED || !supabase || notifications.length === 0) {
+    // Validate inputs
+    if (!userId || !Array.isArray(notifications) || notifications.length === 0) {
+      console.warn('Invalid inputs for saveNotifications');
+      return;
+    }
+
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      console.warn('Supabase not configured, skipping notification save');
       return;
     }
 
     try {
       const notificationData = notifications.map(notif => ({
         user_id: userId,
-        title: notif.title,
-        message: notif.message,
-        category: notif.category,
-        urgency: notif.urgency,
+        title: notif.title || 'Untitled',
+        message: notif.message || '',
+        category: notif.category || 'General',
+        urgency: notif.urgency || 'low',
         read: false,
         signal_id: notif.signalId,
         created_at: new Date().toISOString(),
@@ -192,28 +255,34 @@ export class NotificationGeneratorService {
     user: UserProfile,
     signals: Signal[]
   ): Notification | null {
-    if (!signals || signals.length === 0) {
+    try {
+      // Validate inputs
+      if (!user || !Array.isArray(signals) || signals.length === 0) {
+        return null;
+      }
+
+      const topSignals = signals
+        .filter(s => this.signalMatchesUserInterests(s, user.interests))
+        .sort((a, b) => ((b as any).relevanceScore || 0) - ((a as any).relevanceScore || 0))
+        .slice(0, 5);
+
+      if (topSignals.length === 0) {
+        return null;
+      }
+
+      return {
+        id: `digest_${Date.now()}`,
+        title: 'Your Daily Digest',
+        message: `${topSignals.length} signals today from your interests: ${Array.isArray(user.interests) ? user.interests.slice(0, 3).join(', ') : ''}`,
+        category: 'Digest',
+        urgency: 'low',
+        timestamp: new Date(),
+        read: false,
+      };
+    } catch (error) {
+      console.error('Error in generateDailyDigest:', error);
       return null;
     }
-
-    const topSignals = signals
-      .filter(s => this.signalMatchesUserInterests(s, user.interests))
-      .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-      .slice(0, 5);
-
-    if (topSignals.length === 0) {
-      return null;
-    }
-
-    return {
-      id: `digest_${Date.now()}`,
-      title: 'Your Daily Digest',
-      message: `${topSignals.length} signals today from your interests: ${user.interests.slice(0, 3).join(', ')}`,
-      category: 'Digest',
-      urgency: 'low',
-      timestamp: new Date(),
-      read: false,
-    };
   }
 
   /**
@@ -223,7 +292,7 @@ export class NotificationGeneratorService {
     return {
       id: `breaking_${signal.id}_${Date.now()}`,
       title: '🔴 Breaking News',
-      message: signal.title,
+      message: signal.title || 'No title available',
       category: 'Breaking',
       urgency: 'high',
       timestamp: new Date(),
@@ -240,22 +309,35 @@ export class NotificationGeneratorService {
     newSignals: Signal[],
     preferences?: NotificationPreferences
   ): Promise<Notification[]> {
-    if (!preferences?.pushNotifications) {
+    try {
+      // Validate inputs
+      if (!user) {
+        console.warn('No user provided to processNewSignals');
+        return [];
+      }
+
+      if (!preferences?.pushNotifications) {
+        console.log('Push notifications disabled, skipping notification generation');
+        return [];
+      }
+
+      const notifications = await this.generateNotificationsForSignals(
+        user,
+        newSignals,
+        preferences
+      );
+
+      // Save to database if configured
+      if (user.id && notifications.length > 0) {
+        await this.saveNotifications(user.id, notifications);
+      }
+
+      return notifications;
+    } catch (error) {
+      console.error('Error in processNewSignals:', error);
+      // Return empty array instead of throwing to prevent app crash
       return [];
     }
-
-    const notifications = await this.generateNotificationsForSignals(
-      user,
-      newSignals,
-      preferences
-    );
-
-    // Save to database if configured
-    if (user.id && notifications.length > 0) {
-      await this.saveNotifications(user.id, notifications);
-    }
-
-    return notifications;
   }
 }
 

@@ -13,10 +13,12 @@ import { ChevronLeft, Bookmark, Clock } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function SavedArticlesScreen() {
   const insets = useSafeAreaInsets();
   const { signals } = useApp();
+  const { colors } = useTheme();
 
   // Filter saved signals
   const savedSignals = signals.filter(signal => signal.saved);
@@ -36,17 +38,17 @@ export default function SavedArticlesScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.lighter }]}> 
         <TouchableOpacity 
           onPress={() => router.back()} 
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.background.secondary }]}
           activeOpacity={0.8}
         >
-          <ChevronLeft size={24} color={Colors.text.primary} />
+          <ChevronLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Saved Articles</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Saved Articles</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -56,7 +58,7 @@ export default function SavedArticlesScreen() {
             {savedSignals.map((signal) => (
               <TouchableOpacity
                 key={signal.id}
-                style={styles.articleCard}
+                style={[styles.articleCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}
                 onPress={() => router.push(`/article-detail?id=${signal.id}`)}
                 activeOpacity={0.8}
               >
@@ -70,42 +72,43 @@ export default function SavedArticlesScreen() {
                 <View style={styles.articleContent}>
                   <View style={styles.tagsContainer}>
                     {signal.tags.slice(0, 2).map((tag, index) => (
-                      <View key={index} style={styles.tag}>
-                        <Text style={styles.tagText}>#{tag}</Text>
+                      <View key={index} style={[styles.tag, { backgroundColor: colors.card.light }]}> 
+                        <Text style={[styles.tagText, { color: colors.primary }]}>#{tag}</Text>
                       </View>
                     ))}
                   </View>
                   
-                  <Text style={styles.articleTitle} numberOfLines={2}>{signal.title}</Text>
-                  <Text style={styles.articleSummary} numberOfLines={2}>{signal.summary}</Text>
+                  <Text style={[styles.articleTitle, { color: colors.text.primary }]} numberOfLines={2}>{signal.title}</Text>
+                  <Text style={[styles.articleSummary, { color: colors.text.secondary }]} numberOfLines={2}>{signal.summary}</Text>
                   
                   <View style={styles.articleMeta}>
-                    <Text style={styles.source}>{signal.sourceName}</Text>
+                    <Text style={[styles.source, { color: colors.text.tertiary }]}>{signal.sourceName}</Text>
                     <View style={styles.timeContainer}>
-                      <Clock size={11} color={Colors.text.tertiary} />
-                      <Text style={styles.time}>{formatTimeAgo(signal.timestamp)}</Text>
+                      <Clock size={11} color={colors.text.tertiary} />
+                      <Text style={[styles.time, { color: colors.text.tertiary }]}>{formatTimeAgo(signal.timestamp)}</Text>
                     </View>
                   </View>
                 </View>
                 
-                <View style={styles.savedBadge}>
-                  <Bookmark size={14} color={Colors.primary} fill={Colors.primary} />
+                <View style={[styles.savedBadge, { backgroundColor: colors.card.light }]}> 
+                  <Bookmark size={14} color={colors.primary} fill={colors.primary} />
                 </View>
               </TouchableOpacity>
             ))}
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Bookmark size={48} color={Colors.text.tertiary} />
+            <View style={[styles.emptyIcon, { backgroundColor: colors.card.secondary }]}> 
+              <Bookmark size={48} color={colors.text.tertiary} />
             </View>
-            <Text style={styles.emptyTitle}>No Saved Articles</Text>
-            <Text style={styles.emptyMessage}>
+            <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>No Saved Articles</Text>
+            <Text style={[styles.emptyMessage, { color: colors.text.secondary }]}> 
               Start saving articles to read them later
             </Text>
           </View>
         )}
       </ScrollView>
+      <View style={styles.bottomSpacer} />
     </View>
   );
 }
@@ -113,7 +116,7 @@ export default function SavedArticlesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -256,5 +259,8 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  bottomSpacer: {
+    height: 140,
   },
 });

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Clock, Sparkles, TrendingUp, AlertCircle } from 'lucide-react-native';
@@ -14,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Notification as NotificationType } from '@/types';
 
 type FilterType = 'all' | 'unread' | 'high';
@@ -22,6 +24,7 @@ export default function NotificationsScreen() {
   const { notifications, markNotificationRead } = useApp();
   const [filter, setFilter] = useState<FilterType>('all');
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const filteredNotifications = notifications.filter((notif) => {
     if (filter === 'unread') return !notif.read;
@@ -126,29 +129,29 @@ export default function NotificationsScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.notificationCard, !notif.read && styles.notificationUnread]}
+          style={[styles.notificationCard, !notif.read && [styles.notificationUnread, { backgroundColor: colors.background.white, borderColor: colors.border.light }]]}
           onPress={() => markNotificationRead(notif.id)}
           activeOpacity={0.7}
         >
-          <View style={styles.emojiIcon}><Text style={styles.emojiText}>{getCategoryEmoji(notif.category)}</Text></View>
+          <View style={[styles.emojiIcon, { backgroundColor: colors.background.secondary }]}><Text style={[styles.emojiText, { color: colors.text.primary }]}>{getCategoryEmoji(notif.category)}</Text></View>
           <View style={styles.notificationContent}>
             <View style={styles.notificationHeader}>
-              <Text numberOfLines={1} style={styles.notificationTitle}>{notif.title}</Text>
+              <Text numberOfLines={1} style={[styles.notificationTitle, { color: colors.text.primary }]}>{notif.title}</Text>
               <View style={styles.timeContainer}>
-                <Clock size={11} color={Colors.text.tertiary} strokeWidth={2} />
-                <Text style={styles.notificationTime}>{formatTimeAgo(notif.timestamp)}</Text>
+                <Clock size={11} color={colors.text.tertiary} strokeWidth={2} />
+                <Text style={[styles.notificationTime, { color: colors.text.tertiary }]}>{formatTimeAgo(notif.timestamp)}</Text>
               </View>
             </View>
-            <Text style={styles.notificationMessage}>{notif.message}</Text>
+            <Text style={[styles.notificationMessage, { color: colors.text.secondary }]}>{notif.message}</Text>
             {!notif.read && (
-              <TouchableOpacity style={styles.markRead} onPress={() => markNotificationRead(notif.id)}>
-                <Text style={styles.markReadText}>Mark read</Text>
+              <TouchableOpacity style={[styles.markRead, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]} onPress={() => markNotificationRead(notif.id)}>
+                <Text style={[styles.markReadText, { color: colors.text.onLight }]}>Mark read</Text>
               </TouchableOpacity>
             )}
           </View>
         </TouchableOpacity>
         
-        <View style={styles.itemDivider} />
+        <View style={[styles.itemDivider, { backgroundColor: colors.border.lighter }]} />
       </Animated.View>
     );
   };
@@ -156,16 +159,16 @@ export default function NotificationsScreen() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <Text style={styles.headerTitle}>RUVO</Text>
-        <Text style={styles.headerTagline}>Cut the Noise. Catch the Signal.</Text>
-        <Text style={styles.headerSubtitle}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
+        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>
           {unreadCount > 0 ? `${unreadCount} new signals` : 'All caught up!'}
         </Text>
       </View>
 
-      <View style={styles.filtersWrapper}>
+      <View style={[styles.filtersWrapper, { backgroundColor: colors.background.white, borderBottomColor: colors.border.lighter }]}>
         <View style={styles.dotsRow}>
           <TouchableOpacity
             onPress={() => setFilter('all')}
@@ -173,7 +176,7 @@ export default function NotificationsScreen() {
             accessibilityLabel="All"
             style={styles.dotButton}
           >
-            <View style={[styles.dot, { backgroundColor: '#34C759' }, filter === 'all' && styles.dotActive]} />
+            <View style={[styles.dot, { backgroundColor: '#34C759' }, filter === 'all' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilter('unread')}
@@ -181,7 +184,7 @@ export default function NotificationsScreen() {
             accessibilityLabel="Unread"
             style={styles.dotButton}
           >
-            <View style={[styles.dot, { backgroundColor: '#FFD60A' }, filter === 'unread' && styles.dotActive]} />
+            <View style={[styles.dot, { backgroundColor: '#FFD60A' }, filter === 'unread' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setFilter('high')}
@@ -189,7 +192,7 @@ export default function NotificationsScreen() {
             accessibilityLabel="Urgent"
             style={styles.dotButton}
           >
-            <View style={[styles.dot, { backgroundColor: '#FF453A' }, filter === 'high' && styles.dotActive]} />
+            <View style={[styles.dot, { backgroundColor: '#FF453A' }, filter === 'high' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
           </TouchableOpacity>
         </View>
       </View>
@@ -203,14 +206,15 @@ export default function NotificationsScreen() {
           ) : (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
-                <Bell size={48} color={Colors.text.tertiary} strokeWidth={1.5} />
+                <Bell size={48} color={colors.text.tertiary} strokeWidth={1.5} />
               </View>
-              <Text style={styles.emptyTitle}>No notifications</Text>
-              <Text style={styles.emptyMessage}>You&apos;re all caught up! Check back later for updates.</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>No notifications</Text>
+              <Text style={[styles.emptyMessage, { color: colors.text.secondary }]}>You&apos;re all caught up! Check back later for updates.</Text>
             </View>
           )}
         </View>
       </ScrollView>
+      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );
 }
@@ -230,39 +234,39 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 36,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     fontFamily: Fonts.bold,
-    color: Colors.text.primary,
+    color: 'inherit',
     letterSpacing: -1,
     marginBottom: 8,
   },
   headerTagline: {
     fontSize: 16,
-    fontWeight: '400' as const,
+    fontWeight: '400',
     fontFamily: Fonts.regular,
-    color: Colors.text.secondary,
+    color: 'inherit',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 15,
     fontFamily: Fonts.regular,
-    color: Colors.text.tertiary,
+    color: 'inherit',
   },
   largeTitle: {
     fontSize: 34,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     letterSpacing: -0.8,
-    color: Colors.text.primary,
+    color: 'inherit',
   },
   largeSubtitle: {
     marginTop: 4,
-    color: Colors.text.secondary,
+    color: 'inherit',
   },
   filtersWrapper: {
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: 'inherit',
   },
   filtersContainer: {
     flexDirection: 'row',
@@ -299,9 +303,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: Colors.border.light,
+    borderColor: 'inherit',
     overflow: 'hidden',
   },
   filterChipGradient: {
@@ -312,15 +316,15 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   filterChipActive: {
-    borderColor: Colors.primary,
+    borderColor: 'inherit',
   },
   filterText: {
     fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.text.secondary,
+    fontWeight: '600',
+    color: 'inherit',
   },
   filterTextActive: {
-    color: Colors.text.inverse,
+    color: 'inherit',
   },
   countDot: {
     marginLeft: 8,
@@ -328,16 +332,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   countDotActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: 'inherit',
   },
   countDotText: {
-    color: Colors.text.onLight,
+    color: 'inherit',
     fontSize: 12,
-    fontWeight: '700' as const,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
@@ -355,8 +359,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   notificationUnread: {
-    backgroundColor: Colors.background.white,
-    borderColor: Colors.border.light,
+    backgroundColor: 'transparent',
+    borderColor: 'inherit',
   },
   urgencyIndicator: {
     display: 'none',
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 6,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent',
   },
   emojiText: {
     fontSize: 18,
@@ -391,15 +395,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   categoryBadge: {
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   notificationCategory: {
     fontSize: 9,
-    fontWeight: '700' as const,
-    color: Colors.primary,
+    fontWeight: '700',
+    color: 'inherit',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
@@ -411,14 +415,14 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 11,
     fontFamily: Fonts.regular,
-    color: Colors.text.tertiary,
-    fontWeight: '500' as const,
+    color: 'inherit',
+    fontWeight: '500',
   },
   notificationTitle: {
     fontSize: 15,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     fontFamily: Fonts.bold,
-    color: Colors.text.primary,
+    color: 'inherit',
     marginBottom: 4,
     letterSpacing: -0.2,
     lineHeight: 20,
@@ -426,13 +430,13 @@ const styles = StyleSheet.create({
   notificationMessage: {
     fontSize: 13,
     fontFamily: Fonts.regular,
-    color: Colors.text.secondary,
+    color: 'inherit',
     lineHeight: 18,
     letterSpacing: -0.1,
   },
   itemDivider: {
     height: 1,
-    backgroundColor: Colors.border.lighter,
+    backgroundColor: 'inherit',
     marginLeft: 60,
     marginVertical: 6,
   },
@@ -443,21 +447,21 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
+    backgroundColor: 'inherit',
   },
   markRead: {
     alignSelf: 'flex-start',
     marginTop: 10,
-    backgroundColor: Colors.card.secondary,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    borderColor: 'inherit',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 12,
   },
   markReadText: {
-    color: Colors.text.onLight,
-    fontWeight: '700' as const,
+    color: 'inherit',
+    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',
@@ -469,20 +473,20 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700' as const,
-    color: Colors.text.primary,
+    fontWeight: '700',
+    color: 'inherit',
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 15,
-    color: Colors.text.tertiary,
+    color: 'inherit',
     textAlign: 'center',
     lineHeight: 22,
   },

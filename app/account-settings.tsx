@@ -28,11 +28,13 @@ import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAccountSettings, useUpdateAccountSettings, useUpdateUser } from '@/lib/hooks';
 
 export default function AccountSettingsScreen() {
   const { user } = useApp();
   const { language, setLanguage, t } = useLanguage();
+  const { colors, mode } = useTheme();
   const insets = useSafeAreaInsets();
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -140,40 +142,40 @@ export default function AccountSettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}> 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.lighter }]}> 
         <TouchableOpacity 
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.background.secondary }]}
           onPress={() => router.back()}
         >
-          <ChevronLeft size={24} color={Colors.text.primary} />
+          <ChevronLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('account.title')}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>{t('account.title')}</Text>
         <View style={styles.headerRight}>
           {isEditing ? (
             <View style={styles.headerActions}>
               <TouchableOpacity 
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { backgroundColor: colors.background.secondary }]}
                 onPress={handleCancel}
               >
-                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.saveButton}
+                style={[styles.saveButton, { backgroundColor: colors.primary }]}
                 onPress={handleSave}
                 disabled={updateSettings.isPending}
               >
-                <Save size={16} color={Colors.text.inverse} />
-                <Text style={styles.saveButtonText}>{t('common.save')}</Text>
+                <Save size={16} color={colors.text.inverse} />
+                <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity 
-              style={styles.editButton}
+              style={[styles.editButton, { backgroundColor: colors.background.secondary }]}
               onPress={() => setIsEditing(true)}
             >
-              <Text style={styles.editButtonText}>{t('common.edit')}</Text>
+              <Text style={[styles.editButtonText, { color: colors.text.primary }]}>{t('common.edit')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -190,23 +192,27 @@ export default function AccountSettingsScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>{t('account.profile')}</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.profile')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
-                <User size={20} color={Colors.primary} />
-                <Text style={styles.infoLabel}>{t('account.username')}</Text>
+                <User size={20} color={colors.primary} />
+                <Text style={[styles.infoLabel, { color: colors.text.primary }]}>{t('account.username')}</Text>
               </View>
               {isEditing ? (
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: colors.text.primary, 
+                    backgroundColor: colors.background.white, 
+                    borderColor: colors.border.lighter 
+                  }]}
                   value={formData.username}
                   onChangeText={(text) => {
                     setFormData(prev => ({ ...prev, username: text }));
                     setIsEditing(true);
                   }}
                   placeholder={t('account.username')}
-                  placeholderTextColor={Colors.text.tertiary}
+                  placeholderTextColor={colors.text.tertiary}
                 />
               ) : (
                 <Text style={styles.infoValue}>{formData.username}</Text>
@@ -220,14 +226,18 @@ export default function AccountSettingsScreen() {
               </View>
               {isEditing ? (
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: colors.text.primary, 
+                    backgroundColor: colors.background.white, 
+                    borderColor: colors.border.lighter 
+                  }]}
                   value={formData.email}
                   onChangeText={(text) => {
                     setFormData(prev => ({ ...prev, email: text }));
                     setIsEditing(true);
                   }}
                   placeholder={t('account.email')}
-                  placeholderTextColor={Colors.text.tertiary}
+                  placeholderTextColor={colors.text.tertiary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -246,25 +256,29 @@ export default function AccountSettingsScreen() {
                   <TouchableOpacity
                     style={[
                       styles.languageOption,
-                      formData.language === 'en' && styles.languageOptionSelected
+                      { borderColor: colors.border.lighter },
+                      formData.language === 'en' && [styles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
                     onPress={() => handleLanguageChange('en')}
                   >
                     <Text style={[
                       styles.languageText,
-                      formData.language === 'en' && styles.languageTextSelected
+                      { color: colors.text.primary },
+                      formData.language === 'en' && [styles.languageTextSelected, { color: colors.text.inverse }]
                     ]}>English</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.languageOption,
-                      formData.language === 'ko' && styles.languageOptionSelected
+                      { borderColor: colors.border.lighter },
+                      formData.language === 'ko' && [styles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
                     onPress={() => handleLanguageChange('ko')}
                   >
                     <Text style={[
                       styles.languageText,
-                      formData.language === 'ko' && styles.languageTextSelected
+                      { color: colors.text.primary },
+                      formData.language === 'ko' && [styles.languageTextSelected, { color: colors.text.inverse }]
                     ]}>한국어</Text>
                   </TouchableOpacity>
                 </View>
@@ -287,14 +301,14 @@ export default function AccountSettingsScreen() {
             },
           ]}
         >
-                <Text style={styles.sectionTitle}>{t('account.notifications')}</Text>
-          <View style={styles.card}>
+                <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.notifications')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <View style={styles.settingRow}>
               <View style={styles.settingLeft}>
-                <Bell size={20} color={Colors.primary} />
+                <Bell size={20} color={colors.primary} />
                 <View>
-                  <Text style={styles.settingTitle}>{t('account.pushNotifications')}</Text>
-                  <Text style={styles.settingDescription}>
+                  <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{t('account.pushNotifications')}</Text>
+                  <Text style={[styles.settingDescription, { color: colors.text.secondary }]}> 
                     {t('notifications.pushDesc')}
                   </Text>
                 </View>
@@ -302,8 +316,8 @@ export default function AccountSettingsScreen() {
               <Switch
                 value={formData.pushNotifications}
                 onValueChange={(value) => handleToggleSetting('pushNotifications', value)}
-                trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                thumbColor={Colors.background.white}
+                trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                thumbColor={colors.background.white}
               />
             </View>
             
@@ -355,14 +369,14 @@ export default function AccountSettingsScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionTitle}>{t('account.privacy')}</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.privacy')}</Text>
+          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity style={styles.actionRow}>
               <View style={styles.actionLeft}>
-                <Shield size={20} color={Colors.primary} />
-                <Text style={styles.actionTitle}>{t('account.changePassword')}</Text>
+                <Shield size={20} color={colors.primary} />
+                <Text style={[styles.actionTitle, { color: colors.text.primary }]}>{t('account.changePassword')}</Text>
               </View>
-              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+              <ChevronLeft size={16} color={colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionRow}>
@@ -375,6 +389,7 @@ export default function AccountSettingsScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+      <View style={styles.bottomSpacer} />
     </View>
   );
 }
@@ -382,7 +397,7 @@ export default function AccountSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -585,5 +600,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.text.primary,
     fontFamily: Fonts.medium,
+  },
+  bottomSpacer: {
+    height: 140,
   },
 });

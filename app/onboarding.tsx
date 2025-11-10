@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Animated,
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  Animated, 
+  StatusBar, 
   SafeAreaView,
-  StatusBar,
-  ScrollView,
   Image,
-  TextInput,
-  KeyboardAvoidingView,
   Platform,
+  KeyboardAvoidingView,
+  TextInput,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Sparkles, Check } from 'lucide-react-native';
@@ -59,8 +59,10 @@ export default function OnboardingScreen() {
   }, [currentStep, fadeAnim]);
 
   React.useEffect(() => {
+    let pulseAnimation: Animated.CompositeAnimation | null = null;
+
     // Continuous pulsating animation
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(pulseAnim, {
@@ -87,7 +89,17 @@ export default function OnboardingScreen() {
           }),
         ]),
       ])
-    ).start();
+    );
+    animation.start();
+    
+    pulseAnimation = animation;
+
+    // Cleanup function to stop animations when component unmounts
+    return () => {
+      if (pulseAnimation) {
+        pulseAnimation.stop();
+      }
+    };
   }, []);
 
   const toggleInterest = (interestId: string) => {
@@ -500,8 +512,12 @@ export default function OnboardingScreen() {
         </View>
         
         <View style={styles.askRuvoTip}>
-          <View style={styles.askRuvoIconWrapper}>
-            <Sparkles size={22} color={Colors.primary} strokeWidth={2.5} />
+          <View style={[styles.askRuvoIconWrapper, { backgroundColor: 'transparent' }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 40, height: 40 }}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.askRuvoTitle}>Ask Ruvo Anything</Text>
           <Text style={styles.askRuvoDescription}>
@@ -919,8 +935,6 @@ const styles = StyleSheet.create({
   askRuvoIconWrapper: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -1027,7 +1041,7 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 50,
   },
   welcomeFooter: {
     position: 'absolute',

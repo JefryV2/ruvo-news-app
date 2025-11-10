@@ -38,13 +38,8 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const [echoControlGrouping, setEchoControlGrouping] = useState<'source' | 'topic' | 'title' | 'keyword'>('topic');
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   
-  // Debug log for echo control state
-  console.log('AppContext - Echo Control Enabled:', echoControlEnabled);
-  console.log('AppContext - Echo Control Grouping:', echoControlGrouping);
-  console.log('AppContext - Custom Keywords:', customKeywords);
-  
   // Backend integration hooks
-  const { data: backendUser, isLoading: userLoading } = useCurrentUser();
+  const { data: backendUser, isLoading: userLoading, error: userError } = useCurrentUser();
   
   // Convert backend User to UserProfile format
   const user: UserProfile | null = useMemo(() => {
@@ -63,18 +58,18 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, [backendUser]);
   
   // Only fetch user interactions if we have a valid user ID
-  const { data: userInteractions = {}, isLoading: interactionsLoading } = useUserSignalInteractions(user?.id || '');
+  const { data: userInteractions = {}, isLoading: interactionsLoading, error: interactionsError } = useUserSignalInteractions(user?.id || '');
   
   // Fetch real news using News API
   const userInterests = user?.interests || [];
   
   // Use News API to fetch personalized or top headlines
-  const { data: newsApiSignals, isLoading: newsApiLoading } = userInterests.length > 0
+  const { data: newsApiSignals, isLoading: newsApiLoading, error: newsApiError } = userInterests.length > 0
     ? useNewsAPIPersonalized(userInterests)
     : useTopHeadlines('us');
   
   // Use Webz.io for additional news sources
-  const { data: webzioSignals, isLoading: webzioLoading } = useWebzioPersonalized(userInterests);
+  const { data: webzioSignals, isLoading: webzioLoading, error: webzioError } = useWebzioPersonalized(userInterests);
   
   // AI-Powered News (optional, if Gemini key is set)
   const userPreferences = {
@@ -82,16 +77,21 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     language: user?.language || 'en',
   };
   
-  const { data: aiSignals, isLoading: aiLoading } = useAIPersonalizedNews(
+  const { data: aiSignals, isLoading: aiLoading, error: aiError } = useAIPersonalizedNews(
     userPreferences,
     20
   );
   
   // Fallback chain: AI → News API → Database → Mock Data
-  const { data: dbSignals, isLoading: dbLoading } = useSignalsForUser(user?.id || '', 20);
+  const { data: dbSignals, isLoading: dbLoading, error: dbError } = useSignalsForUser(user?.id || '', 20);
   
   // Combine multiple news sources and merge with user interactions
   const combinedSignals = useMemo(() => {
+    // Handle errors gracefully
+    if (aiError || newsApiError || webzioError || dbError) {
+      console.warn('Data fetching errors:', { aiError, newsApiError, webzioError, dbError });
+    }
+    
     const allSignals = [
       ...(aiSignals || []),
       ...(newsApiSignals || []),
@@ -140,12 +140,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       const dateB = timestampB instanceof Date ? timestampB : new Date(timestampB);
       return dateB.getTime() - dateA.getTime();
     });
-  }, [aiSignals, newsApiSignals, webzioSignals, dbSignals, userInteractions]);
+  }, [aiSignals, newsApiSignals, webzioSignals, dbSignals, userInteractions, aiError, newsApiError, webzioError, dbError]);
   
   const signals = combinedSignals.length > 0 ? combinedSignals : localSignals;
   const signalsLoading = aiLoading || newsApiLoading || webzioLoading || dbLoading || interactionsLoading;
   
-  const { data: dbNotifications = [], isLoading: notificationsLoading } = useNotificationsForUser(user?.id || '', 50);
+  const { data: dbNotifications = [], isLoading: notificationsLoading, error: notificationsError } = useNotificationsForUser(user?.id || '', 50);
   
   // Generate notifications based on user interests and signals
   useEffect(() => {
@@ -186,7 +186,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   
   // Combine generated notifications with database and mock notifications
   const notifications = useMemo(() => {
-    const allNotifications = [
+    // Handle notification errors gracefully
+    if (notificationsError) {
+      console.warn('Notifications error:', notificationsError);
+    }
+    
+    const allNotifications: Notification[] = [
       ...generatedNotifications,
       ...dbNotifications,
       ...MOCK_NOTIFICATIONS,
@@ -205,7 +210,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       const dateB = timestampB instanceof Date ? timestampB : new Date(timestampB);
       return dateB.getTime() - dateA.getTime();
     });
-  }, [generatedNotifications, dbNotifications]);
+  }, [generatedNotifications, dbNotifications, notificationsError]);
   
   const toggleLikeMutation = useToggleLike();
   const toggleSaveMutation = useToggleSave();
@@ -329,6 +334,31 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, [combinedSignals]);
 
   const combinedIsLoading = isLoading || userLoading || signalsLoading || notificationsLoading;
+
+  // Add error handling for the entire context
+  useEffect(() => {
+    if (userError) {
+      console.error('User context error:', userError);
+    }
+    if (interactionsError) {
+      console.error('Interactions error:', interactionsError);
+    }
+    if (newsApiError) {
+      console.error('News API error:', newsApiError);
+    }
+    if (webzioError) {
+      console.error('Webz.io error:', webzioError);
+    }
+    if (aiError) {
+      console.error('AI service error:', aiError);
+    }
+    if (dbError) {
+      console.error('Database error:', dbError);
+    }
+    if (notificationsError) {
+      console.error('Notifications error:', notificationsError);
+    }
+  }, [userError, interactionsError, newsApiError, webzioError, aiError, dbError, notificationsError]);
 
   return useMemo(() => ({
     user,

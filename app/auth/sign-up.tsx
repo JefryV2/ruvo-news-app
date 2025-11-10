@@ -57,7 +57,9 @@ export default function SignUpScreen() {
     ]).start();
 
     // Pulsating animation
-    Animated.loop(
+    let pulseAnimation: Animated.CompositeAnimation | null = null;
+
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(pulseAnim, {
@@ -84,7 +86,17 @@ export default function SignUpScreen() {
           }),
         ]),
       ])
-    ).start();
+    );
+    animation.start();
+    
+    pulseAnimation = animation;
+
+    // Cleanup function to stop animations when component unmounts
+    return () => {
+      if (pulseAnimation) {
+        pulseAnimation.stop();
+      }
+    };
   }, []);
 
   const handleSignUp = async () => {
@@ -291,6 +303,7 @@ export default function SignUpScreen() {
             </TouchableOpacity>
           </View>
           </Animated.View>
+          <View style={{ height: 140 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

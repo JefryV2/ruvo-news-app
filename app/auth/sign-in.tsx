@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    let pulseAnimation: Animated.CompositeAnimation | null = null;
 
     // Start animations only if component is still mounted
     if (isMounted) {
@@ -60,7 +62,7 @@ export default function SignInScreen() {
       ]).start();
 
       // Pulsating animation
-      const pulseAnimation = Animated.loop(
+      pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.parallel([
             Animated.timing(pulseAnim, {
@@ -89,13 +91,15 @@ export default function SignInScreen() {
         ])
       );
       pulseAnimation.start();
-
-      // Cleanup function to stop animations when component unmounts
-      return () => {
-        isMounted = false;
-        pulseAnimation.stop();
-      };
     }
+
+    // Cleanup function to stop animations when component unmounts
+    return () => {
+      isMounted = false;
+      if (pulseAnimation) {
+        pulseAnimation.stop();
+      }
+    };
   }, []);
 
   const handleSignIn = async () => {
@@ -177,12 +181,39 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
-          <Image source={require('@/assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.headerTitle}>Welcome Back</Text>
-          <Text style={styles.headerSubtitle}>Sign in to continue</Text>
+          <Animated.View
+            style={{
+              transform: [{ scale: scaleAnim }],
+              opacity: fadeAnim,
+            }}
+          >
+            <Image source={require('@/assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
+          </Animated.View>
+          <Animated.Text 
+            style={[
+              styles.headerTitle,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            Welcome Back
+          </Animated.Text>
+          <Animated.Text 
+            style={[
+              styles.headerSubtitle,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            Sign in to continue
+          </Animated.Text>
         </View>
 
-              <ScrollView
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -197,76 +228,85 @@ export default function SignInScreen() {
               },
             ]}  
           >
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIconContainer}>
-                <Mail size={20} color={Colors.primary} strokeWidth={2} />
+            <View style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconContainer}>
+                  <Mail size={20} color={Colors.primary} strokeWidth={2} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email address"
+                  placeholderTextColor={Colors.text.tertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
               </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor={Colors.text.tertiary}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-              />
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconContainer}>
+                  <Lock size={20} color={Colors.primary} strokeWidth={2} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.text.tertiary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.forgotButton}>
+                <Text style={styles.forgotButtonText}>Forgot password?</Text>
+              </TouchableOpacity>
+
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <AlertCircle size={16} color={Colors.alert} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.signInButton, !isFormValid && styles.signInButtonDisabled]}
+                onPress={handleSignIn}
+                disabled={!isFormValid || isLoading}
+                activeOpacity={0.8}
+              >
+                <View style={styles.signInButtonGradient}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={Colors.text.inverse} />
+                  ) : (
+                    <>
+                      <Text style={styles.signInButtonText}>Sign In</Text>
+                      <ArrowRight size={20} color={Colors.text.inverse} strokeWidth={2.5} />
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIconContainer}>
-                <Lock size={20} color={Colors.primary} strokeWidth={2} />
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={Colors.text.tertiary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.divider} />
             </View>
 
-            <TouchableOpacity style={styles.forgotButton}>
-              <Text style={styles.forgotButtonText}>Forgot password?</Text>
-            </TouchableOpacity>
-
-            {error ? (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={16} color={Colors.alert} />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            <TouchableOpacity
-              style={[styles.signInButton, !isFormValid && styles.signInButtonDisabled]}
-              onPress={handleSignIn}
-              disabled={!isFormValid || isLoading}
-              activeOpacity={0.8}
-            >
-              <View style={styles.signInButtonGradient}>
-                <Text style={styles.signInButtonText}>{isLoading ? 'Signing in...' : 'Sign In'}</Text>
-                {!isLoading && (<ArrowRight size={20} color={Colors.text.inverse} strokeWidth={2.5} />)}
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.divider} />
-          </View>
-
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>Don&apos;t have an account?</Text>
-            <TouchableOpacity onPress={() => router.replace('/auth/sign-up')}>
-              <Text style={styles.footerLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>Don&apos;t have an account?</Text>
+              <TouchableOpacity onPress={() => router.replace('/auth/sign-up')}>
+                <Text style={styles.footerLink}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
+          <View style={{ height: 140 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -276,7 +316,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: Colors.background.primary,
   },
   backgroundContainer: {
     position: 'absolute',
@@ -321,13 +361,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     marginBottom: 8,
     fontFamily: Fonts.bold,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: Colors.text.secondary,
     fontFamily: Fonts.regular,
   },
   scrollView: {
@@ -339,7 +379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: Colors.background.white,
     borderRadius: 32,
     padding: 24,
     shadowColor: '#000',

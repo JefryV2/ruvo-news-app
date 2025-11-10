@@ -49,7 +49,7 @@ const Colors = {
   // Border colors - Subtle and clean
   border: {
     light: '#E5E5E5',
-    lighter: '#F0F0F0',
+    lighter: '#E6E6E6',
     primary: '#CCCCCC',
     dark: '#999999',
   },

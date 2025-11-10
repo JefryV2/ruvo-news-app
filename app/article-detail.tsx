@@ -15,12 +15,14 @@ import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { echoControlService } from '@/lib/echoControlService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ArticleDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { signals, toggleSignalLike, toggleSignalSave, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
+  const { colors, mode } = useTheme();
   
   // Find the signal by ID
   const signal = signals.find(s => s.id === id);
@@ -49,8 +51,8 @@ export default function ArticleDetailScreen() {
 
   if (!signal) {
     return (
-      <View style={styles.container}>
-        <Text>Article not found</Text>
+      <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+        <Text style={{ color: colors.text.primary }}>Article not found</Text>
       </View>
     );
   }
@@ -85,17 +87,17 @@ export default function ArticleDetailScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border.lighter }]}>
         <TouchableOpacity 
           onPress={() => router.back()} 
-          style={styles.closeButton}
+          style={[styles.closeButton, { backgroundColor: colors.background.secondary }]}
           activeOpacity={0.8}
         >
-          <X size={24} color={Colors.text.primary} />
+          <X size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Article</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Article</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -113,51 +115,51 @@ export default function ArticleDetailScreen() {
           {/* Tags */}
           <View style={styles.tagsContainer}>
             {signal.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>#{tag}</Text>
+              <View key={index} style={[styles.tag, { backgroundColor: mode === 'dark' ? 'rgba(32, 178, 170, 0.2)' : 'rgba(240,244,255,0.8)' }]}>
+                <Text style={[styles.tagText, { color: colors.primary }]}>{tag}</Text>
               </View>
             ))}
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>{signal.title}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{signal.title}</Text>
 
           {/* Meta */}
           <View style={styles.meta}>
-            <Text style={styles.source}>{signal.sourceName}</Text>
-            <Text style={styles.dot}>•</Text>
-            <Text style={styles.time}>{formatTimeAgo(signal.timestamp)}</Text>
+            <Text style={[styles.source, { color: colors.text.primary }]}>{signal.sourceName}</Text>
+            <Text style={[styles.dot, { color: colors.text.tertiary }]}>•</Text>
+            <Text style={[styles.time, { color: colors.text.tertiary }]}>{formatTimeAgo(signal.timestamp)}</Text>
             {signal.verified && (
               <>
-                <Text style={styles.dot}>•</Text>
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}>✓ Verified</Text>
+                <Text style={[styles.dot, { color: colors.text.tertiary }]}>•</Text>
+                <View style={[styles.verifiedBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.verifiedText, { color: colors.text.inverse }]}>✓ Verified</Text>
                 </View>
               </>
             )}
           </View>
 
           {/* Summary */}
-          <Text style={styles.summary}>{signal.summary}</Text>
+          <Text style={[styles.summary, { color: colors.text.secondary }]}>{signal.summary}</Text>
 
           {/* Full Content (if available) */}
           {signal.content && signal.content.length > signal.summary.length && (
             <View style={styles.fullContentSection}>
-              <Text style={styles.fullContentLabel}>Full Article</Text>
-              <Text style={styles.fullContent}>{signal.content}</Text>
+              <Text style={[styles.fullContentLabel, { color: colors.text.tertiary }]}>Full Article</Text>
+              <Text style={[styles.fullContent, { color: colors.text.primary }]}>{signal.content}</Text>
             </View>
           )}
 
           {/* Related Articles Section */}
           {relatedArticles.length > 0 && echoControlEnabled && (
-            <View style={styles.relatedArticlesSection}>
+            <View style={[styles.relatedArticlesSection, { borderTopColor: colors.border.lighter }]}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Different Perspectives</Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{relatedArticles.length}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Different Perspectives</Text>
+                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.badgeText, { color: colors.text.inverse }]}>{relatedArticles.length}</Text>
                 </View>
               </View>
-              <Text style={styles.relatedArticlesDescription}>
+              <Text style={[styles.relatedArticlesDescription, { color: colors.text.tertiary }]}>
                 See how other sources are covering this story
               </Text>
               
@@ -165,7 +167,7 @@ export default function ArticleDetailScreen() {
                 {relatedArticles.map((article, index) => (
                   <TouchableOpacity 
                     key={article.id} 
-                    style={styles.relatedArticle}
+                    style={[styles.relatedArticle, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}
                     onPress={() => {
                       router.push({
                         pathname: '/article-detail',
@@ -174,16 +176,16 @@ export default function ArticleDetailScreen() {
                     }}
                   >
                     <View style={styles.relatedArticleContent}>
-                      <Text style={styles.relatedArticleSource} numberOfLines={1}>
+                      <Text style={[styles.relatedArticleSource, { color: colors.primary }]} numberOfLines={1}>
                         {article.sourceName}
                       </Text>
-                      <Text style={styles.relatedArticleTitle} numberOfLines={2}>
+                      <Text style={[styles.relatedArticleTitle, { color: colors.text.primary }]} numberOfLines={2}>
                         {article.title}
                       </Text>
                     </View>
                     {article.verified && (
-                      <View style={styles.verifiedBadgeSmall}>
-                        <Text style={styles.verifiedTextSmall}>✓</Text>
+                      <View style={[styles.verifiedBadgeSmall, { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.verifiedTextSmall, { color: colors.text.inverse }]}>✓</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -194,18 +196,18 @@ export default function ArticleDetailScreen() {
 
           {/* Read Full Article Button */}
           <TouchableOpacity 
-            style={styles.readMoreButton}
+            style={[styles.readMoreButton, { backgroundColor: colors.accent }]}
             onPress={handleOpenUrl}
             activeOpacity={0.8}
           >
-            <ExternalLink size={20} color={Colors.text.inverse} />
-            <Text style={styles.readMoreText}>Read Full Article</Text>
+            <ExternalLink size={20} color={colors.text.inverse} />
+            <Text style={[styles.readMoreText, { color: colors.text.inverse }]}>Read Full Article</Text>
           </TouchableOpacity>
 
           {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity 
-              style={[styles.actionButton, signal.liked && styles.actionButtonActive]}
+              style={[styles.actionButton, signal.liked && styles.actionButtonActive, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }, signal.liked && { backgroundColor: mode === 'dark' ? 'rgba(32, 178, 170, 0.2)' : 'rgba(240,244,255,0.8)', borderColor: colors.primary }]}
               onPress={() => {
                 console.log('Article Detail - Like pressed:', signal.id, 'Current state:', signal.liked);
                 toggleSignalLike(signal.id);
@@ -214,14 +216,14 @@ export default function ArticleDetailScreen() {
             >
               <Heart 
                 size={22} 
-                color={signal.liked ? Colors.alert : Colors.text.primary} 
-                fill={signal.liked ? Colors.alert : 'transparent'}
+                color={signal.liked ? colors.alert : colors.text.primary} 
+                fill={signal.liked ? colors.alert : 'transparent'}
               />
-              <Text style={[styles.actionText, signal.liked && styles.actionTextActive]}>Like</Text>
+              <Text style={[styles.actionText, { color: colors.text.primary }, signal.liked && { color: colors.primary }]}>Like</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.actionButton, signal.saved && styles.actionButtonActive]}
+              style={[styles.actionButton, signal.saved && styles.actionButtonActive, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }, signal.saved && { backgroundColor: mode === 'dark' ? 'rgba(32, 178, 170, 0.2)' : 'rgba(240,244,255,0.8)', borderColor: colors.primary }]}
               onPress={() => {
                 console.log('Article Detail - Save pressed:', signal.id, 'Current state:', signal.saved);
                 toggleSignalSave(signal.id);
@@ -230,18 +232,18 @@ export default function ArticleDetailScreen() {
             >
               <Bookmark 
                 size={22} 
-                color={signal.saved ? Colors.primary : Colors.text.primary} 
-                fill={signal.saved ? Colors.primary : 'transparent'}
+                color={signal.saved ? colors.primary : colors.text.primary} 
+                fill={signal.saved ? colors.primary : 'transparent'}
               />
-              <Text style={[styles.actionText, signal.saved && styles.actionTextActive]}>Save</Text>
+              <Text style={[styles.actionText, { color: colors.text.primary }, signal.saved && { color: colors.primary }]}>Save</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.actionButton}
+              style={[styles.actionButton, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}
               activeOpacity={0.8}
             >
-              <Share2 size={22} color={Colors.text.primary} />
-              <Text style={styles.actionText}>Share</Text>
+              <Share2 size={22} color={colors.text.primary} />
+              <Text style={[styles.actionText, { color: colors.text.primary }]}>Share</Text>
             </TouchableOpacity>
           </View>
           
@@ -256,7 +258,6 @@ export default function ArticleDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.white,
   },
   header: {
     flexDirection: 'row',
@@ -265,20 +266,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text.primary,
     fontFamily: Fonts.bold,
   },
   placeholder: {
@@ -290,7 +288,6 @@ const styles = StyleSheet.create({
   heroImage: {
     width: '100%',
     height: 300,
-    backgroundColor: Colors.card.secondary,
   },
   content: {
     padding: 20,
@@ -302,7 +299,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tag: {
-    backgroundColor: 'rgba(240,244,255,0.8)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 18,
@@ -310,12 +306,10 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: Colors.text.primary,
     marginBottom: 16,
     lineHeight: 36,
     fontFamily: Fonts.bold,
@@ -329,19 +323,15 @@ const styles = StyleSheet.create({
   source: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text.primary,
   },
   dot: {
     fontSize: 14,
-    color: Colors.text.tertiary,
     marginHorizontal: 8,
   },
   time: {
     fontSize: 14,
-    color: Colors.text.tertiary,
   },
   verifiedBadge: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -349,11 +339,9 @@ const styles = StyleSheet.create({
   verifiedText: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.text.inverse,
   },
   summary: {
     fontSize: 18,
-    color: Colors.text.secondary,
     lineHeight: 28,
     marginBottom: 24,
     fontWeight: '400',
@@ -364,14 +352,12 @@ const styles = StyleSheet.create({
   fullContentLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   fullContent: {
     fontSize: 16,
-    color: Colors.text.primary,
     lineHeight: 26,
   },
   readMoreButton: {
@@ -379,7 +365,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.accent,
     paddingVertical: 16,
     borderRadius: 16,
     marginBottom: 24,
@@ -387,7 +372,6 @@ const styles = StyleSheet.create({
   readMoreText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.text.inverse,
   },
   actions: {
     flexDirection: 'row',
@@ -401,31 +385,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: Colors.background.secondary,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
   },
   actionButtonActive: {
-    backgroundColor: 'rgba(240,244,255,0.8)',
-    borderColor: Colors.primary,
+    borderWidth: 1,
   },
   actionText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text.primary,
   },
   actionTextActive: {
-    color: Colors.primary,
+    fontWeight: '600',
   },
   bottomSpacer: {
-    height: 60,
+    height: 140,
   },
   relatedArticlesSection: {
     marginTop: 30,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: Colors.border.lighter,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -435,11 +414,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.text.primary,
     fontFamily: Fonts.bold,
   },
   badge: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -450,11 +427,9 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text.inverse,
   },
   relatedArticlesDescription: {
     fontSize: 14,
-    color: Colors.text.tertiary,
     marginBottom: 16,
   },
   relatedArticlesList: {
@@ -464,11 +439,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background.secondary,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
   },
   relatedArticleContent: {
     flex: 1,
@@ -477,17 +450,14 @@ const styles = StyleSheet.create({
   relatedArticleSource: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.primary,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   relatedArticleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
   },
   verifiedBadgeSmall: {
-    backgroundColor: Colors.primary,
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -497,6 +467,5 @@ const styles = StyleSheet.create({
   verifiedTextSmall: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.text.inverse,
   },
 });

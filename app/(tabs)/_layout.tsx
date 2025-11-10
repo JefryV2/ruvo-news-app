@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Image,
+  Platform,
+} from 'react-native';
 import { Tabs } from 'expo-router';
-import { Home, Search, Bell, User, MessageCircle } from 'lucide-react-native';
+import { Home, Search, Bell, User, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { View, TouchableOpacity, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function FloatingTabBar({ state, descriptors, navigation }: any) {
 	const { t } = useLanguage();
+	const { notifications } = useApp();
+	const { colors } = useTheme();
 	
 	// Map route names to translation keys
 	const getTabLabel = (routeName: string) => {
@@ -20,86 +31,132 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 		}
 	};
 	
+	// Get notification count for alerts tab
+	const notificationCount = notifications.filter(n => !n.read).length;
+	
 	return (
-		<BlurView
-			intensity={40}
-			tint="light"
-			style={{
-				position: 'absolute',
-				left: 16,
-				right: 16,
-				bottom: 12,
-				borderRadius: 28,
-				flexDirection: 'row',
-				alignItems: 'center',
-				justifyContent: 'space-between',
-				paddingHorizontal: 10,
-				height: 60,
-				backgroundColor: 'rgba(255,255,255,0.6)',
-				borderWidth: 1,
-				borderColor: 'rgba(227,235,233,0.8)',
-				// shadow for hovering effect
-				shadowColor: '#000',
-				shadowOffset: { width: 0, height: 8 },
-				shadowOpacity: 0.15,
-				shadowRadius: 16,
-				elevation: 10,
-			}}
-		>
-			{state.routes.map((route: any, index: number) => {
-				const { options } = descriptors[route.key];
-				const label = getTabLabel(route.name);
+		<View pointerEvents="box-none">
+            <View
+				style={{
+					position: 'absolute',
+					left: 16,
+					right: 16,
+					bottom: 20,
+					borderRadius: 28,
+					flexDirection: 'row',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					paddingHorizontal: 10,
+					height: 60,
+					backgroundColor: colors.background.white,
+					borderWidth: 1,
+					borderColor: colors.border.lighter,
+					// shadow for hovering effect
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: Platform.OS === 'web' ? 4 : 8 },
+                    shadowOpacity: Platform.OS === 'web' ? 0.08 : 0.15,
+                    shadowRadius: Platform.OS === 'web' ? 8 : 16,
+                    elevation: Platform.OS === 'web' ? 4 : 10,
+					zIndex: 1000,
+				}}
+			>
+				{state.routes.map((route: any, index: number) => {
+					const label = getTabLabel(route.name);
+					const isFocused = state.index === index;
 
-				const isFocused = state.index === index;
+					const onPress = () => {
+						const event = navigation.emit({
+							type: 'tabPress',
+							target: route.key,
+							canPreventDefault: true,
+						});
 
-				const onPress = () => {
-					const event = navigation.emit({
-						type: 'tabPress',
-						target: route.key,
-						canPreventDefault: true,
-					});
+						if (!isFocused && !event.defaultPrevented) {
+							navigation.navigate(route.name);
+						}
+					};
 
-					if (!isFocused && !event.defaultPrevented) {
-						navigation.navigate(route.name);
+					// Define icons directly instead of using the options
+					let IconComponent;
+					switch (route.name) {
+						case 'feed':
+							IconComponent = Home;
+							break;
+						case 'discover':
+							IconComponent = Search;
+							break;
+						case 'notifications':
+							IconComponent = Bell;
+							break;
+						case 'profile':
+							IconComponent = User;
+							break;
+						default:
+							IconComponent = Home;
 					}
-				};
 
-				const Icon = options.tabBarIcon as any;
-
-				return (
-					<TouchableOpacity
-						key={route.key}
-						accessibilityRole="button"
-						onPress={onPress}
-						activeOpacity={0.9}
-						style={{
-							flex: 1,
-							alignItems: 'center',
-							justifyContent: 'center',
-							gap: 2,
-						}}
-					>
-						{Icon ? (
-							<Icon color={isFocused ? Colors.primary : Colors.text.secondary} size={22} />
-						) : null}
-						<Text style={{ color: isFocused ? Colors.primary : Colors.text.secondary, fontWeight: '700' as const, fontSize: 12 }}>
-							{label}
-						</Text>
-					</TouchableOpacity>
-				);
-			})}
-
+					return (
+						<TouchableOpacity
+							key={route.key}
+							accessibilityRole="button"
+							onPress={onPress}
+							activeOpacity={0.9}
+							style={{
+								flex: 1,
+								alignItems: 'center',
+								justifyContent: 'center',
+								gap: 2,
+							}}
+						>
+							<IconComponent 
+								color={isFocused ? colors.primary : colors.text.secondary} 
+								size={22} 
+							/>
+                            <Text style={{ 
+								color: isFocused ? colors.primary : colors.text.secondary, 
+                                fontWeight: '700', 
+                                fontSize: 12,
+                            }}>
+								{label}
+							</Text>
+							{route.name === 'notifications' && notificationCount > 0 && (
+								<View style={{
+									position: 'absolute',
+									top: -2,
+									right: 10,
+									backgroundColor: colors.alert,
+									borderRadius: 10,
+									width: 20,
+									height: 20,
+									alignItems: 'center',
+									justifyContent: 'center',
+								}}>
+									<Text style={{ 
+										color: 'white', 
+										fontSize: 10, 
+										fontWeight: 'bold' 
+									}}>
+										{notificationCount > 9 ? '9+' : notificationCount}
+									</Text>
+								</View>
+							)}
+						</TouchableOpacity>
+					);
+				})}
+			</View>
+			
+			{/* Simple floating button implementation */}
 			<TouchableOpacity
 				activeOpacity={0.9}
 				onPress={() => navigation.navigate('ask-ruvo' as never)}
 				style={{
 					position: 'absolute',
-					right: -8,
-					bottom: 10,
+					right: 20,
+					bottom: 90,
 					width: 56,
 					height: 56,
 					borderRadius: 28,
-					backgroundColor: Colors.primary,
+					backgroundColor: colors.primary,
 					alignItems: 'center',
 					justifyContent: 'center',
 					shadowColor: '#000',
@@ -107,11 +164,16 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 					shadowOpacity: 0.24,
 					shadowRadius: 16,
 					elevation: 10,
+					zIndex: 9999,
 				}}
 			>
-				<MessageCircle size={24} color={Colors.text.inverse} />
+				<Image 
+					source={require('@/assets/images/icon.png')} 
+					style={{ width: 40, height: 40 }}
+					resizeMode="contain"
+				/>
 			</TouchableOpacity>
-		</BlurView>
+		</View>
 	);
 }
 
@@ -130,33 +192,25 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="feed"
 				options={{
-					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-						<Home color={color} size={size} />
-					),
+					tabBarLabel: 'Home',
 				}}
 			/>
 			<Tabs.Screen
 				name="discover"
 				options={{
-					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-						<Search color={color} size={size} />
-					),
+					tabBarLabel: 'Discover',
 				}}
 			/>
 			<Tabs.Screen
 				name="notifications"
 				options={{
-					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-						<Bell color={color} size={size} />
-					),
+					tabBarLabel: 'Notifications',
 				}}
 			/>
 			<Tabs.Screen
 				name="profile"
 				options={{
-					tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-						<User color={color} size={size} />
-					),
+					tabBarLabel: 'Profile',
 				}}
 			/>
 		</Tabs>

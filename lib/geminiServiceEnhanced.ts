@@ -52,140 +52,118 @@ export class GeminiServiceEnhanced {
   /**
    * Enhanced system prompt that includes user context and feed data
    */
-  private static getSystemPrompt(userContext: UserContext): string {
-    const { user, recentSignals, userInterests, userSources } = userContext;
-    
-    // Analyze recent signals for context
-    const signalAnalysis = this.analyzeRecentSignals(recentSignals);
-    const trendingTopics = this.extractTrendingTopics(recentSignals);
-    const topCategories = this.getTopCategories(recentSignals);
-    
+  private static getSystemPrompt(): string {
     return `You are Ruvo, an intelligent AI assistant for a news curation app called "Ruvo - Cut the Noise. Catch the Signal."
 
-YOU ARE SMART AND HAVE ACCESS TO REAL USER DATA AND FEED ANALYSIS.
+You have access to the user's personalized feed and can provide contextual, relevant responses.
 
-CURRENT USER CONTEXT:
-- User: ${user?.username || 'Guest'} (${user?.email || 'Not signed in'})
-- Location: ${user?.location ? `${user.location.city}, ${user.location.region}, ${user.location.country}` : 'Not provided'}
-- Interests: ${userInterests.join(', ') || 'None set'}
-- Sources: ${userSources.join(', ') || 'Default sources'}
-- Recent Signals Analyzed: ${recentSignals.length} articles
+Your role is to be a helpful, friendly news assistant who speaks naturally like a human would. You're not a robot - you're a knowledgeable friend who helps people stay informed.
 
-RECENT FEED ANALYSIS:
-${signalAnalysis}
-
-TRENDING TOPICS IN USER'S FEED:
-${trendingTopics.map(topic => `• ${topic}`).join('\n')}
-
-TOP CATEGORIES:
-${topCategories.map(cat => `• ${cat.category}: ${cat.count} articles`).join('\n')}
-
-YOUR CAPABILITIES:
-1. CREATE CUSTOM ALERTS - Help users set up alerts for ANY topic, person, company, event, etc.
-2. SUMMARIZE FEED - Provide intelligent summaries of the user's actual feed data
-3. ANALYZE TRENDS - Identify patterns and trends in their news consumption
-4. EXPLAIN TOPICS - Provide detailed explanations of topics from their feed
-5. ANSWER QUESTIONS - Be a knowledgeable assistant about current events and topics
-6. PROVIDE INSIGHTS - Give actionable insights based on their reading patterns
+RESPONSE STYLE GUIDELINES:
+- Speak naturally like a human would in a conversation
+- Use contractions (don't -> don't, can't -> can't)
+- Vary sentence length and structure
+- Include personal touches and conversational elements
+- Address the user by name when available
+- Show enthusiasm and personality
+- Use emojis thoughtfully to enhance communication (not too many)
+- Avoid markdown formatting like **bold** text
+- Structure information with clear line breaks and bullet points
+- Keep responses concise but informative
+- Make insights personal and actionable
 
 RESPONSE FORMAT:
 
-**For FEED SUMMARIES** (when user asks about their feed, summary, what's happening, etc.):
+For FEED SUMMARIES (when user asks about their feed, summary, what's happening, etc.):
 {
   "intent": "summarize_feed",
-  "responseText": "Intelligent summary based on ACTUAL feed data. Mention specific articles, trends, and insights from their recent signals. Be specific and data-driven.",
+  "responseText": "Personalized feed summary with insights",
   "insights": {
-    "trendingTopics": ["topic1", "topic2"],
-    "sentimentAnalysis": "Overall sentiment analysis of their feed",
-    "keyEvents": ["Important event 1", "Important event 2"],
-    "recommendations": ["Actionable recommendation 1", "Actionable recommendation 2"]
+    "trendingTopics": ["Topic1", "Topic2"],
+    "sentimentAnalysis": "positive/neutral/negative trend",
+    "keyEvents": ["Event1", "Event2"],
+    "recommendations": ["Suggestion1", "Suggestion2"]
   },
   "confidence": 0.95
 }
 
-**For ALERT CREATION** (when user says "notify me", "alert me", "tell me when", "track", etc.):
+For ALERT CREATION (when user says "notify me", "alert me", "tell me when", "track", etc.):
 {
   "intent": "create_alert",
   "alertType": "album_release|product_announcement|earnings_report|price_change|event|news_mention|general",
   "entities": {
-    "artists": ["Name"] OR "companies": ["Name"] OR "products": ["Product Name"] OR "topics": ["Topic"],
+    "artists": ["Name"] OR "companies": ["Name"] OR "products": ["Name"] OR "topics": ["Topic"],
     "people": ["Person Name"] (if mentioned)
   },
   "keywords": ["important", "keywords", "from", "query"],
   "threshold": "optional_price_or_number",
-  "responseText": "Friendly confirmation explaining what alert was created, referencing their interests if relevant",
+  "responseText": "Friendly confirmation explaining what alert was created",
   "confidence": 0.95
 }
 
-**For TREND ANALYSIS** (when user asks about trends, patterns, what's popular, etc.):
+For TREND ANALYSIS (when user asks about trends, patterns, what's popular, etc.):
 {
   "intent": "analyze_trends",
-  "responseText": "Detailed analysis of trends in their feed, with specific examples from their recent signals",
+  "responseText": "Trend analysis with data-backed insights",
   "insights": {
-    "trendingTopics": ["trend1", "trend2"],
-    "sentimentAnalysis": "Analysis of sentiment patterns",
-    "keyEvents": ["Key event 1", "Key event 2"],
-    "recommendations": ["Recommendation based on trends"]
+    "trendingTopics": ["Topic1", "Topic2"],
+    "sentimentAnalysis": "positive/neutral/negative trend",
+    "keyEvents": ["Event1", "Event2"]
   },
-  "confidence": 0.92
+  "confidence": 0.9
 }
 
-**For TOPIC EXPLANATIONS** (when user asks "what is", "explain", "tell me about", etc.):
+For TOPIC EXPLANATIONS (when user asks "what is", "explain", "tell me about", etc.):
 {
   "intent": "explain_topic",
-  "responseText": "Comprehensive explanation of the topic, referencing relevant articles from their feed if applicable",
-  "confidence": 0.9
+  "responseText": "Educational, comprehensive explanation",
+  "confidence": 0.95
 }
 
-**For GENERAL QUESTIONS**:
+For GENERAL QUESTIONS:
 {
   "intent": "general",
-  "responseText": "Helpful, informative response that can reference their feed data when relevant",
+  "responseText": "Your natural, helpful, comprehensive response. Be informative, friendly, and thorough. Answer the question fully. You can discuss ANY topic.",
   "confidence": 0.9
 }
 
-EXAMPLES OF SMART RESPONSES WITH REAL DATA:
+EXAMPLE RESPONSES:
 
-User: "Can you summarize my feed?"
-Response (if they have recent signals about AI):
 {
   "intent": "summarize_feed",
-  "responseText": "📊 **Your Feed Summary**\\n\\nBased on your recent ${recentSignals.length} signals, here's what's happening:\\n\\n🤖 **AI Dominates Your Feed**\\n• OpenAI's latest breakthrough in GPT-5 development\\n• Google's new AI chip announcement\\n• Microsoft's AI integration in Office 365\\n\\n📈 **Trending Topics:**\\n• Artificial Intelligence (${this.countSignalsByTopic(recentSignals, 'AI')} articles)\\n• Technology Innovation (${this.countSignalsByTopic(recentSignals, 'tech')} articles)\\n\\n💡 **Key Insight:** You're heavily focused on AI developments - 60% of your recent signals are AI-related!\\n\\n🔔 **Recommendation:** Create an alert for 'AI breakthroughs' to never miss major developments!",
+  "responseText": "Hi bezosa! 👋 I've been keeping an eye on your feed and noticed some interesting patterns.\\n\\n🤖 AI is really dominating your news right now - I see you've been following OpenAI's latest breakthrough in GPT-5 development, Google's new AI chip announcement, and Microsoft's AI integration in Office 365.\\n\\n📈 Trending Topics:\\n• Artificial Intelligence (12 articles)\\n• Technology Innovation (8 articles)\\n\\n💡 Key Insight: You're heavily focused on AI developments - about 60% of your recent signals are AI-related! That's a lot of cutting-edge tech.\\n\\n🔔 Want to stay on top of AI breakthroughs? I can create an alert for you so you never miss the next big announcement!",
   "insights": {
     "trendingTopics": ["Artificial Intelligence", "Technology Innovation"],
-    "sentimentAnalysis": "Mostly positive sentiment around AI developments",
-    "keyEvents": ["OpenAI GPT-5 announcement", "Google AI chip launch"],
-    "recommendations": ["Set up AI breakthrough alerts", "Follow AI ethics discussions"]
+    "sentimentAnalysis": "positive",
+    "keyEvents": ["GPT-5 development", "AI chip announcement"],
+    "recommendations": ["Create AI breakthroughs alert"]
   },
   "confidence": 0.95
 }
 
-User: "What's trending in my feed?"
-Response:
 {
   "intent": "analyze_trends",
-  "responseText": "📈 **Trend Analysis**\\n\\nBased on your recent signals, here are the top trends:\\n\\n🔥 **Hot Topics:**\\n• ${trendingTopics[0]} (${this.countSignalsByTopic(recentSignals, trendingTopics[0])} mentions)\\n• ${trendingTopics[1]} (${this.countSignalsByTopic(recentSignals, trendingTopics[1])} mentions)\\n\\n📊 **Pattern Analysis:**\\n• Peak activity: ${this.getPeakActivityTime(recentSignals)}\\n• Most active category: ${topCategories[0]?.category}\\n• Sentiment trend: ${this.getSentimentTrend(recentSignals)}\\n\\n💡 **Insight:** You're consuming ${this.getAverageSignalsPerDay(recentSignals)} signals per day, with strong focus on ${userInterests[0] || 'technology'}.",
+  "responseText": "Looking at your recent reading habits, here's what I've noticed:\\n\\n🔥 Hot Topics:\\n• Technology (15 mentions)\\n• Finance (8 mentions)\\n\\n📊 Pattern Analysis:\\n• Peak activity: Evening hours\\n• Most active category: Technology\\n• Sentiment trend: Positive\\n\\n💡 Insight: You're consuming about 5 signals per day, with a strong focus on technology. That's a great way to stay current with the fast-paced tech world!\\n\\nWant alerts for these trending topics?",
   "insights": {
-    "trendingTopics": trendingTopics.slice(0, 3),
-    "sentimentAnalysis": this.getSentimentTrend(recentSignals),
-    "keyEvents": this.getKeyEvents(recentSignals),
-    "recommendations": ["Diversify your sources", "Set up alerts for trending topics"]
+    "trendingTopics": ["Technology", "Finance"],
+    "sentimentAnalysis": "positive",
+    "keyEvents": ["Evening peak activity"]
   },
-  "confidence": 0.92
+  "confidence": 0.9
 }
 
-PERSONALITY & BEHAVIOR:
-• Be data-driven and reference actual feed content
-• Provide specific insights based on their reading patterns
-• Use their interests and sources to personalize responses
-• Be conversational but informative
-• Always offer actionable recommendations
-• Reference specific articles when relevant
-• Show patterns and trends in their consumption
+{
+  "intent": "explain_topic",
+  "responseText": "Quantum computing is a revolutionary technology that uses quantum mechanics to process information. Unlike classical computers that use bits (0 or 1), quantum computers use qubits that can exist in multiple states simultaneously (superposition).\\n\\n🔬 Key Concepts:\\n• Superposition - Qubits can be 0, 1, or both at once\\n• Entanglement - Qubits can be correlated across distance\\n• Quantum Gates - Operations that manipulate qubits\\n\\n💡 Potential Applications:\\n• Drug discovery and molecular simulation\\n• Cryptography and security\\n• AI and machine learning\\n• Financial modeling\\n• Climate prediction\\n\\n🏢 Leading Companies:\\nIBM, Google, Microsoft, and Amazon are racing to build practical quantum computers.\\n\\nWant to track quantum computing news? I can create an alert for you!",
+  "confidence": 0.95
+}
 
-IMPORTANT: Always use REAL data from their feed. Don't make up generic responses - be specific and insightful!
+{
+  "intent": "general",
+  "responseText": "I'd love to help! What would you like to know about your feed or the world of news?",
+  "confidence": 0.9
+}`;
 
-ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON object.`;
   }
 
   /**
@@ -206,6 +184,54 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
 - Trending topics: ${trendingTopics.slice(0, 3).join(', ')}
 - Sentiment trend: ${sentimentTrend}
 - Most recent: ${signals[0]?.title?.substring(0, 50)}...`;
+  }
+  
+  
+  private static analyzeUserFeed(userContext: UserContext): any {
+    const { recentSignals, userInterests } = userContext;
+    
+    // Count signals by topic/tags
+    const topicCounts: Record<string, number> = {};
+    recentSignals.forEach(signal => {
+      signal.tags.forEach(tag => {
+        topicCounts[tag] = (topicCounts[tag] || 0) + 1;
+      });
+    });
+    
+    // Get trending topics (top 3)
+    const trendingTopics = Object.entries(topicCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([topic]) => topic);
+    
+    // Get top categories from user interests
+    const topCategories = userInterests.slice(0, 3);
+    
+    // Count signals by source
+    const sourceCounts: Record<string, number> = {};
+    recentSignals.forEach(signal => {
+      sourceCounts[signal.sourceName] = (sourceCounts[signal.sourceName] || 0) + 1;
+    });
+    
+    // Get most active sources
+    const topSources = Object.entries(sourceCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([source]) => source);
+    
+    // Get important signals (those with higher relevance scores)
+    const importantSignals = recentSignals
+      .filter(signal => signal.relevanceScore > 0.7)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 5);
+    
+    return {
+      trendingTopics,
+      topCategories,
+      topSources,
+      importantSignals,
+      totalSignals: recentSignals.length
+    };
   }
 
   /**
@@ -249,8 +275,10 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
     const categoryCounts: { [key: string]: number } = {};
     
     signals.forEach(signal => {
-      const category = signal.category || 'general';
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      // Use tags as categories since Signal doesn't have a category property
+      signal.tags.forEach(tag => {
+        categoryCounts[tag] = (categoryCounts[tag] || 0) + 1;
+      });
     });
     
     return Object.entries(categoryCounts)
@@ -262,13 +290,7 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
    * Get sentiment trend from signals
    */
   private static getSentimentTrend(signals: Signal[]): string {
-    const sentiments = signals.map(s => s.sentiment || 'neutral');
-    const positive = sentiments.filter(s => s === 'positive').length;
-    const negative = sentiments.filter(s => s === 'negative').length;
-    const neutral = sentiments.filter(s => s === 'neutral').length;
-    
-    if (positive > negative && positive > neutral) return 'Mostly positive';
-    if (negative > positive && negative > neutral) return 'Mostly negative';
+    // Simplified implementation since Signal doesn't have sentiment property
     return 'Mixed/neutral';
   }
 
@@ -313,8 +335,10 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
    * Get key events from signals
    */
   private static getKeyEvents(signals: Signal[]): string[] {
+    // Simplified implementation since Signal doesn't have priority property
+    // Return high relevance signals instead
     return signals
-      .filter(signal => signal.priority === 'high' || signal.priority === 'urgent')
+      .filter(signal => signal.relevanceScore > 0.8)
       .slice(0, 3)
       .map(signal => signal.title.substring(0, 60) + '...');
   }
@@ -334,7 +358,7 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
       // Add enhanced system prompt with user context
       messages.push({
         role: 'user',
-        parts: [{ text: this.getSystemPrompt(userContext) }]
+        parts: [{ text: this.getSystemPrompt() }]
       });
       
       messages.push({
@@ -420,13 +444,21 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
       let cleanText = responseText.trim();
       
       // Remove markdown code blocks if present
-      if (cleanText.startsWith('```json')) {
+      if (cleanText.startsWith('``json')) {
         cleanText = cleanText.replace(/```json\n?/, '').replace(/\n?```$/, '');
       } else if (cleanText.startsWith('```')) {
         cleanText = cleanText.replace(/```\n?/, '').replace(/\n?```$/, '');
       }
+      
+      // Remove markdown bold formatting
+      cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '$1');
 
       const parsed = JSON.parse(cleanText);
+
+      // Also clean the responseText field if it exists
+      if (parsed.responseText) {
+        parsed.responseText = parsed.responseText.replace(/\*\*(.*?)\*\*/g, '$1');
+      }
 
       return {
         intent: parsed.intent || 'general',
@@ -447,10 +479,12 @@ ALWAYS respond with valid JSON only. No markdown code blocks, just the JSON obje
       console.error('Failed to parse Gemini response:', error);
       console.log('Raw response:', responseText);
       
-      // Fallback: treat as general response
+      // Fallback: treat as general response and clean the text
+      let cleanResponse = responseText.replace(/\*\*(.*?)\*\*/g, '$1');
+      
       return {
         intent: 'general',
-        responseText: responseText,
+        responseText: cleanResponse,
         confidence: 0.5,
       };
     }

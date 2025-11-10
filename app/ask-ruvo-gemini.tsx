@@ -20,6 +20,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -28,6 +29,7 @@ import Colors from '@/constants/colors';
 import { GeminiService } from '@/lib/geminiService';
 import { CustomAlertsService } from '@/lib/customAlertsService';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type Message = {
   id: string;
@@ -41,18 +43,12 @@ type Message = {
 
 export default function AskRuvoScreen() {
   const { user } = useApp();
+  const { colors, mode } = useTheme(); // Add theme context
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Hello! I'm Ruvo, your AI assistant powered by Gemini. I can help you:
-
-• Create custom alerts (e.g., "Notify me when BTS drops an album")
-• Search for specific topics
-• Summarize your feed
-• Answer questions
-
-What can I help you with?`,
+      text: `Hi there! I'm Ruvo, your personal news assistant.\n\nI can help you:\n• Create alerts for topics you're interested in\n• Answer questions about current events\n• Explain complex topics\n• Find news on any subject\n\nWhat can I help you with today?`,
       isUser: false,
       timestamp: new Date(),
     },
@@ -127,7 +123,7 @@ What can I help you with?`,
             responseText = geminiResponse.responseText;
           } catch (error) {
             console.error('Error creating alert:', error);
-            responseText = 'Sorry, I had trouble creating that alert. Could you try rephrasing your request?';
+            responseText = 'Sorry, I had trouble creating that alert. Could you try rephrasing your request? For example: "Notify me about tech news" or "Alert me when Apple releases something new"';
           }
         }
       }
@@ -149,10 +145,10 @@ What can I help you with?`,
     } catch (error: any) {
       console.error('Error processing request:', error);
       
-      let errorMessage = 'Sorry, I encountered an error processing your request.';
+      let errorMessage = 'Sorry, I had trouble with that request. Could you try asking in a different way?';
       
       if (error.message?.includes('API key not configured')) {
-        errorMessage = '⚠️ Gemini API key is not configured. Please add EXPO_PUBLIC_GEMINI_API_KEY to your .env file.\n\nGet your free API key at: https://makersuite.google.com/app/apikey';
+        errorMessage = '⚠️ Gemini API key is not configured yet!\n\nTo get smart AI responses:\n1. Visit: https://makersuite.google.com/app/apikey\n2. Create a free API key\n3. Add it to your .env file\n4. Restart the app\n\nI can still help create alerts! Try: "Notify me about [topic]"';
       } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       }
@@ -171,12 +167,18 @@ What can I help you with?`,
     if (message.isTyping) {
       return (
         <View key={message.id} style={[styles.messageContainer, styles.aiMessageContainer]}>
-          <View style={styles.aiAvatar}>
-            <Sparkles size={16} color={Colors.primary} />
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 16, height: 16 }}
+              resizeMode="contain"
+            />
           </View>
-          <View style={[styles.messageBubble, styles.aiBubble, styles.typingBubble]}>
-            <ActivityIndicator size="small" color={Colors.text.secondary} />
-            <Text style={styles.typingText}>Thinking...</Text>
+          <View style={[styles.messageBubble, styles.aiBubble, { backgroundColor: colors.card.light }]}>
+            <View style={styles.typingBubble}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.typingText, { color: colors.text.secondary }]}>Ruvo is thinking...</Text>
+            </View>
           </View>
         </View>
       );
@@ -191,49 +193,66 @@ What can I help you with?`,
         ]}
       >
         {!message.isUser && (
-          <View style={styles.aiAvatar}>
-            <Sparkles size={16} color={Colors.primary} />
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 16, height: 16 }}
+              resizeMode="contain"
+            />
           </View>
         )}
         <View
           style={[
             styles.messageBubble,
-            message.isUser ? styles.userBubble : styles.aiBubble,
+            message.isUser ? 
+              [styles.userBubble, { backgroundColor: colors.primary }] : 
+              [styles.aiBubble, { backgroundColor: colors.card.light }]
           ]}
         >
-          <Text
-            style={[
-              styles.messageText,
-              message.isUser ? styles.userText : styles.aiText,
-            ]}
-          >
+          <Text style={[
+            styles.messageText,
+            message.isUser ? [styles.userText, { color: colors.text.inverse }] : [styles.aiText, { color: colors.text.primary }]
+          ]}>
             {message.text}
           </Text>
-          {message.alertCreated && (
-            <View style={styles.alertBadge}>
-              <Bell size={14} color={Colors.accent} />
-              <Text style={styles.alertBadgeText}>Alert Active</Text>
-            </View>
+          
+          {message.alertCreated && message.alertId && (
+            <TouchableOpacity 
+              style={[styles.alertBadge, { backgroundColor: `${colors.accent}20` }]}
+              onPress={() => router.push('/custom-alerts')}
+            >
+              <Bell size={14} color={colors.accent} />
+              <Text style={[styles.alertBadgeText, { color: colors.accent }]}>Alert Created!</Text>
+            </TouchableOpacity>
           )}
         </View>
+        {message.isUser && (
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Sparkles size={16} color={colors.primary} />
+          </View>
+        )}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top', 'bottom']}>
+      <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.light }]}>
         <View style={styles.headerContent}>
-          <View style={styles.headerIcon}>
-            <Sparkles size={20} color={Colors.primary} />
+          <View style={[styles.headerIcon, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
           </View>
           <View>
-            <Text style={styles.headerTitle}>Ask Ruvo</Text>
-            <Text style={styles.headerSubtitle}>Powered by Gemini AI</Text>
+            <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Ask Ruvo</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>Powered by Gemini AI</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={Colors.text.primary} />
+          <X size={24} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
 
@@ -252,11 +271,15 @@ What can I help you with?`,
           <View style={{ height: 20 }} />
         </ScrollView>
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { borderTopColor: colors.border.light, backgroundColor: colors.background.primary }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.card.light, 
+              color: colors.text.primary,
+              borderColor: colors.border.lighter
+            }]}
             placeholder="Ask me anything..."
-            placeholderTextColor={Colors.text.secondary}
+            placeholderTextColor={colors.text.tertiary}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -264,17 +287,17 @@ What can I help you with?`,
             editable={!isProcessing}
           />
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (inputText.trim() === '' || isProcessing) && styles.sendButtonDisabled
+            style={[styles.sendButton, 
+              (inputText.trim() === '' || isProcessing) && styles.sendButtonDisabled,
+              { backgroundColor: colors.primary }
             ]}
             onPress={handleSend}
             disabled={inputText.trim() === '' || isProcessing}
           >
             {isProcessing ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.text.inverse} />
             ) : (
-              <Send size={20} color="#FFFFFF" />
+              <Send size={20} color={colors.text.inverse} />
             )}
           </TouchableOpacity>
         </View>
@@ -286,7 +309,6 @@ What can I help you with?`,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
   },
   header: {
     flexDirection: 'row',
@@ -295,7 +317,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
   },
   headerContent: {
     flexDirection: 'row',
@@ -306,18 +327,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: Colors.text.primary,
+    fontFamily: 'PlayfairDisplay_700Bold',
   },
   headerSubtitle: {
     fontSize: 12,
-    color: Colors.text.secondary,
     marginTop: 2,
   },
   closeButton: {
@@ -336,7 +355,7 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 12,
   },
   userMessageContainer: {
     justifyContent: 'flex-end',
@@ -348,33 +367,34 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
   messageBubble: {
-    maxWidth: '75%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    maxWidth: '85%',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   userBubble: {
-    backgroundColor: Colors.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 8,
   },
   aiBubble: {
-    backgroundColor: Colors.card.light,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 8,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   userText: {
-    color: '#FFFFFF',
+    fontWeight: '500' as const,
   },
   aiText: {
-    color: Colors.text.primary,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -382,55 +402,53 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border.light,
-    backgroundColor: Colors.background.light,
   },
   input: {
     flex: 1,
-    backgroundColor: Colors.card.light,
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     fontSize: 16,
-    color: Colors.text.primary,
-    maxHeight: 100,
+    maxHeight: 120,
+    borderWidth: 1,
   },
   sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.primary,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 8,
   },
   typingText: {
-    fontSize: 14,
-    color: Colors.text.secondary,
+    fontSize: 15,
     fontStyle: 'italic',
   },
   alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: `${Colors.accent}20`,
-    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     alignSelf: 'flex-start',
   },
   alertBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.accent,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useRef } from 'react';
 
 import {
   StyleSheet,
@@ -10,15 +9,20 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  Animated,
+  ActivityIndicator,
+  Pressable,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { Heart, Bookmark, X, ExternalLink } from 'lucide-react-native';
+import { Heart, Bookmark, X, ExternalLink, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Signal } from '@/types';
 import { echoControlService } from '@/lib/echoControlService';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,35 +34,45 @@ const CAROUSEL_SLIDE_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 const CAROUSEL_SPACING = 12;
 
 export default function FeedScreen() {
-  const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
+  const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals, echoControlEnabled, echoControlGrouping, customKeywords, isLoading } = useApp();
   const { t } = useLanguage();
+  const { colors, mode } = useTheme();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
   const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // Animation values for cards
+  const cardAnimations = useRef(
+    signals.map(() => new Animated.Value(0))
+  ).current;
 
   useEffect(() => {
+    // Animate cards when they appear
+    signals.forEach((_, index) => {
+      Animated.timing(cardAnimations[index], {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }).start();
+    });
+    
     const interval = setInterval(() => {
       refreshSignals();
-    }, 10000);
+    }, 30000); // Refresh every 30 seconds instead of 10
 
     return () => clearInterval(interval);
-  }, [refreshSignals]);
+  }, [refreshSignals, signals]);
 
   const onRefresh = () => {
     setRefreshing(true);
     refreshSignals();
-    setTimeout(() => setRefreshing(false), 1000);
+    setTimeout(() => setRefreshing(false), 1500);
   };
 
-
-
-
-
-
-
-
-    const formatTimeAgo = (date: Date | string | undefined) => {
+  const formatTimeAgo = (date: Date | string | undefined) => {
     if (!date) return 'Just now';
     try {
       const dateObj = date instanceof Date ? date : new Date(date);
@@ -73,24 +87,9 @@ export default function FeedScreen() {
     }
   };
 
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-    const renderSignalCard = (signal: Signal) => {
+  const renderSignalCard = (signal: Signal, index: number) => {
     const isExpanded = expandedArticleId === signal.id;
+    const animation = cardAnimations[index];
     
     // Find related articles using the improved service based on user's grouping preference
     const relatedArticles = echoControlEnabled ? 
@@ -105,113 +104,106 @@ export default function FeedScreen() {
     }
 
     return (
-      <View key={signal.id} style={styles.card}>
+      <Animated.View 
+        key={signal.id} 
+        style={[
+          styles.card,
+          {
+            opacity: animation,
+            transform: [{
+              translateY: animation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0],
+              })
+            }]
+          }
+        ]}
+      >
         {signal.imageUrl && (
           <TouchableOpacity onPress={() => router.push(`/article-detail?id=${signal.id}`)}>
             <Image source={{ uri: signal.imageUrl }} style={styles.cardImage} resizeMode="cover" />
           </TouchableOpacity>
         )}
         <TouchableOpacity 
-          style={styles.cardContent}
+          style={[styles.cardContent, { backgroundColor: colors.card.primary }]}
           activeOpacity={0.95}
           onPress={() => router.push(`/article-detail?id=${signal.id}`)}
         >
-        <View style={styles.cardHeader}>
-          <View style={styles.sourceInfo}>
-            <Text style={styles.sourceName}>{signal.sourceName}</Text>
-            {signal.verified && (
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedText}>✓</Text>
-              </View>
-            )}
+          <View style={styles.cardHeader}>
+            <View style={styles.sourceInfo}>
+              <Text style={[styles.sourceName, { color: colors.text.primary }]}>{signal.sourceName}</Text>
+              {signal.verified && (
+                <View style={[styles.verifiedBadge, { backgroundColor: colors.primary }]}> 
+                  <Text style={[styles.verifiedText, { color: colors.text.inverse }]}>✓</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.headerRight}>
+              <Text style={[styles.timestamp, { color: colors.text.tertiary }]}>{formatTimeAgo(signal.timestamp)}</Text>
+              {relatedArticles.length > 0 && echoControlEnabled && (
+                <View style={[styles.relatedBadge, { backgroundColor: colors.primary }]}> 
+                  <Text style={[styles.relatedBadgeText, { color: colors.text.inverse }]}>{relatedArticles.length}</Text>
+                </View>
+              )}
+            </View>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.timestamp}>{formatTimeAgo(signal.timestamp)}</Text>
-            {relatedArticles.length > 0 && echoControlEnabled && (
-              <View style={styles.relatedBadge}>
-                <Text style={styles.relatedBadgeText}>{relatedArticles.length}</Text>
-              </View>
-            )}
-          </View>
-        </View>
 
-
-
-                  <Text style={styles.title}>{signal.title}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{signal.title}</Text>
           
-          <Text style={styles.summary} numberOfLines={isExpanded ? undefined : 3}>
+          <Text style={[styles.summary, { color: colors.text.secondary }]} numberOfLines={isExpanded ? undefined : 3}>
             {signal.summary}
           </Text>
           
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    {isExpanded && signal.content && signal.content !== signal.summary && (
-            <View style={styles.expandedContent}>
-              <Text style={styles.fullText}>{signal.content}</Text>
+          {isExpanded && signal.content && signal.content !== signal.summary && (
+            <View style={[styles.expandedContent, { borderTopColor: colors.border.lighter }]}> 
+              <Text style={[styles.fullText, { color: colors.text.primary }]}>{signal.content}</Text>
             </View>
           )}
           
           {!isExpanded && (
-            <Text style={styles.tapToExpand}>Tap to read more...</Text>
+            <Text style={[styles.tapToExpand, { color: colors.primary }]}>Tap to read more...</Text>
           )}
 
-        <View style={styles.tagsContainer}>
-          {signal.tags.map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
+          <View style={styles.tagsContainer}>
+            {signal.tags.map((tag, index) => (
+              <View key={index} style={[styles.tag, { backgroundColor: colors.card.light }]}> 
+                <Text style={[styles.tagText, { color: colors.primary }]}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
 
-
-                </TouchableOpacity>
+        </TouchableOpacity>
         
         <View style={styles.reactionsRow}>
           <TouchableOpacity 
-            style={styles.reactionPill} 
+            style={[styles.reactionPill, { backgroundColor: colors.card.white }]} 
             activeOpacity={0.9} 
             onPress={() => {
               console.log('Like button pressed for signal:', signal.id, 'Current liked state:', signal.liked);
               toggleSignalLike(signal.id);
             }}
           >
-            <Heart size={18} color={signal.liked ? Colors.alert : Colors.text.tertiary} fill={signal.liked ? Colors.alert : 'transparent'} />
-            <Text style={styles.reactionText}>{signal.liked ? 1 : 0}</Text>
+            <Heart size={18} color={signal.liked ? colors.alert : colors.text.tertiary} fill={signal.liked ? colors.alert : 'transparent'} />
+            <Text style={[styles.reactionText, { color: signal.liked ? colors.alert : colors.text.tertiary }]}>{signal.liked ? 1 : 0}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.reactionPill} 
+            style={[styles.reactionPill, { backgroundColor: colors.card.white }]} 
             activeOpacity={0.9} 
             onPress={() => {
               console.log('Save button pressed for signal:', signal.id, 'Current saved state:', signal.saved);
               toggleSignalSave(signal.id);
             }}
           >
-            <Bookmark size={18} color={signal.saved ? Colors.primary : Colors.text.tertiary} fill={signal.saved ? Colors.primary : 'transparent'} />
-            <Text style={styles.reactionText}>{signal.saved ? 1 : 0}</Text>
+            <Bookmark size={18} color={signal.saved ? colors.primary : colors.text.tertiary} fill={signal.saved ? colors.primary : 'transparent'} />
+            <Text style={[styles.reactionText, { color: signal.saved ? colors.primary : colors.text.tertiary }]}>{signal.saved ? 1 : 0}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.morePill} activeOpacity={0.8} onPress={() => dismissSignal(signal.id)}>
-            <X size={18} color={Colors.text.tertiary} />
+          
+          <TouchableOpacity style={[styles.morePill, { backgroundColor: colors.card.white }]} activeOpacity={0.8} onPress={() => dismissSignal(signal.id)}>
+            <X size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
-
-
-
-
-                </View>
-      </View>
+        </View>
+      </Animated.View>
     );
   };
 
@@ -219,11 +211,15 @@ export default function FeedScreen() {
   const recommendations = signals.slice(Math.min(3, signals.length));
 
   const renderCarouselItem = (item: Signal, index: number) => (
-    <View key={item.id} style={styles.slide}>
+    <Pressable 
+      key={item.id} 
+      style={styles.slide}
+      onPress={() => router.push(`/article-detail?id=${item.id}`)}
+    >
       {item.imageUrl ? (
         <Image source={{ uri: item.imageUrl }} style={styles.slideImage} resizeMode="cover" />
       ) : (
-        <View style={[styles.slideImage, { backgroundColor: Colors.card.secondary }]} />
+        <View style={[styles.slideImage, { backgroundColor: colors.card.secondary }]} />
       )}
       <LinearGradient
         colors={["rgba(0,0,0,0.0)", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.65)"]}
@@ -233,35 +229,56 @@ export default function FeedScreen() {
       />
       <View style={styles.slideContent}>
         {item.tags?.[0] && (
-          <View style={styles.slideTag}><Text style={styles.slideTagText}>{item.tags[0]}</Text></View>
+          <View style={[styles.slideTag, { backgroundColor: 'rgba(0,0,0,0.35)' }]}><Text style={[styles.slideTagText, { color: colors.text.inverse }]}>{item.tags[0]}</Text></View>
         )}
-        <Text numberOfLines={2} style={styles.slideTitle}>{item.title}</Text>
-        <Text style={styles.slideMeta}>{item.sourceName} · {formatTimeAgo(item.timestamp)}</Text>
+        <Text numberOfLines={2} style={[styles.slideTitle, { color: colors.text.inverse }]}>{item.title}</Text>
+        <Text style={[styles.slideMeta, { color: '#E6F3F0' }]}>{item.sourceName} · {formatTimeAgo(item.timestamp)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
+          <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading your personalized feed...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+      <Animated.ScrollView
         style={styles.mainScrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>RUVO</Text>
-          <Text style={styles.headerTagline}>Cut the Noise. Catch the Signal.</Text>
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
+          <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
         </View>
         
         {breakingSignals.length > 0 && (
           <View style={styles.carouselSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('feed.breakingNews')}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>{t('feed.breakingNews')}</Text>
               <TouchableOpacity activeOpacity={0.8}>
-                <Text style={styles.sectionLink}>{t('actions.view')} all</Text>
+                <Text style={[styles.sectionLink, { color: colors.primary }]}>{t('actions.view')} all</Text>
               </TouchableOpacity>
             </View>
 
@@ -292,29 +309,28 @@ export default function FeedScreen() {
         {recommendations.length > 0 && (
           <View style={styles.recommendationsSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recommendations</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Recommendations</Text>
               <TouchableOpacity activeOpacity={0.8}>
-                <Text style={styles.sectionLink}>{t('actions.view')} all</Text>
+                <Text style={[styles.sectionLink, { color: colors.primary }]}>{t('actions.view')} all</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.feed}>
-              {recommendations.map((signal) => renderSignalCard(signal))}
+              {recommendations.map((signal, index) => renderSignalCard(signal, index))}
             </View>
           </View>
         )}
 
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+        {recommendations.length === 0 && !isLoading && (
+          <View style={styles.emptyState}>
+            <Sparkles size={48} color={colors.text.tertiary} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text.primary }]}>No articles yet</Text>
+            <Text style={[styles.emptyStateText, { color: colors.text.secondary }]}>We're curating your personalized feed. Check back soon!</Text>
+          </View>
+        )}
 
-
-
-
-
-
-
-
-      
+        <View style={[styles.bottomPadding, { height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom) }]} />
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -322,7 +338,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
+    backgroundColor: Colors.background.primary,
   },
   mainScrollView: {
     flex: 1,
@@ -337,7 +353,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   bottomPadding: {
-    height: 100,
+    height: 140,
+    backgroundColor: 'transparent',
   },
   sectionHeader: {
     paddingHorizontal: 20,
@@ -351,11 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     fontFamily: Fonts.bold,
-    color: Colors.text.onLight,
+    color: 'inherit',
     letterSpacing: -0.3,
   },
   sectionLink: {
-    color: Colors.primary,
+    color: 'inherit',
     fontWeight: '700',
   },
   carouselContainer: {
@@ -368,7 +385,7 @@ const styles = StyleSheet.create({
     marginRight: CAROUSEL_SPACING,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: Colors.card.secondary,
+    backgroundColor: 'transparent',
   },
   slideImage: {
     width: '100%',
@@ -389,20 +406,20 @@ const styles = StyleSheet.create({
   },
   slideTag: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'transparent',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
     marginBottom: 8,
   },
   slideTagText: {
-    color: Colors.text.inverse,
+    color: 'inherit',
     fontWeight: '700',
     fontFamily: Fonts.bold,
     fontSize: 12,
   },
   slideTitle: {
-    color: Colors.text.inverse,
+    color: 'inherit',
     fontWeight: '800',
     fontFamily: Fonts.bold,
     fontSize: 16,
@@ -410,7 +427,7 @@ const styles = StyleSheet.create({
   },
   slideMeta: {
     marginTop: 4,
-    color: '#E6F3F0',
+    color: 'inherit',
     fontSize: 12,
     fontFamily: Fonts.regular,
   },
@@ -426,12 +443,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.border.primary,
+    backgroundColor: 'inherit',
   },
   dotActive: {
     width: 16,
     borderRadius: 3,
-    backgroundColor: Colors.primary,
+    backgroundColor: 'inherit',
   },
   header: {
     paddingHorizontal: 20,
@@ -442,7 +459,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '800',
     fontFamily: Fonts.bold,
-    color: Colors.text.onLight,
+    color: 'inherit',
     letterSpacing: -1,
     marginBottom: 8,
   },
@@ -450,7 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
     fontFamily: Fonts.regular,
-    color: Colors.text.secondary,
+    color: 'inherit',
     letterSpacing: 0.5,
   },
   feed: {
@@ -459,8 +476,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 24,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -490,25 +507,25 @@ const styles = StyleSheet.create({
   sourceName: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: 'inherit',
     letterSpacing: -0.2,
   },
   verifiedBadge: {
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Colors.primary,
+    backgroundColor: 'inherit',
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedText: {
-    color: '#FFFFFF',
+    color: 'inherit',
     fontSize: 11,
     fontWeight: '700',
   },
   timestamp: {
     fontSize: 13,
-    color: Colors.text.tertiary,
+    color: 'inherit',
   },
   headerRight: {
     flexDirection: 'row',
@@ -516,7 +533,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   relatedBadge: {
-    backgroundColor: Colors.primary,
+    backgroundColor: 'inherit',
     borderRadius: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -526,19 +543,19 @@ const styles = StyleSheet.create({
   relatedBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.text.inverse,
+    color: 'inherit',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: 'inherit',
     marginBottom: 8,
     lineHeight: 26,
     letterSpacing: -0.4,
   },
   summary: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: 'inherit',
     lineHeight: 22,
     marginBottom: 14,
   },
@@ -549,7 +566,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tag: {
-    backgroundColor: 'rgba(240,244,255,0.8)',
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 18,
@@ -557,7 +574,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: 'inherit',
     letterSpacing: -0.1,
   },
   reactionsRow: {
@@ -570,23 +587,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'transparent',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
   },
   morePill: {
     marginLeft: 'auto',
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'transparent',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
   },
-
-
-
-    reactionText: {
-    color: Colors.text.onLight,
+  reactionText: {
+    color: 'inherit',
     fontWeight: '700',
   },
   expandedContent: {
@@ -595,52 +609,45 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border.lighter,
   },
-
-
-
-
-
-    fullText: {
+  fullText: {
     fontSize: 15,
-    color: Colors.text.primary,
+    color: 'inherit',
     lineHeight: 24,
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   tapToExpand: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: 'inherit',
     marginBottom: 8,
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 50,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: 'inherit',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyStateTitle: {
+    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'inherit',
+  },
+  emptyStateText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: 'inherit',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
 });

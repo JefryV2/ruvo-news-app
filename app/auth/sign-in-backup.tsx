@@ -53,7 +53,9 @@ export default function SignInScreen() {
     ]).start();
 
     // Pulsating animation
-    Animated.loop(
+    let pulseAnimation: Animated.CompositeAnimation | null = null;
+
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(pulseAnim, {
@@ -80,7 +82,17 @@ export default function SignInScreen() {
           }),
         ]),
       ])
-    ).start();
+    );
+    animation.start();
+    
+    pulseAnimation = animation;
+
+    // Cleanup function to stop animations when component unmounts
+    return () => {
+      if (pulseAnimation) {
+        pulseAnimation.stop();
+      }
+    };
   }, []);
 
   const handleSignIn = async () => {

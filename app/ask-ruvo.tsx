@@ -9,15 +9,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { X, Send, Sparkles, Bell, Check } from 'lucide-react-native';
+import { X, Send, Sparkles, Bell } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { AIRequestParser } from '@/lib/aiRequestParser';
 import { CustomAlertsService } from '@/lib/customAlertsService';
 import { GeminiServiceEnhanced } from '@/lib/geminiServiceEnhanced';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type Message = {
   id: string;
@@ -31,14 +34,18 @@ type Message = {
 
 export default function AskRuvoScreen() {
   const { user, signals } = useApp();
+  const { colors, mode } = useTheme(); // Add theme context
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Initialize with contextual welcome message
   useEffect(() => {
     const welcomeMessage = user 
-      ? `Hello ${user.username}! 👋 I'm Ruvo, your intelligent AI assistant powered by Gemini.\n\nI've analyzed your feed and can help you with:\n\n• 📊 Summarizing your ${signals.length} recent signals\n• 🔔 Creating smart alerts based on your interests: ${user.interests?.slice(0, 3).join(', ') || 'None set'}\n• 📈 Analyzing trends in your news consumption\n• 💡 Answering questions about topics in your feed\n• 🎯 Providing personalized insights\n\nWhat would you like to know about your feed?`
-      : `Hello! I'm Ruvo, your intelligent AI assistant powered by Gemini. I can help you with:\n\n• Creating custom alerts for any topic\n• Answering questions about anything\n• Explaining complex concepts\n• Having natural conversations\n• Finding and tracking news\n\nAsk me anything - I'm here to help! 💡`;
+      ? `Hi ${user.username}! 👋 I'm Ruvo, your personal news assistant.\n\nI see you're interested in ${user.interests?.slice(0, 3).join(', ') || 'various topics'} and you have ${signals.length} recent articles in your feed.\n\nI can help you:\n• Find more stories on topics you care about\n• Create alerts so you never miss important updates\n• Summarize what's been happening lately\n\nWhat would you like to know?`
+      : `Hi there! I'm Ruvo, your personal news assistant.\n\nI can help you:\n• Create alerts for topics you're interested in\n• Answer questions about current events\n• Explain complex topics\n• Find news on any subject\n\nWhat can I help you with today?`;
 
     setMessages([{
       id: '1',
@@ -47,8 +54,15 @@ export default function AskRuvoScreen() {
       timestamp: new Date(),
     }]);
   }, [user, signals]);
-  const [inputText, setInputText] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  // Animate welcome message
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages arrive
@@ -57,7 +71,7 @@ export default function AskRuvoScreen() {
     }, 100);
   }, [messages]);
 
-    const handleSend = async () => {
+  const handleSend = async () => {
     if (inputText.trim() === '' || isProcessing) return;
 
     const query = inputText.trim();
@@ -90,7 +104,7 @@ export default function AskRuvoScreen() {
     setIsProcessing(false);
   };
 
-    const processUserRequest = async (query: string) => {
+  const processUserRequest = async (query: string) => {
     try {
       let responseText = '';
       let alertCreated = false;
@@ -131,16 +145,48 @@ export default function AskRuvoScreen() {
         // Fallback to pattern matching if Gemini fails
         console.warn('Gemini failed, using fallback:', geminiError);
         
-                if (geminiError.message?.includes('API key not configured')) {
+        if (geminiError.message?.includes('API key not configured')) {
           // Better response for common queries even without API
           const lowerQuery = query.toLowerCase();
           
           if (lowerQuery.includes('summarize') || lowerQuery.includes('summary')) {
-            responseText = `📊 **Feed Summary**\n\nYour personalized feed shows news based on your ${user?.interests.length || 0} interests. To get the most from Ruvo:\n\n✨ Add more interests in Profile\n🔔 Create alerts for topics you follow\n📰 Browse Discover for trending stories\n\n💡 **Tip:** For AI-powered summaries and conversations, add a Gemini API key (free!) - check the documentation!`;
+            responseText = `📊 Feed Summary
+
+Your personalized feed shows news based on your ${user?.interests.length || 0} interests. To get the most from Ruvo:
+
+✨ Add more interests in Profile
+🔔 Create alerts for topics you follow
+📰 Browse Discover for trending stories
+
+💡 Tip: For AI-powered summaries and conversations, add a Gemini API key (free!) - check the documentation!`;
           } else if (lowerQuery.includes('what') || lowerQuery.includes('how') || lowerQuery.includes('why') || lowerQuery.includes('explain') || lowerQuery.includes('tell me')) {
-            responseText = '💡 I can answer any question with Gemini AI!\n\n**Quick Setup (2 minutes):**\n1. Get free API key: https://makersuite.google.com/app/apikey\n2. Add to .env: EXPO_PUBLIC_GEMINI_API_KEY=your_key\n3. Restart app\n\n**Without API key**, I can help with:\n• Creating alerts: "Notify me about [topic]"\n• Basic assistance\n\n**With API key**, I can:\n• Answer any question\n• Explain concepts\n• Have natural conversations\n• Provide detailed information';
+            responseText = `💡 I can answer any question with Gemini AI!
+
+Quick Setup (2 minutes):
+1. Get free API key: https://makersuite.google.com/app/apikey
+2. Add to .env: EXPO_PUBLIC_GEMINI_API_KEY=your_key
+3. Restart app
+
+Without API key, I can help with:
+• Creating alerts: "Notify me about [topic]"
+• Basic assistance
+
+With API key, I can:
+• Answer any question
+• Explain concepts
+• Have natural conversations
+• Provide detailed information`;
           } else {
-            responseText = '⚠️ Gemini AI is not configured yet!\n\n**Get intelligent responses:**\n1. Visit: https://makersuite.google.com/app/apikey\n2. Create free API key\n3. Add to .env file\n4. Restart app\n\nI can still help create alerts! Try:\n"Notify me about [your topic]"';
+            responseText = `⚠️ Gemini AI is not configured yet!
+
+Get intelligent responses:
+1. Visit: https://makersuite.google.com/app/apikey
+2. Create free API key
+3. Add to .env file
+4. Restart app
+
+I can still help create alerts! Try:
+"Notify me about [topic]"`;
           }
         } else {
           const parsed = AIRequestParser.parseRequest(query);
@@ -153,20 +199,40 @@ export default function AskRuvoScreen() {
                 const alert = await CustomAlertsService.createAlert(user.id, parsed);
                 alertCreated = true;
                 alertId = alert.id;
-                responseText = `✅ Alert created!\n\n**${alert.title}**\n${alert.description}\n\nI'll notify you when relevant news appears.`;
+                responseText = `✅ Alert created!
+
+${alert.title}
+${alert.description}
+
+I'll notify you when relevant news appears.`;
               } catch (error) {
                 responseText = 'Sorry, I had trouble creating that alert. Try: "Notify me about [topic]"';
               }
             }
-                    } else if (parsed.intent === 'search') {
-            responseText = `I can help you track news about that topic!\n\nTry creating an alert:\n"Notify me about ${parsed.keywords.slice(0, 2).join(' ')}"\n\n💡 **Want smarter responses?** Add Gemini API key (free!) for AI-powered answers to any question!`;
+          } else if (parsed.intent === 'search') {
+            responseText = `I can help you track news about that topic!
+
+Try creating an alert:
+"Notify me about ${parsed.keywords.slice(0, 2).join(' ')}"
+
+💡 Want smarter responses? Add Gemini API key (free!) for AI-powered answers to any question!`;
           } else if (parsed.intent === 'summarize') {
-            responseText = `📊 **Quick Summary**\n\nYour feed is curated based on your interests. Check:\n• Feed tab for latest signals\n• Discover tab for trending news\n• Profile to manage interests\n\n🔔 Create alerts to never miss important updates!`;
+            responseText = `📊 Quick Summary
+
+Your feed is curated based on your interests. Check:
+• Feed tab for latest signals
+• Discover tab for trending news
+• Profile to manage interests
+
+🔔 Create alerts to never miss important updates!`;
           } else {
-            responseText = 'I\'m working in limited mode right now.\n\n✅ I can help create alerts:\n"Notify me about [topic]"\n\n🤖 For AI-powered conversations:\nAdd Gemini API key (see docs)';
+            responseText = "I'm working in limited mode right now.\n\n✅ I can help create alerts:\n\"Notify me about [topic]\"\n\n🤖 For AI-powered conversations:\nAdd Gemini API key (see docs)";
           }
         }
       }
+
+      // Apply human-like filtering to make responses feel more natural
+      responseText = humanizeResponse(responseText);
 
       // Add AI response
       const aiResponse: Message = {
@@ -194,73 +260,97 @@ export default function AskRuvoScreen() {
     }
   };
 
-    const renderMessage = (message: Message) => {
+  const renderMessage = (message: Message) => {
     if (message.isTyping) {
       return (
         <View key={message.id} style={[styles.messageContainer, styles.aiMessageContainer]}>
-          <View style={styles.aiAvatar}>
-            <Sparkles size={16} color={Colors.primary} />
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 16, height: 16 }}
+              resizeMode="contain"
+            />
           </View>
-          <View style={[styles.messageBubble, styles.aiBubble, styles.typingBubble]}>
-            <ActivityIndicator size="small" color={Colors.text.secondary} />
-            <Text style={styles.typingText}>Thinking...</Text>
+          <View style={[styles.messageBubble, styles.aiBubble, { backgroundColor: colors.card.light }]}>
+            <View style={styles.typingBubble}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.typingText, { color: colors.text.secondary }]}>Ruvo is thinking...</Text>
+            </View>
           </View>
         </View>
       );
     }
 
     return (
-      <View
-        key={message.id}
+      <View 
+        key={message.id} 
         style={[
-          styles.messageContainer,
-          message.isUser ? styles.userMessageContainer : styles.aiMessageContainer,
+          styles.messageContainer, 
+          message.isUser ? styles.userMessageContainer : styles.aiMessageContainer
         ]}
       >
         {!message.isUser && (
-          <View style={styles.aiAvatar}>
-            <Sparkles size={16} color={Colors.primary} />
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 16, height: 16 }}
+              resizeMode="contain"
+            />
           </View>
         )}
-        <View
-          style={[
-            styles.messageBubble,
-            message.isUser ? styles.userBubble : styles.aiBubble,
-          ]}
-        >
-          <Text
-            style={[
-              styles.messageText,
-              message.isUser ? styles.userText : styles.aiText,
-            ]}
-          >
+        
+        <View style={[
+          styles.messageBubble,
+          message.isUser ? 
+            [styles.userBubble, { backgroundColor: colors.primary }] : 
+            [styles.aiBubble, { backgroundColor: colors.card.light }]
+        ]}>
+          <Text style={[
+            styles.messageText,
+            message.isUser ? styles.userText : styles.aiText,
+            message.isUser ? { color: colors.text.inverse } : { color: colors.text.primary }
+          ]}>
             {message.text}
           </Text>
-          {message.alertCreated && (
-            <View style={styles.alertBadge}>
-              <Bell size={14} color={Colors.accent} />
-              <Text style={styles.alertBadgeText}>Alert Active</Text>
-            </View>
+          
+          {message.alertCreated && message.alertId && (
+            <TouchableOpacity 
+              style={[styles.alertBadge, { backgroundColor: `${colors.accent}20` }]}
+              onPress={() => router.push('/custom-alerts')}
+            >
+              <Bell size={14} color={colors.accent} />
+              <Text style={[styles.alertBadgeText, { color: colors.accent }]}>Alert Created!</Text>
+            </TouchableOpacity>
           )}
         </View>
+        
+        {message.isUser && (
+          <View style={[styles.aiAvatar, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Sparkles size={16} color={colors.primary} />
+          </View>
+        )}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top', 'bottom']}>
+      <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.light }]}>
         <View style={styles.headerContent}>
-                    <View style={styles.headerIcon}>
-            <Sparkles size={20} color={Colors.primary} />
+          <View style={[styles.headerIcon, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
           </View>
           <View>
-            <Text style={styles.headerTitle}>Ask Ruvo</Text>
-            <Text style={styles.headerSubtitle}>Powered by Gemini AI</Text>
+            <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Ask Ruvo</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.text.secondary }]}>Powered by Gemini AI</Text>
           </View>
         </View>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={Colors.text.primary} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <X size={24} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
 
@@ -269,35 +359,44 @@ export default function AskRuvoScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-                <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-        >
-          {messages.map((message) => renderMessage(message))}
-          <View style={{ height: 20 }} />
-        </ScrollView>
+        <View style={[styles.messagesBackground, { backgroundColor: colors.background.primary }]}>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((message) => renderMessage(message))}
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { borderTopColor: colors.border.light, backgroundColor: colors.background.primary }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.card.light, 
+              color: colors.text.primary,
+              borderColor: colors.border.lighter
+            }]}
             placeholder="Ask me anything..."
-            placeholderTextColor={Colors.text.secondary}
+            placeholderTextColor={colors.text.tertiary}
             value={inputText}
             onChangeText={setInputText}
             multiline
             maxLength={500}
           />
-                    <TouchableOpacity
-            style={[styles.sendButton, (inputText.trim() === '' || isProcessing) && styles.sendButtonDisabled]}
+          <TouchableOpacity
+            style={[styles.sendButton, 
+              (inputText.trim() === '' || isProcessing) && styles.sendButtonDisabled,
+              { backgroundColor: colors.primary }
+            ]}
             onPress={handleSend}
             disabled={inputText.trim() === '' || isProcessing}
           >
             {isProcessing ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.text.inverse} />
             ) : (
-              <Send size={20} color="#FFFFFF" />
+              <Send size={20} color={colors.text.inverse} />
             )}
           </TouchableOpacity>
         </View>
@@ -309,7 +408,6 @@ export default function AskRuvoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
   },
   header: {
     flexDirection: 'row',
@@ -318,7 +416,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
   },
   headerContent: {
     flexDirection: 'row',
@@ -329,24 +426,25 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
-        headerTitle: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: Colors.text.primary,
+    fontFamily: 'PlayfairDisplay_700Bold',
   },
   headerSubtitle: {
     fontSize: 12,
-    color: Colors.text.secondary,
     marginTop: 2,
   },
   closeButton: {
     padding: 4,
   },
   content: {
+    flex: 1,
+  },
+  messagesBackground: {
     flex: 1,
   },
   messagesContainer: {
@@ -359,7 +457,7 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 12,
   },
   userMessageContainer: {
     justifyContent: 'flex-end',
@@ -371,33 +469,34 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
   messageBubble: {
-    maxWidth: '75%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    maxWidth: '85%',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   userBubble: {
-    backgroundColor: Colors.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 8,
   },
   aiBubble: {
-    backgroundColor: Colors.card.light,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 8,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   userText: {
-    color: '#FFFFFF',
+    fontWeight: '500' as const,
   },
-    aiText: {
-    color: Colors.text.primary,
+  aiText: {
   },
   inputContainer: {
     flexDirection: 'row',
@@ -405,55 +504,75 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border.light,
-    backgroundColor: Colors.background.light,
   },
-    input: {
+  input: {
     flex: 1,
-    backgroundColor: Colors.card.light,
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     fontSize: 16,
-    color: Colors.text.primary,
-    maxHeight: 100,
+    maxHeight: 120,
+    borderWidth: 1,
   },
   sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.primary,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-    sendButtonDisabled: {
-    opacity: 0.5,
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 8,
   },
   typingText: {
-    fontSize: 14,
-    color: Colors.text.secondary,
+    fontSize: 15,
     fontStyle: 'italic',
   },
   alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: `${Colors.accent}20`,
-    borderRadius: 12,
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     alignSelf: 'flex-start',
   },
-    alertBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.accent,
+  alertBadgeText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
+
+// Helper function to make responses more human-like
+const humanizeResponse = (responseText: string): string => {
+  // Remove any remaining markdown bold formatting
+  let humanizedText = responseText.replace(/\*\*(.*?)\*\*/g, '$1');
+  
+  // Replace markdown-style headers with more natural formatting
+  humanizedText = humanizedText.replace(/^(#+)\s*(.*?)$/gm, '$2');
+  
+  // Add more natural sentence structures
+  humanizedText = humanizedText.replace(/\. \[/g, '.\n['); // Add line breaks before lists
+  
+  // Ensure proper spacing after punctuation
+  humanizedText = humanizedText.replace(/\s*\.\s*/g, '. ');
+  humanizedText = humanizedText.replace(/\s*,\s*/g, ', ');
+  humanizedText = humanizedText.replace(/\s*;\s*/g, '; ');
+  
+  // Trim extra whitespace
+  humanizedText = humanizedText.replace(/^\s+|\s+$/gm, '');
+  
+  return humanizedText;
+};

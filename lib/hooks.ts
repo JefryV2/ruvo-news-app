@@ -7,7 +7,7 @@ import { aiNewsService, UserPreferences } from '../lib/aiNewsService';
 import { newsApiService } from '../lib/newsApiService';
 import { webzioService } from '../lib/webzioService';
 import { NotificationGeneratorService } from '../lib/notificationGeneratorService';
-import { Signal, UserProfile, Notification } from '../types';
+import { Signal, UserProfile, Notification as TypesNotification } from '../types';
 
 // Auth hooks
 export const useSignIn = () => {
@@ -53,7 +53,7 @@ export const useSession = () => {
 
 // User hooks
 export const useCurrentUser = () => {
-  return useQuery({
+  return useQuery<User | null, Error>({
     queryKey: ['user', 'current'],
     queryFn: userService.getCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -260,7 +260,7 @@ export const useDismissSignal = () => {
 
 // Fetch user signal interactions
 export const useUserSignalInteractions = (userId: string) => {
-  return useQuery({
+  return useQuery<Record<string, any>, Error>({
     queryKey: ['user-signals', 'interactions', userId],
     queryFn: () => userSignalService.getUserSignalInteractions(userId),
     enabled: !!userId,
@@ -289,7 +289,7 @@ export const useSavedSignals = (userId: string) => {
 
 // Notification hooks
 export const useNotificationsForUser = (userId: string, limit = 50) => {
-  return useQuery({
+  return useQuery<TypesNotification[], Error>({
     queryKey: ['notifications', 'user', userId, limit],
     queryFn: () => notificationService.getNotificationsForUser(userId, limit),
     enabled: !!userId,
@@ -417,7 +417,7 @@ export const useWebzioSearch = (query: string) => {
 
 // Profile and Account Management hooks
 export const useProfileStats = (userId: string) => {
-  return useQuery({
+  return useQuery<any, Error>({
     queryKey: ['profile-stats', userId],
     queryFn: () => accountSettingsService.getProfileStats(userId),
     enabled: !!userId,
@@ -428,7 +428,7 @@ export const useProfileStats = (userId: string) => {
 export const useAccountSettings = () => {
   const { data: user } = useCurrentUser();
   
-  return useQuery({
+  return useQuery<any, Error>({
     queryKey: ['account-settings', user?.id],
     queryFn: () => accountSettingsService.getAccountSettings(user?.id || ''),
     enabled: !!user?.id,
