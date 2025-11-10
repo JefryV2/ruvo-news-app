@@ -6,7 +6,7 @@
       "use": "@vercel/static-build",
       "config": {
         "buildCommand": "expo export --platform web",
-        "outputDirectory": "dist"
+        "outputDirectory": "web-build"
       }
     }
   ],
