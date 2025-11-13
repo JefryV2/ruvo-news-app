@@ -278,6 +278,10 @@ class NewsService {
   // Get user's preferred sources
   private async getUserSources(userId: string): Promise<NewsSource[]> {
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data, error } = await supabase
         .from('user_sources')
         .select(`

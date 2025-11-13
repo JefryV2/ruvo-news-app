@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   StyleSheet,
   Text,
@@ -39,7 +40,8 @@ import {
   Trash2,
   Plus,
   X,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
@@ -55,6 +57,7 @@ import {
   useDeleteAccount,
   useExportUserData
 } from '@/lib/hooks';
+import { communityService } from '@/lib/communityService';
 
 export default function ProfileScreen() {
   const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
@@ -66,6 +69,7 @@ export default function ProfileScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [newKeyword, setNewKeyword] = useState('');
+  const [showFriends, setShowFriends] = useState(false);
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -74,6 +78,11 @@ export default function ProfileScreen() {
   const signOutMutation = useSignOut();
   const deleteAccountMutation = useDeleteAccount();
   const exportDataMutation = useExportUserData();
+  
+  // Community hooks
+  const [friends, setFriends] = useState<any[]>([]);
+  const [friendRequests, setFriendRequests] = useState<any[]>([]);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -109,10 +118,18 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Initiating logout process');
               await signOutMutation.mutateAsync();
-              router.replace('/auth/sign-in');
+              console.log('Logout mutation successful, navigating to sign-in');
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to logout');
+              console.error('Logout error:', error);
+              // Even if there's an error, still try to navigate to sign-in
+            } finally {
+              // Always navigate to sign-in screen
+              setTimeout(() => {
+                router.replace('/auth/sign-in');
+                router.dismissAll(); // Clear navigation stack
+              }, 300);
             }
           },
         },
@@ -208,6 +225,66 @@ export default function ProfileScreen() {
     // Here you could also save to backend if needed
   };
 
+  const handleAddFriend = () => {
+    router.push('/add-friend');
+  };
+
+  const handleAcceptFriendRequest = async (friendId: string) => {
+    try {
+      await communityService.acceptFriendRequest(friendId, user?.id || '');
+      // Refresh friends data
+      const [friendsData, requestsData] = await Promise.all([
+        communityService.getFriends(user?.id || ''),
+        communityService.getFriendRequests(user?.id || '')
+      ]);
+      setFriends(friendsData);
+      setFriendRequests(requestsData);
+      Alert.alert('Success', 'Friend request accepted!');
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      Alert.alert('Error', 'Failed to accept friend request');
+    }
+  };
+
+  const refreshFriendsData = async () => {
+    if (user?.id) {
+      try {
+        const [friendsData, requestsData] = await Promise.all([
+          communityService.getFriends(user.id),
+          communityService.getFriendRequests(user.id)
+        ]);
+        setFriends(friendsData);
+        setFriendRequests(requestsData);
+      } catch (error) {
+        console.error('Error refreshing friends data:', error);
+      }
+    }
+  };
+
+  const handleRejectFriendRequest = async (friendId: string) => {
+    try {
+      await communityService.rejectFriendRequest(friendId, user?.id || '');
+      // Refresh friend requests
+      const requestsData = await communityService.getFriendRequests(user?.id || '');
+      setFriendRequests(requestsData);
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      Alert.alert('Error', 'Failed to reject friend request');
+    }
+  };
+
+  const handleRemoveFriend = async (friendId: string) => {
+    try {
+      await communityService.removeFriend(user?.id || '', friendId);
+      // Refresh friends data
+      const friendsData = await communityService.getFriends(user?.id || '');
+      setFriends(friendsData);
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      Alert.alert('Error', 'Failed to remove friend');
+    }
+  };
+
   const handleAccountSettings = () => {
     router.push('/account-settings');
   };
@@ -262,6 +339,56 @@ export default function ProfileScreen() {
       useNativeDriver: true,
     }).start();
   }, [showStats]);
+
+  // Load friends and friend requests
+  useEffect(() => {
+    const loadFriendsData = async () => {
+      if (user?.id) {
+        setIsLoadingFriends(true);
+        try {
+          const [friendsData, requestsData] = await Promise.all([
+            communityService.getFriends(user.id),
+            communityService.getFriendRequests(user.id)
+          ]);
+          setFriends(friendsData);
+          setFriendRequests(requestsData);
+        } catch (error) {
+          console.error('Error loading friends data:', error);
+        } finally {
+          setIsLoadingFriends(false);
+        }
+      }
+    };
+    
+    loadFriendsData();
+  }, [user?.id]);
+  
+  // Refresh friend requests when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadFriendRequests = async () => {
+        if (user?.id) {
+          try {
+            const requestsData = await communityService.getFriendRequests(user.id);
+            setFriendRequests(requestsData);
+          } catch (error) {
+            console.error('Error loading friend requests:', error);
+          }
+        }
+      };
+      
+      loadFriendRequests();
+    }, [user?.id])
+  );
+
+  // Refresh friends data periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshFriendsData();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   // Filter liked and saved signals
   const likedSignals = signals.filter(signal => signal.liked).slice(0, 3); // Show only first 3
@@ -783,6 +910,134 @@ export default function ProfileScreen() {
             },
           ]}
         >
+          <Text style={styles.sectionLabel}>Community</Text>
+          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+            <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
+              <Row 
+                icon={<UserIcon size={16} color={colors.primary} />} 
+                title="Friends" 
+                subtitle={`${friends.length} friends, ${friendRequests.length} requests`}
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            onPress={handleAddFriend}
+          >
+            <Row 
+              icon={<Plus size={16} color={colors.primary} />} 
+              title="Add Friend" 
+              trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            onPress={refreshFriendsData}
+          >
+            <Row 
+              icon={<RefreshCw size={16} color={colors.primary} />} 
+              title="Refresh Friends" 
+              trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            onPress={() => router.push('/friend-requests')}
+          >
+            <Row 
+              icon={<MessageCircle size={16} color={colors.primary} />} 
+              title="Friend Requests" 
+              subtitle={`${friendRequests.length} pending requests`}
+              trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+            />
+          </TouchableOpacity>
+          
+          <Animated.View 
+            style={[
+              {
+                opacity: interestsAnim,
+                maxHeight: showFriends ? 500 : 0,
+                overflow: 'hidden',
+              }
+            ]}
+          >
+            <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+              <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
+              {friendRequests.length > 0 ? (
+                friendRequests.map((request) => (
+                  <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                        <UserIcon size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                        {request.users?.username || 'Unknown User'}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity 
+                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
+                        onPress={() => handleAcceptFriendRequest(request.user_id)}
+                      >
+                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                        onPress={() => handleRejectFriendRequest(request.user_id)}
+                      >
+                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                  No pending friend requests
+                </Text>
+              )}
+              
+              <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+              {friends.length > 0 ? (
+                friends.map((friend) => (
+                  <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                        <UserIcon size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                        {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                      onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
+                    >
+                      <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                  You haven't added any friends yet
+                </Text>
+              )}
+            </View>
+          </Animated.View>
+        </Animated.View>
+
+        <Animated.View 
+          style={[
+            styles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleAccountSettings}>
@@ -1241,3 +1496,5 @@ const styles = StyleSheet.create({
 const removeLastBorder = (index: number, total: number) => {
   return index === total - 1 ? { borderBottomWidth: 0 } : {};
 };
+
+

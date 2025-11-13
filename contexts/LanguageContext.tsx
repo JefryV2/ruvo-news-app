@@ -117,6 +117,7 @@ const translations = {
     // Navigation
     'nav.home': 'Home',
     'nav.search': 'Search',
+    'nav.community': 'Community',
     'nav.alerts': 'Alerts',
     'nav.profile': 'Profile',
     'nav.chat': 'Chat',
@@ -250,6 +251,7 @@ const translations = {
     // Navigation
     'nav.home': '홈',
     'nav.search': '검색',
+    'nav.community': '커뮤니티',
     'nav.alerts': '알림',
     'nav.profile': '프로필',
     'nav.chat': '채팅',

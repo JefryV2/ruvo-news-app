@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,9 @@ import {
   Image,
   TouchableOpacity,
   Linking,
+  Modal,
+  TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,13 +18,16 @@ import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { echoControlService } from '@/lib/echoControlService';
+import { communityService, Friend } from '@/lib/communityService';
+import { Signal } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
+import { eventEmitter, EVENTS } from '@/lib/eventEmitter';
 
 export default function ArticleDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { signals, toggleSignalLike, toggleSignalSave, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
+  const { signals, user, toggleSignalLike, toggleSignalSave, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
   const { colors, mode } = useTheme();
   
   // Find the signal by ID
@@ -83,6 +89,134 @@ export default function ArticleDetailScreen() {
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
+    }
+  };
+
+  type FriendProfile = {
+    username?: string | null;
+    email?: string | null;
+  };
+  type FriendWithProfile = Friend & {
+    user_user?: FriendProfile | null;
+    friend_user?: FriendProfile | null;
+  };
+  type ShareOption = {
+    key: string;
+    label: string;
+    description?: string;
+    successMessage: string;
+    action: () => Promise<void>;
+  };
+
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [shareOptions, setShareOptions] = useState<ShareOption[]>([]);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareProcessing, setShareProcessing] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!shareFeedback) return;
+    const timeout = setTimeout(() => setShareFeedback(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [shareFeedback]);
+
+  const handleShareArticle = async (signalToShare: Signal | undefined) => {
+    console.log('=== Article Detail: Share Button Pressed ===');
+    console.log('Signal ID:', signalToShare?.id);
+    console.log('Current user:', user);
+
+    if (!signalToShare) {
+      setShareFeedback({ type: 'error', message: 'Unable to share this article.' });
+      return;
+    }
+
+    if (!user?.id) {
+      console.log('User not logged in');
+      setShareFeedback({ type: 'error', message: 'You must be logged in to share articles' });
+      return;
+    }
+
+    try {
+      setShareLoading(true);
+      console.log('Fetching friends for user:', user.id);
+      // Get friends
+      const friendsData = await communityService.getFriends(user.id);
+      console.log('Friends data received:', friendsData);
+      
+      const normalizedFriends = (friendsData as FriendWithProfile[]).map((friend) => {
+        const isSender = friend.user_id === user.id;
+        const friendId = isSender ? friend.friend_id : friend.user_id;
+        const friendProfile = (isSender ? friend.friend_user : friend.user_user) || {};
+        const friendName =
+          friendProfile?.username ||
+          friendProfile?.email ||
+          (friendId ? `Friend ${friendId.substring(0, 4)}` : 'Friend');
+        return {
+          id: friendId,
+          name: friendName,
+        };
+      });
+
+      const message = 'Check out this article!';
+      const options: ShareOption[] = [
+        {
+          key: 'community',
+          label: 'Share to Community Feed',
+          description: 'Make this article visible to everyone in RUVO community.',
+          successMessage: 'Article shared to community feed',
+          action: () => communityService.shareArticleToCommunity(user.id, signalToShare, message),
+        },
+      ];
+
+      if (normalizedFriends.length > 0) {
+        options.push({
+          key: 'all-friends',
+          label: 'Share with all friends',
+          description: 'Send to all friends and the community feed in one tap.',
+          successMessage: 'Article shared with all friends and the community feed',
+          action: () => communityService.shareArticleWithAllFriends(user.id, signalToShare, message),
+        });
+
+        normalizedFriends.forEach((friend) => {
+          if (!friend.id) {
+            return;
+          }
+          options.push({
+            key: `friend-${friend.id}`,
+            label: `Share with ${friend.name}`,
+            description: 'Send privately to this friend.',
+            successMessage: `Article shared with ${friend.name}`,
+            action: () => communityService.shareArticleWithFriend(user.id, signalToShare, friend.id!, message),
+          });
+        });
+      }
+
+      setShareOptions(options);
+      setShareModalVisible(true);
+    } catch (error) {
+      console.error('Error loading friends:', error);
+      setShareFeedback({ type: 'error', message: 'Failed to load friends list. Please try again.' });
+    }
+    finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleShareSelection = async (option: ShareOption) => {
+    setShareModalVisible(false);
+    setShareProcessing(true);
+    try {
+      await option.action();
+      eventEmitter.emit(EVENTS.ARTICLE_SHARED);
+      setShareFeedback({ type: 'success', message: option.successMessage });
+    } catch (error: any) {
+      console.error('Error sharing article:', error);
+      setShareFeedback({
+        type: 'error',
+        message: error?.message || 'Failed to share article. Please try again.',
+      });
+    } finally {
+      setShareProcessing(false);
     }
   };
 
@@ -239,11 +373,23 @@ export default function ArticleDetailScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}
-              activeOpacity={0.8}
+          style={[
+            styles.actionButton,
+            { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter },
+            (shareLoading || shareProcessing) && styles.actionButtonDisabled,
+          ]}
+            onPress={() => handleShareArticle(signal)}
+          activeOpacity={0.8}
+          disabled={shareLoading || shareProcessing}
             >
+          {shareLoading || shareProcessing ? (
+            <ActivityIndicator size="small" color={colors.text.primary} />
+          ) : (
+            <>
               <Share2 size={22} color={colors.text.primary} />
               <Text style={[styles.actionText, { color: colors.text.primary }]}>Share</Text>
+            </>
+          )}
             </TouchableOpacity>
           </View>
           
@@ -251,6 +397,64 @@ export default function ArticleDetailScreen() {
           <View style={styles.bottomSpacer} />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={shareModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShareModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShareModalVisible(false)}>
+          <View style={styles.shareModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.shareModalContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+                <View style={styles.shareModalHandle} />
+                <Text style={[styles.shareModalTitle, { color: colors.text.primary }]}>Share Article</Text>
+                <Text style={[styles.shareModalSubtitle, { color: colors.text.secondary }]}>
+                  Choose how you want to share this article.
+                </Text>
+                {shareOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.shareOption, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}
+                    activeOpacity={0.85}
+                    onPress={() => handleShareSelection(option)}
+                  >
+                    <Text style={[styles.shareOptionLabel, { color: colors.text.primary }]}>{option.label}</Text>
+                    {option.description ? (
+                      <Text style={[styles.shareOptionDescription, { color: colors.text.secondary }]}>{option.description}</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={[styles.shareModalCloseButton, { backgroundColor: colors.card.primary, borderColor: colors.border.lighter }]}
+                  onPress={() => setShareModalVisible(false)}
+                >
+                  <Text style={[styles.shareModalCloseText, { color: colors.text.primary }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {shareProcessing && (
+        <View style={styles.shareProcessingOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
+
+      {shareFeedback && (
+        <View
+          style={[
+            styles.shareFeedbackContainer,
+            shareFeedback.type === 'success' ? styles.shareFeedbackSuccess : styles.shareFeedbackError,
+            { bottom: 24 + insets.bottom },
+          ]}
+        >
+          <Text style={styles.shareFeedbackText}>{shareFeedback.message}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -388,6 +592,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
   },
+  actionButtonDisabled: {
+    opacity: 0.6,
+  },
   actionButtonActive: {
     borderWidth: 1,
   },
@@ -467,5 +674,99 @@ const styles = StyleSheet.create({
   verifiedTextSmall: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  shareFeedbackContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    minWidth: '70%',
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  shareFeedbackText: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text.inverse,
+  },
+  shareFeedbackSuccess: {
+    backgroundColor: Colors.success,
+  },
+  shareFeedbackError: {
+    backgroundColor: Colors.alert,
+  },
+  shareModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  shareModalContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24 + 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  shareModalHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: Colors.border.light,
+    marginBottom: 12,
+  },
+  shareModalTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  shareModalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  shareOption: {
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderWidth: 1,
+    gap: 4,
+  },
+  shareOptionLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  shareOptionDescription: {
+    fontSize: 13,
+  },
+  shareModalCloseButton: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  shareModalCloseText: {
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  shareProcessingOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
 });

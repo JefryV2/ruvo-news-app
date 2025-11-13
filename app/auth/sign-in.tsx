@@ -109,7 +109,14 @@ export default function SignInScreen() {
     setError('');
 
     try {
+      console.log('Starting sign in process...', { email });
+      console.log('Environment variables:', {
+        supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING',
+        hasAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'MISSING'
+      });
+      
       const result = await authService.signIn({ email, password });
+      console.log('Sign in result:', result);
       
       if (result.user) {
         // Check if user has completed onboarding
@@ -123,7 +130,18 @@ export default function SignInScreen() {
       }
     } catch (err: any) {
       console.error('Sign in error:', err);
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      // Provide more user-friendly error messages
+      if (err.message.includes('Network connection issue')) {
+        setError('Network connection issue. Please check your internet connection and try again.');
+      } else if (err.message.includes('DNS Error')) {
+        setError('Invalid Supabase project URL. Please check your .env file.');
+      } else if (err.message.includes('Network error')) {
+        setError('Network connection issue. Please check your internet connection.');
+      } else if (err.message.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError(err.message || 'Failed to sign in. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -65,7 +65,7 @@ export class GeolocationService {
       return {
         granted: false,
         canAskAgain: false,
-        status: 'denied'
+        status: 'denied' as Location.LocationPermissionResponse['status']
       };
     }
   }
@@ -104,7 +104,7 @@ export class GeolocationService {
         longitude: location.coords.longitude,
         country: firstAddress.country || 'Unknown',
         countryCode: firstAddress.isoCountryCode || 'US',
-        region: firstAddress.region || firstAddress.state || 'Unknown',
+        region: firstAddress.region || 'Unknown',
         city: firstAddress.city || firstAddress.district || 'Unknown',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };

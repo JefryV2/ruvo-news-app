@@ -94,9 +94,9 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_signals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Users can only access their own data
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id);
+-- Allow all users to view all other users (for search functionality)
+CREATE POLICY "Users can search for other users" ON users
+  FOR SELECT USING (true);
 
 CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = id);

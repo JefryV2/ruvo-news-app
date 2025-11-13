@@ -5,6 +5,7 @@ import { UserProfile, Signal, Notification } from '@/types';
 import { MOCK_SIGNALS, MOCK_NOTIFICATIONS } from '@/constants/mockData';
 import { useCurrentUser, useSignalsForUser, useNotificationsForUser, useToggleLike, useToggleSave, useDismissSignal, useMarkNotificationAsRead, useAIPersonalizedNews, useNewsAPIPersonalized, useTopHeadlines, useUpdateInterests, useUpdateSources, useWebzioPersonalized, useUserSignalInteractions } from '@/lib/hooks';
 import { NotificationGeneratorService } from '@/lib/notificationGeneratorService';
+import { useAuthListener } from '@/lib/hooks';
 
 type AppState = {
   user: UserProfile | null;
@@ -40,6 +41,9 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   
   // Backend integration hooks
   const { data: backendUser, isLoading: userLoading, error: userError } = useCurrentUser();
+  
+  // Listen for auth state changes
+  useAuthListener();
   
   // Convert backend User to UserProfile format
   const user: UserProfile | null = useMemo(() => {

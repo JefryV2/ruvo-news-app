@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Home, Search, Bell, User, Sparkles } from 'lucide-react-native';
+import { Home, Search, Bell, User, Sparkles, Users } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { BlurView } from 'expo-blur';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,6 +25,7 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 		switch (routeName) {
 			case 'feed': return t('nav.home');
 			case 'discover': return t('nav.search');
+			case 'community': return t('nav.community');
 			case 'notifications': return t('nav.alerts');
 			case 'profile': return t('nav.profile');
 			default: return routeName;
@@ -84,6 +85,9 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 							break;
 						case 'discover':
 							IconComponent = Search;
+							break;
+						case 'community':
+							IconComponent = Users;
 							break;
 						case 'notifications':
 							IconComponent = Bell;
@@ -199,6 +203,12 @@ export default function TabLayout() {
 				name="discover"
 				options={{
 					tabBarLabel: 'Discover',
+				}}
+			/>
+			<Tabs.Screen
+				name="community"
+				options={{
+					tabBarLabel: 'Community',
 				}}
 			/>
 			<Tabs.Screen

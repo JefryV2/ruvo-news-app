@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,19 +6,24 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Heart, Clock } from 'lucide-react-native';
+import { ChevronLeft, Heart, Clock, Share2 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { communityService } from '@/lib/communityService';
 
 export default function LikedArticlesScreen() {
   const insets = useSafeAreaInsets();
-  const { signals } = useApp();
+  const { signals, user } = useApp();
   const { colors } = useTheme();
+  const [friends, setFriends] = useState<any[]>([]);
 
   // Filter liked signals
   const likedSignals = signals.filter(signal => signal.liked);
@@ -34,6 +39,121 @@ export default function LikedArticlesScreen() {
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
+    }
+  };
+
+  const handleShareArticle = async (signalId: string) => {
+    console.log('Share button pressed in liked articles. Signal ID:', signalId);
+    console.log('Current user:', user);
+    
+    if (!user?.id) {
+      console.log('User not logged in in liked articles');
+      Alert.alert('Error', 'You must be logged in to share articles');
+      return;
+    }
+
+    try {
+      console.log('Fetching friends for user in liked articles:', user.id);
+      // Get friends
+      const friendsData = await communityService.getFriends(user.id);
+      setFriends(friendsData);
+      console.log('Friends data received in liked articles:', friendsData);
+
+      // Show share options even if no friends (for community sharing)
+      const friendOptions = friendsData.map(friend => 
+        friend.user_id === user.id ? friend.friend_id : friend.user_id
+      );
+      
+      console.log('Friend options in liked articles:', friendOptions);
+      console.log('Platform.OS in liked articles:', Platform.OS);
+      
+      if (Platform.OS === 'ios') {
+        console.log('Showing ActionSheet for iOS in liked articles');
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Share with all friends', 'Share to Community Feed', ...friendOptions.map((id, index) => `Friend ${index + 1}`)],
+            cancelButtonIndex: 0,
+            title: 'Share with friends',
+            message: 'Select a friend to share this article with'
+          },
+          async (buttonIndex) => {
+            console.log('ActionSheet button pressed in liked articles:', buttonIndex);
+            if (buttonIndex === 0) return; // Cancel
+            
+            try {
+              if (buttonIndex === 1) {
+                // Share with all friends
+                console.log('Sharing with all friends in liked articles');
+                await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
+                Alert.alert('Success', 'Article shared with all friends and to community feed');
+              } else if (buttonIndex === 2) {
+                // Share to Community Feed only
+                console.log('Sharing to community feed only in liked articles');
+                await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
+                Alert.alert('Success', 'Article shared to community feed');
+              } else {
+                // Share with specific friend
+                const friendId = friendOptions[buttonIndex - 3];
+                console.log('Sharing with specific friend in liked articles:', friendId);
+                await communityService.shareArticleWithFriend(user.id, signalId, friendId, 'Check out this article!');
+                Alert.alert('Success', 'Article shared with friend');
+              }
+            } catch (error) {
+              console.error('Error sharing article in liked articles:', error);
+              Alert.alert('Error', 'Failed to share article. Please try again.');
+            }
+          }
+        );
+      } else {
+        console.log('Showing Alert for Android/Web in liked articles');
+        // For Android and web, show a simple alert with options
+        const options = [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Share with all friends', onPress: async () => {
+            try {
+              console.log('Sharing with all friends in liked articles');
+              await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
+              Alert.alert('Success', 'Article shared with all friends and to community feed');
+            } catch (error) {
+              console.error('Error sharing article in liked articles:', error);
+              Alert.alert('Error', 'Failed to share article. Please try again.');
+            }
+          }},
+          { text: 'Share to Community Feed', onPress: async () => {
+            try {
+              console.log('Sharing to community feed only in liked articles');
+              // For community feed only, we'll still use shareArticleWithAllFriends but it will show in community
+              await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
+              Alert.alert('Success', 'Article shared to community feed');
+            } catch (error) {
+              console.error('Error sharing article in liked articles:', error);
+              Alert.alert('Error', 'Failed to share article. Please try again.');
+            }
+          }},
+          ...friendOptions.map((friendId, index) => ({
+            text: `Friend ${index + 1}`,
+            onPress: async () => {
+              try {
+                console.log('Sharing with specific friend in liked articles:', friendId);
+                await communityService.shareArticleWithFriend(user.id, signalId, friendId, 'Check out this article!');
+                Alert.alert('Success', 'Article shared with friend');
+              } catch (error) {
+                console.error('Error sharing article in liked articles:', error);
+                Alert.alert('Error', 'Failed to share article. Please try again.');
+              }
+            }
+          }))
+        ];
+        
+        Alert.alert(
+          'Share with friends',
+          'Select a friend to share this article with',
+          options as any
+        );
+      }
+    } catch (error) {
+      console.error('Error loading friends in liked articles:', error);
+      Alert.alert('Error', 'Failed to load friends list. Please try again.');
     }
   };
 
@@ -90,8 +210,16 @@ export default function LikedArticlesScreen() {
                   </View>
                 </View>
                 
-                <View style={[styles.likedBadge, { backgroundColor: colors.card.light }]}> 
-                  <Heart size={14} color={colors.alert} fill={colors.alert} />
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, { backgroundColor: colors.card.light }]}
+                    onPress={() => handleShareArticle(signal.id)}
+                  >
+                    <Share2 size={16} color={colors.text.primary} />
+                  </TouchableOpacity>
+                  <View style={[styles.likedBadge, { backgroundColor: colors.card.light }]}> 
+                    <Heart size={14} color={colors.alert} fill={colors.alert} />
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
@@ -221,6 +349,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.background.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionsContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     width: 32,
     height: 32,
     borderRadius: 16,

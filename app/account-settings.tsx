@@ -136,7 +136,7 @@ export default function AccountSettingsScreen() {
   };
 
   const handleLanguageChange = (newLanguage: string) => {
-    setFormData(prev => ({ ...prev, language: newLanguage }));
+    setFormData(prev => ({ ...prev, language: newLanguage as 'en' | 'ko' }));
     setLanguage(newLanguage as 'en' | 'ko');
     setIsEditing(true);
   };
@@ -376,7 +376,8 @@ export default function AccountSettingsScreen() {
                 <Shield size={20} color={colors.primary} />
                 <Text style={[styles.actionTitle, { color: colors.text.primary }]}>{t('account.changePassword')}</Text>
               </View>
-              <ChevronLeft size={16} color={colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
+
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionRow}>
@@ -384,7 +385,7 @@ export default function AccountSettingsScreen() {
                 <Eye size={20} color={Colors.primary} />
                 <Text style={styles.actionTitle}>{t('account.privacySettings')}</Text>
               </View>
-              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] }} />
+              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: Colors.text.primary,
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
   },
   infoValue: {
     fontSize: 15,
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: Colors.text.primary,
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
   },
   settingDescription: {
     fontSize: 13,
@@ -599,7 +600,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: Colors.text.primary,
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
   },
   bottomSpacer: {
     height: 140,

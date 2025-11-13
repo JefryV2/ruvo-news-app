@@ -49,6 +49,122 @@ export const userService = {
 
   async updateSources(userId: string, sources: string[]): Promise<User> {
     return this.updateUser(userId, { sources });
+  },
+
+  async listAllUsers(limit = 100): Promise<User[]> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
+    
+    console.log('Listing all users');
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+      .limit(limit);
+    
+    console.log('All users list - data:', data, 'error:', error);
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async searchUsers(query: string, limit = 20): Promise<User[]> {
+    // Special check for Ruairi Morgan
+    if (query.trim().toLowerCase() === 'ruairi morgan') {
+      console.log('Special search for Ruairi Morgan');
+      try {
+        if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
+        const { data: ruairiData, error: ruairiError } = await supabase
+          .from('users')
+          .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+          .eq('username', 'Ruairi Morgan');
+        
+        console.log('Direct Ruairi Morgan search - data:', ruairiData, 'error:', ruairiError);
+        
+        if (ruairiData && ruairiData.length > 0) {
+          return ruairiData;
+        }
+      } catch (error) {
+        console.error('Error in direct Ruairi Morgan search:', error);
+      }
+    }
+    
+    console.log('Supabase configured:', IS_SUPABASE_CONFIGURED);
+    console.log('Supabase client:', supabase);
+    if (!IS_SUPABASE_CONFIGURED || !supabase) throw new Error('Backend not configured');
+    
+    console.log('Executing user search with query:', query);
+    
+    // Special debug for Ruairi Morgan
+    if (query.includes('Ruairi') || query.includes('Morgan')) {
+      console.log('Searching for Ruairi Morgan specifically');
+      
+      // Check if Ruairi Morgan exists in the database
+      const { data: ruairiData, error: ruairiError } = await supabase
+        .from('users')
+        .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+        .eq('username', 'Ruairi Morgan');
+      
+      console.log('Ruairi Morgan exact match - data:', ruairiData, 'error:', ruairiError);
+      
+      // Also try partial match
+      const { data: ruairiPartialData, error: ruairiPartialError } = await supabase
+        .from('users')
+        .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+        .ilike('username', '%Ruairi%Morgan%');
+      
+      console.log('Ruairi Morgan partial match - data:', ruairiPartialData, 'error:', ruairiPartialError);
+    }
+    
+    // First check if we can retrieve any users at all (to test RLS)
+    const { data: allUsers, error: allUsersError } = await supabase
+      .from('users')
+      .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+      .limit(5);
+    
+    console.log('All users query - data:', allUsers, 'error:', allUsersError);
+    
+    // Then try the search query
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+      .or(`username.ilike.%${query}%,email.ilike.%${query}%`)
+      .limit(limit);
+    
+    // If that fails, try a simpler approach
+    if (error || !data || data.length === 0) {
+      console.log('Primary search failed, trying alternative approach');
+      const { data: usernameData, error: usernameError } = await supabase
+        .from('users')
+        .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+        .ilike('username', `%${query}%`)
+        .limit(limit);
+      
+      console.log('Username search - data:', usernameData, 'error:', usernameError);
+      
+      if (usernameData && usernameData.length > 0) {
+        return usernameData;
+      }
+      
+      const { data: emailData, error: emailError } = await supabase
+        .from('users')
+        .select('id, username, email, interests, sources, is_premium, language, created_at, updated_at')
+        .ilike('email', `%${query}%`)
+        .limit(limit);
+      
+      console.log('Email search - data:', emailData, 'error:', emailError);
+      
+      if (emailData && emailData.length > 0) {
+        return emailData;
+      }
+    }
+    
+    console.log('Search response - data:', data, 'error:', error);
+    
+    if (error) {
+      console.log('Primary search failed with error:', error);
+      // Return empty array instead of throwing error to prevent app crash
+      return [];
+    }
+    return data || [];
   }
 };
 

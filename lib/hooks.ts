@@ -8,6 +8,7 @@ import { newsApiService } from '../lib/newsApiService';
 import { webzioService } from '../lib/webzioService';
 import { NotificationGeneratorService } from '../lib/notificationGeneratorService';
 import { Signal, UserProfile, Notification as TypesNotification } from '../types';
+import { useAuthListener } from '../hooks/useAuthListener';
 
 // Auth hooks
 export const useSignIn = () => {
@@ -38,7 +39,14 @@ export const useSignOut = () => {
   return useMutation({
     mutationFn: () => authService.signOut(),
     onSuccess: () => {
+      console.log('Sign out successful, clearing query cache');
       queryClient.clear();
+    },
+    onError: (error) => {
+      console.error('Sign out error:', error);
+      // Even if there's an error, still try to clear the cache
+      queryClient.clear();
+      throw error;
     },
   });
 };
@@ -505,3 +513,6 @@ export const useGenerateDailyDigest = () => {
     },
   });
 };
+
+// Auth listener hook
+export { useAuthListener };

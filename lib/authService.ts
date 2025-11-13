@@ -81,13 +81,28 @@ export const authService = {
     }
 
     try {
+      console.log('Attempting to sign in with Supabase...', { 
+        email: data.email,
+        supabaseConfigured: IS_SUPABASE_CONFIGURED,
+        hasSupabase: !!supabase,
+        supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL
+      });
+      
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
-      if (error) throw error;
-      if (!authData.user) throw new Error('Failed to sign in');
+      console.log('Supabase auth response:', { authData, error });
+
+      if (error) {
+        console.error('Supabase auth error:', error);
+        throw error;
+      }
+      
+      if (!authData.user) {
+        throw new Error('Failed to sign in - no user returned');
+      }
 
       // Store session locally
       if (authData.session) {
@@ -100,7 +115,20 @@ export const authService = {
       };
     } catch (error: any) {
       console.error('Sign in error:', error);
-      throw new Error(error.message || 'Failed to sign in');
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Provide more detailed error information
+      if (error.name === 'AuthRetryableFetchError' && error.message === 'Failed to fetch') {
+        throw new Error('Network connection issue: Unable to reach Supabase authentication service. Please check your internet connection and try again.');
+      } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        throw new Error('Network error: Unable to connect to authentication service. Please check your internet connection.');
+      }
+      
+      throw new Error(error.message || 'Failed to sign in. Please check your credentials and try again.');
     }
   },
 
@@ -108,17 +136,29 @@ export const authService = {
    * Sign out the current user
    */
   async signOut() {
+    console.log('Starting sign out process');
     if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      console.error('Supabase is not configured');
       throw new Error('Supabase is not configured');
     }
 
     try {
+      console.log('Calling Supabase signOut');
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        throw error;
+      }
+      console.log('Supabase signOut successful');
 
       // Clear local session
+      console.log('Clearing local session data');
       await AsyncStorage.removeItem('supabase_session');
       await AsyncStorage.removeItem('onboardingComplete');
+      console.log('Local session data cleared');
+      
+      // Add a small delay to ensure auth state change is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw new Error(error.message || 'Failed to sign out');

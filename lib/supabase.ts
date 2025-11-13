@@ -1,14 +1,47 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+// Load environment variables
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+console.log('Supabase URL from env:', supabaseUrl);
+console.log('Supabase Anon Key present:', !!supabaseAnonKey);
 
 export const IS_SUPABASE_CONFIGURED = Boolean(supabaseUrl && supabaseAnonKey);
 
+// Validate Supabase URL format
+if (supabaseUrl && !supabaseUrl.startsWith('https://')) {
+  console.warn('Invalid Supabase URL format. Should start with https://');
+}
+
 // Only create a real client when env vars exist; otherwise export null.
-export const supabase = IS_SUPABASE_CONFIGURED
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
-  : null;
+export let supabase: SupabaseClient | null = null;
+
+if (IS_SUPABASE_CONFIGURED && supabaseUrl && supabaseAnonKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'ruvo-app'
+        }
+      }
+    });
+    console.log('✅ Supabase client initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase client:', error);
+    supabase = null;
+  }
+} else {
+  console.warn(' Supabase not configured - missing URL or Anon Key');
+  console.log('IS_SUPABASE_CONFIGURED:', IS_SUPABASE_CONFIGURED);
+  console.log('supabaseUrl:', supabaseUrl);
+  console.log('supabaseAnonKey present:', !!supabaseAnonKey);
+}
 
 // Database types
 export interface User {

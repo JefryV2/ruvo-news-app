@@ -188,6 +188,10 @@ class PersonalizationService implements RecommendationEngine {
   // Find users with similar reading patterns
   private async findSimilarUsers(userId: string): Promise<string[]> {
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: userInteractions, error } = await supabase
         .from('user_signals')
         .select('user_id, signal_id, action')
@@ -231,6 +235,10 @@ class PersonalizationService implements RecommendationEngine {
     allArticles: NewsArticle[]
   ): Promise<NewsArticle[]> {
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: similarUserLikes, error } = await supabase
         .from('user_signals')
         .select('signal_id')
@@ -242,6 +250,10 @@ class PersonalizationService implements RecommendationEngine {
       const likedSignalIds = similarUserLikes?.map(item => item.signal_id) || [];
       
       // Get user's already seen articles
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: userInteractions } = await supabase
         .from('user_signals')
         .select('signal_id')
@@ -338,6 +350,10 @@ class PersonalizationService implements RecommendationEngine {
         updateData.reading_time = readingTime;
       }
 
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { error } = await supabase
         .from('user_signals')
         .upsert(updateData);
@@ -366,6 +382,10 @@ class PersonalizationService implements RecommendationEngine {
   // Get user profile
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -374,6 +394,10 @@ class PersonalizationService implements RecommendationEngine {
 
       if (userError) throw userError;
 
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: interests, error: interestsError } = await supabase
         .from('interests')
         .select('*')
@@ -381,6 +405,10 @@ class PersonalizationService implements RecommendationEngine {
 
       if (interestsError) throw interestsError;
 
+      if (!supabase) {
+        throw new Error('Supabase is not configured');
+      }
+      
       const { data: interactions, error: interactionsError } = await supabase
         .from('user_signals')
         .select('signal_id, action, reading_time')
