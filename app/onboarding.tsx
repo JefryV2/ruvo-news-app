@@ -39,6 +39,11 @@ export default function OnboardingScreen() {
   const [slideAnim] = useState(new Animated.Value(20));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [glowAnim] = useState(new Animated.Value(0.3));
+  // Create separate animated values for interpolation to avoid conflicts
+  const [scaleInterpolated] = useState(new Animated.Value(1.1));
+  const [glowInterpolated] = useState(new Animated.Value(0.5));
+  const [scaleInterpolated2] = useState(new Animated.Value(1));
+  const [glowInterpolated2] = useState(new Animated.Value(0.3));
 
   React.useEffect(() => {
     fadeAnim.setValue(0);
@@ -61,7 +66,7 @@ export default function OnboardingScreen() {
   React.useEffect(() => {
     let pulseAnimation: Animated.CompositeAnimation | null = null;
 
-    // Continuous pulsating animation
+    // Continuous pulsating animation - using consistent useNativeDriver: true
     const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -73,7 +78,28 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.6,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true, // Changed from false to true
+          }),
+          // Animate the interpolated values separately
+          Animated.timing(scaleInterpolated, {
+            toValue: 1.4,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated, {
+            toValue: 0.8,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleInterpolated2, {
+            toValue: 1.3,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated2, {
+            toValue: 0.6,
+            duration: 2000,
+            useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
@@ -85,7 +111,28 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.3,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true, // Changed from false to true
+          }),
+          // Animate the interpolated values separately
+          Animated.timing(scaleInterpolated, {
+            toValue: 1.1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated, {
+            toValue: 0.5,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleInterpolated2, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated2, {
+            toValue: 0.3,
+            duration: 2000,
+            useNativeDriver: true,
           }),
         ]),
       ])
@@ -235,14 +282,8 @@ export default function OnboardingScreen() {
           style={[
             styles.gradientOrb2,
             {
-              transform: [{ scale: pulseAnim.interpolate({
-                inputRange: [1, 1.3],
-                outputRange: [1.1, 1.4],
-              })}],
-              opacity: glowAnim.interpolate({
-                inputRange: [0.3, 0.6],
-                outputRange: [0.5, 0.8],
-              }),
+              transform: [{ scale: scaleInterpolated }],
+              opacity: glowInterpolated,
             },
           ]} 
         >
@@ -258,14 +299,8 @@ export default function OnboardingScreen() {
           style={[
             styles.gradientOrb3,
             {
-              transform: [{ scale: pulseAnim.interpolate({
-                inputRange: [1, 1.3],
-                outputRange: [1, 1.3],
-              })}],
-              opacity: glowAnim.interpolate({
-                inputRange: [0.3, 0.6],
-                outputRange: [0.3, 0.6],
-              }),
+              transform: [{ scale: scaleInterpolated2 }],
+              opacity: glowInterpolated2,
             },
           ]} 
         >

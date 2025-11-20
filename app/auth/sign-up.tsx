@@ -34,6 +34,9 @@ export default function SignUpScreen() {
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.3)).current;
+  // Create separate animated values for interpolation to avoid conflicts
+  const scaleInterpolated = useRef(new Animated.Value(1.1)).current;
+  const glowInterpolated = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -56,7 +59,7 @@ export default function SignUpScreen() {
       }),
     ]).start();
 
-    // Pulsating animation
+    // Pulsating animation - using consistent useNativeDriver: true
     let pulseAnimation: Animated.CompositeAnimation | null = null;
 
     const animation = Animated.loop(
@@ -70,7 +73,18 @@ export default function SignUpScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.6,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true, // Changed from false to true
+          }),
+          // Animate the interpolated values separately
+          Animated.timing(scaleInterpolated, {
+            toValue: 1.4,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated, {
+            toValue: 0.7,
+            duration: 2000,
+            useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
@@ -82,7 +96,18 @@ export default function SignUpScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.3,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true, // Changed from false to true
+          }),
+          // Animate the interpolated values separately
+          Animated.timing(scaleInterpolated, {
+            toValue: 1.1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowInterpolated, {
+            toValue: 0.4,
+            duration: 2000,
+            useNativeDriver: true,
           }),
         ]),
       ])
@@ -155,14 +180,8 @@ export default function SignUpScreen() {
           style={[
             styles.gradientOrb2,
             {
-              transform: [{ scale: pulseAnim.interpolate({
-                inputRange: [1, 1.3],
-                outputRange: [1.1, 1.4],
-              })}],
-              opacity: glowAnim.interpolate({
-                inputRange: [0.3, 0.6],
-                outputRange: [0.4, 0.7],
-              }),
+              transform: [{ scale: scaleInterpolated }],
+              opacity: glowInterpolated,
             },
           ]} 
         >
