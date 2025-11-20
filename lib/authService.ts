@@ -154,7 +154,8 @@ export const authService = {
       // Clear local session
       console.log('Clearing local session data');
       await AsyncStorage.removeItem('supabase_session');
-      await AsyncStorage.removeItem('onboardingComplete');
+      // Don't remove onboardingComplete - users should only onboard once
+      // await AsyncStorage.removeItem('onboardingComplete');
       console.log('Local session data cleared');
       
       // Add a small delay to ensure auth state change is processed

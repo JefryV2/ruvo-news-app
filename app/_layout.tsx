@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppProvider } from '@/contexts/AppContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import ScreenTimeTracker from '@/components/ScreenTimeTracker';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,7 +54,9 @@ export default function RootLayout() {
         <AppProvider>
           <LanguageProvider>
             <ThemeProvider>
-              <RootLayoutNav />
+              <ScreenTimeTracker>
+                <RootLayoutNav />
+              </ScreenTimeTracker>
             </ThemeProvider>
           </LanguageProvider>
         </AppProvider>

@@ -43,15 +43,31 @@ export default function FeedScreen() {
   const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   
-  // Animation values for cards
-  const cardAnimations = useRef(
-    signals.map(() => new Animated.Value(0))
-  ).current;
+  // Animation values keyed by signal ID to avoid undefined entries when the feed changes
+  const cardAnimations = useRef<Record<string, Animated.Value>>({}).current;
+
+  // Ensure we always have animation values for current signals and clean up removed ones
+  useEffect(() => {
+    signals.forEach((signal) => {
+      if (!cardAnimations[signal.id]) {
+        cardAnimations[signal.id] = new Animated.Value(0);
+      }
+    });
+
+    Object.keys(cardAnimations).forEach((id) => {
+      if (!signals.find((signal) => signal.id === id)) {
+        delete cardAnimations[id];
+      }
+    });
+  }, [signals, cardAnimations]);
 
   useEffect(() => {
     // Animate cards when they appear
-    signals.forEach((_, index) => {
-      Animated.timing(cardAnimations[index], {
+    signals.forEach((signal, index) => {
+      const animation = cardAnimations[signal.id];
+      if (!animation) return;
+
+      Animated.timing(animation, {
         toValue: 1,
         duration: 300,
         delay: index * 50,
@@ -89,7 +105,7 @@ export default function FeedScreen() {
 
   const renderSignalCard = (signal: Signal, index: number) => {
     const isExpanded = expandedArticleId === signal.id;
-    const animation = cardAnimations[index];
+    const animation = cardAnimations[signal.id] || new Animated.Value(1);
     
     // Find related articles using the improved service based on user's grouping preference
     const relatedArticles = echoControlEnabled ? 

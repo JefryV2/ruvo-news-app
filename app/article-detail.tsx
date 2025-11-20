@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,25 +13,153 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, ExternalLink, Heart, Bookmark, Share2 } from 'lucide-react-native';
+import { X, ExternalLink, Heart, Bookmark, Share2, AlertCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { echoControlService } from '@/lib/echoControlService';
 import { communityService, Friend } from '@/lib/communityService';
+import { contentWellbeingService } from '@/lib/contentWellbeingService';
+import { useWellbeingPreferences } from '@/lib/contentWellbeingPreferences';
+import { signalService } from '@/lib/services';
+import type { Signal as SupabaseSignal } from '@/lib/supabase';
 import { Signal } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { eventEmitter, EVENTS } from '@/lib/eventEmitter';
 
 export default function ArticleDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, url: urlParam, article: articleParam } = useLocalSearchParams<{ id?: string; url?: string; article?: string }>();
   const insets = useSafeAreaInsets();
   const { signals, user, toggleSignalLike, toggleSignalSave, echoControlEnabled, echoControlGrouping, customKeywords } = useApp();
   const { colors, mode } = useTheme();
   
-  // Find the signal by ID
-  const signal = signals.find(s => s.id === id);
+  const decodedArticle = useMemo(() => {
+    if (!articleParam) return null;
+    try {
+      const parsed = JSON.parse(decodeURIComponent(articleParam));
+      return {
+        ...parsed,
+        timestamp: parsed.timestamp ? new Date(parsed.timestamp) : new Date(),
+      } as Signal;
+    } catch (error) {
+      console.warn('Failed to parse article param:', error);
+      return null;
+    }
+  }, [articleParam]);
+
+  const localSignal = useMemo(() => {
+    if (id) {
+      return signals.find((s) => s.id === id);
+    }
+    if (urlParam) {
+      return signals.find((s) => s.url === urlParam);
+    }
+    return null;
+  }, [id, urlParam, signals]);
+
+  const [remoteSignal, setRemoteSignal] = useState<typeof localSignal | null>(decodedArticle);
+  const [isRemoteLoading, setIsRemoteLoading] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+
+  const mapSupabaseSignal = (supabaseSignal: SupabaseSignal): typeof localSignal => ({
+    id: supabaseSignal.id,
+    title: supabaseSignal.title,
+    summary: supabaseSignal.summary,
+    content: supabaseSignal.content || '',
+    sourceId: supabaseSignal.source_name,
+    sourceName: supabaseSignal.source_name,
+    verified: supabaseSignal.verified,
+    tags: supabaseSignal.tags || [],
+    url: supabaseSignal.source_url,
+    relevanceScore: 0,
+    timestamp: new Date(supabaseSignal.created_at),
+    imageUrl: supabaseSignal.image_url || undefined,
+    saved: false,
+    liked: false,
+  });
+
+  useEffect(() => {
+    if (!id || localSignal || decodedArticle) return;
+    let isMounted = true;
+    setIsRemoteLoading(true);
+    setRemoteError(null);
+    signalService
+      .getSignalById(id)
+      .then((dbSignal) => {
+        if (!isMounted) return;
+        if (dbSignal) {
+          setRemoteSignal(mapSupabaseSignal(dbSignal));
+        } else {
+          setRemoteError('Article not found');
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setRemoteError(error.message || 'Failed to load article');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRemoteLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, localSignal]);
+
+  type FriendProfile = {
+    username?: string | null;
+    email?: string | null;
+  };
+  type FriendWithProfile = Friend & {
+    user_user?: FriendProfile | null;
+    friend_user?: FriendProfile | null;
+  };
+  type ShareOption = {
+    key: string;
+    label: string;
+    description?: string;
+    successMessage: string;
+    action: () => Promise<void>;
+  };
+
+  const signal = localSignal || remoteSignal;
+
+  const { preferences: wellbeingPreferences } = useWellbeingPreferences();
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [shareOptions, setShareOptions] = useState<ShareOption[]>([]);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareProcessing, setShareProcessing] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!shareFeedback) return;
+    const timeout = setTimeout(() => setShareFeedback(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [shareFeedback]);
+
+  const distressInfo = React.useMemo(() => {
+    if (!signal || !wellbeingPreferences.showSensitiveBanner) {
+      return { isDistressing: false, reasons: [] as string[] };
+    }
+    return contentWellbeingService.evaluateSignal(signal);
+  }, [signal?.id, wellbeingPreferences.showSensitiveBanner]);
+
+  useEffect(() => {
+    if (!signal || !wellbeingPreferences.trackingEnabled) return;
+    const startTime = Date.now();
+    return () => {
+      const duration = Date.now() - startTime;
+      if (duration > 0 && wellbeingPreferences.trackingEnabled) {
+        contentWellbeingService.logArticleView(signal, duration).catch((err) =>
+          console.warn('Failed logging article dwell time', err),
+        );
+      }
+    };
+  }, [signal?.id, wellbeingPreferences.trackingEnabled]);
 
   // Find related articles using the improved service based on user's grouping preference
   const relatedArticles = signal && echoControlEnabled ? 
@@ -57,8 +185,14 @@ export default function ArticleDetailScreen() {
 
   if (!signal) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
-        <Text style={{ color: colors.text.primary }}>Article not found</Text>
+      <View style={[styles.container, { backgroundColor: colors.background.primary, alignItems: 'center', justifyContent: 'center' }]}>
+        {isRemoteLoading ? (
+          <ActivityIndicator size="large" color={colors.primary} />
+        ) : (
+          <Text style={{ color: colors.text.primary }}>
+            {remoteError || 'Article not found'}
+          </Text>
+        )}
       </View>
     );
   }
@@ -91,34 +225,6 @@ export default function ArticleDetailScreen() {
       return 'Just now';
     }
   };
-
-  type FriendProfile = {
-    username?: string | null;
-    email?: string | null;
-  };
-  type FriendWithProfile = Friend & {
-    user_user?: FriendProfile | null;
-    friend_user?: FriendProfile | null;
-  };
-  type ShareOption = {
-    key: string;
-    label: string;
-    description?: string;
-    successMessage: string;
-    action: () => Promise<void>;
-  };
-
-  const [shareModalVisible, setShareModalVisible] = useState(false);
-  const [shareOptions, setShareOptions] = useState<ShareOption[]>([]);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareProcessing, setShareProcessing] = useState(false);
-  const [shareFeedback, setShareFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!shareFeedback) return;
-    const timeout = setTimeout(() => setShareFeedback(null), 3000);
-    return () => clearTimeout(timeout);
-  }, [shareFeedback]);
 
   const handleShareArticle = async (signalToShare: Signal | undefined) => {
     console.log('=== Article Detail: Share Button Pressed ===');
@@ -164,7 +270,10 @@ export default function ArticleDetailScreen() {
           label: 'Share to Community Feed',
           description: 'Make this article visible to everyone in RUVO community.',
           successMessage: 'Article shared to community feed',
-          action: () => communityService.shareArticleToCommunity(user.id, signalToShare, message),
+          action: async () => {
+            await communityService.shareArticleToCommunity(user.id, signalToShare, message);
+            return Promise.resolve();
+          },
         },
       ];
 
@@ -174,7 +283,10 @@ export default function ArticleDetailScreen() {
           label: 'Share with all friends',
           description: 'Send to all friends and the community feed in one tap.',
           successMessage: 'Article shared with all friends and the community feed',
-          action: () => communityService.shareArticleWithAllFriends(user.id, signalToShare, message),
+          action: async () => {
+            await communityService.shareArticleWithAllFriends(user.id, signalToShare, message);
+            return Promise.resolve();
+          },
         });
 
         normalizedFriends.forEach((friend) => {
@@ -186,7 +298,10 @@ export default function ArticleDetailScreen() {
             label: `Share with ${friend.name}`,
             description: 'Send privately to this friend.',
             successMessage: `Article shared with ${friend.name}`,
-            action: () => communityService.shareArticleWithFriend(user.id, signalToShare, friend.id!, message),
+            action: async () => {
+              await communityService.shareArticleWithFriend(user.id, signalToShare, friend.id!, message);
+              return Promise.resolve();
+            },
           });
         });
       }
@@ -223,7 +338,10 @@ export default function ArticleDetailScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border.lighter }]}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.background.primary,
+        borderBottomColor: colors.border.lighter 
+      }]}>
         <TouchableOpacity 
           onPress={() => router.back()} 
           style={[styles.closeButton, { backgroundColor: colors.background.secondary }]}
@@ -257,6 +375,18 @@ export default function ArticleDetailScreen() {
 
           {/* Title */}
           <Text style={[styles.title, { color: colors.text.primary }]}>{signal.title}</Text>
+
+          {distressInfo.isDistressing && wellbeingPreferences.showSensitiveBanner && (
+            <View style={[styles.distressBanner, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}>
+              <AlertCircle size={16} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.distressTitle, { color: colors.accent }]}>Sensitive Topic</Text>
+                <Text style={[styles.distressText, { color: colors.text.secondary }]}>
+                  This article covers potentially distressing themes. Consider taking breaks if you start feeling overwhelmed.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Meta */}
           <View style={styles.meta}>
@@ -700,6 +830,24 @@ const styles = StyleSheet.create({
   },
   shareFeedbackError: {
     backgroundColor: Colors.alert,
+  },
+  distressBanner: {
+    flexDirection: 'row',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  distressTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  distressText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   shareModalOverlay: {
     flex: 1,

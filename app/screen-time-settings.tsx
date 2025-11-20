@@ -7,18 +7,22 @@ import {
   Switch,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Clock, AlertCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { screenTimeService } from '@/lib/screenTimeService';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useWellbeingPreferences } from '@/lib/contentWellbeingPreferences';
 
 export default function ScreenTimeSettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors, mode } = useTheme();
   const [enabled, setEnabled] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(60);
   const [todayUsage, setTodayUsage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { preferences: wellbeingPreferences, setPreference, loading: prefsLoading } = useWellbeingPreferences();
 
   const timeOptions = [
     { label: '30 minutes', value: 30 },
@@ -77,46 +81,57 @@ export default function ScreenTimeSettingsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text>Loading...</Text>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+        <Text style={{ color: colors.text.primary }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+      <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={Colors.text.primary} />
+      <View style={[styles.header, { 
+        backgroundColor: colors.background.primary,
+        borderBottomColor: colors.border.light
+      }]}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={[styles.closeButton, { backgroundColor: colors.background.secondary }]}
+          activeOpacity={0.85}
+        >
+          <X size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Screen Time</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Screen Time</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Usage Today */}
-        <View style={styles.card}>
-          <View style={styles.iconContainer}>
-            <Clock size={24} color={Colors.primary} />
+        <View style={[styles.card, { 
+          backgroundColor: colors.card.secondary,
+          borderColor: colors.border.lighter
+        }]}>
+          <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
+            <Clock size={24} color={colors.primary} />
           </View>
-          <Text style={styles.cardTitle}>Today's Usage</Text>
-          <Text style={styles.usageTime}>{formatTime(todayUsage)}</Text>
+          <Text style={[styles.cardTitle, { color: colors.text.secondary }]}>Today's Usage</Text>
+          <Text style={[styles.usageTime, { color: colors.text.primary }]}>{formatTime(todayUsage)}</Text>
           
           {enabled && (
             <>
-              <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarContainer, { backgroundColor: colors.background.secondary }]}>
                 <View 
                   style={[
                     styles.progressBar, 
                     { 
                       width: `${Math.min(100, usagePercentage)}%`,
-                      backgroundColor: usagePercentage >= 100 ? Colors.alert : Colors.primary 
+                      backgroundColor: usagePercentage >= 100 ? colors.alert : colors.primary 
                     }
                   ]} 
                 />
               </View>
-              <Text style={styles.remainingText}>
+              <Text style={[styles.remainingText, { color: colors.text.secondary }]}>
                 {usagePercentage >= 100 ? 'Limit exceeded' : `${formatTime(remainingTime)} remaining`}
               </Text>
             </>
@@ -125,18 +140,21 @@ export default function ScreenTimeSettingsScreen() {
 
         {/* Enable/Disable */}
         <View style={styles.section}>
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, { 
+            backgroundColor: colors.card.secondary,
+            borderColor: colors.border.lighter
+          }]}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Daily Limit</Text>
-              <Text style={styles.settingDescription}>
+              <Text style={[styles.settingTitle, { color: colors.text.primary }]}>Daily Limit</Text>
+              <Text style={[styles.settingDescription, { color: colors.text.secondary }]}>
                 Set a daily time limit for app usage
               </Text>
             </View>
             <Switch
               value={enabled}
               onValueChange={handleToggle}
-              trackColor={{ false: Colors.border.light, true: `${Colors.primary}40` }}
-              thumbColor={enabled ? Colors.primary : Colors.text.tertiary}
+              trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
+              thumbColor={enabled ? colors.primary : colors.text.tertiary}
             />
           </View>
         </View>
@@ -144,25 +162,33 @@ export default function ScreenTimeSettingsScreen() {
         {/* Time Limit Options */}
         {enabled && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Daily Limit</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Daily Limit</Text>
             {timeOptions.map((option) => (
               <TouchableOpacity
                 key={option.value}
                 style={[
                   styles.timeOption,
-                  dailyLimit === option.value && styles.timeOptionSelected
+                  dailyLimit === option.value && styles.timeOptionSelected,
+                  { 
+                    backgroundColor: dailyLimit === option.value ? `${colors.primary}15` : colors.card.secondary,
+                    borderColor: dailyLimit === option.value ? colors.primary : colors.border.lighter
+                  }
                 ]}
                 onPress={() => handleLimitChange(option.value)}
                 activeOpacity={0.7}
               >
                 <Text style={[
                   styles.timeOptionText,
-                  dailyLimit === option.value && styles.timeOptionTextSelected
+                  dailyLimit === option.value && styles.timeOptionTextSelected,
+                  { 
+                    color: dailyLimit === option.value ? colors.primary : colors.text.primary,
+                    fontWeight: dailyLimit === option.value ? '600' : '500'
+                  }
                 ]}>
                   {option.label}
                 </Text>
                 {dailyLimit === option.value && (
-                  <View style={styles.selectedIndicator} />
+                  <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]} />
                 )}
               </TouchableOpacity>
             ))}
@@ -171,14 +197,53 @@ export default function ScreenTimeSettingsScreen() {
 
         {/* Info */}
         {enabled && (
-          <View style={styles.infoCard}>
-            <AlertCircle size={20} color={Colors.accent} />
-            <Text style={styles.infoText}>
+          <View style={[styles.infoCard, { 
+            backgroundColor: colors.card.secondary,
+            borderColor: colors.border.lighter
+          }]}>
+            <AlertCircle size={20} color={colors.accent} />
+            <Text style={[styles.infoText, { color: colors.text.secondary }]}>
               When you reach your daily limit, you'll be prompted to close the app. 
               The timer resets at midnight each day.
             </Text>
           </View>
         )}
+
+        {/* Wellbeing Controls */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>Wellbeing</Text>
+          <View style={[styles.settingRow, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: colors.text.primary }]}>Track reading patterns</Text>
+              <Text style={[styles.settingDescription, { color: colors.text.secondary }]}>
+                Log time spent per category to understand your habits.
+              </Text>
+            </View>
+            <Switch
+              value={wellbeingPreferences.trackingEnabled}
+              onValueChange={(value) => setPreference({ trackingEnabled: value })}
+              disabled={prefsLoading}
+              trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
+              thumbColor={wellbeingPreferences.trackingEnabled ? colors.primary : colors.text.tertiary}
+            />
+          </View>
+
+          <View style={[styles.settingRow, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: colors.text.primary }]}>Sensitive content warnings</Text>
+              <Text style={[styles.settingDescription, { color: colors.text.secondary }]}>
+                Show alerts when articles may be emotionally heavy.
+              </Text>
+            </View>
+            <Switch
+              value={wellbeingPreferences.showSensitiveBanner}
+              onValueChange={(value) => setPreference({ showSensitiveBanner: value })}
+              disabled={prefsLoading}
+              trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
+              thumbColor={wellbeingPreferences.showSensitiveBanner ? colors.primary : colors.text.tertiary}
+            />
+          </View>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -189,7 +254,6 @@ export default function ScreenTimeSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
   },
   header: {
     flexDirection: 'row',
@@ -198,16 +262,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.background.white,
   },
   closeButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text.primary,
   },
   placeholder: {
     width: 32,
@@ -217,19 +282,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: Colors.background.white,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
   },
   iconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: `${Colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -237,19 +299,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.secondary,
     marginBottom: 8,
   },
   usageTime: {
     fontSize: 36,
     fontWeight: '700',
-    color: Colors.text.primary,
     marginBottom: 16,
   },
   progressBarContainer: {
     width: '100%',
     height: 8,
-    backgroundColor: Colors.background.secondary,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 12,
@@ -260,7 +319,6 @@ const styles = StyleSheet.create({
   },
   remainingText: {
     fontSize: 14,
-    color: Colors.text.secondary,
   },
   section: {
     marginBottom: 24,
@@ -268,7 +326,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.secondary,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -277,11 +334,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background.white,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
   },
   settingInfo: {
     flex: 1,
@@ -290,56 +345,42 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
-    color: Colors.text.secondary,
   },
   timeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 2,
-    borderColor: Colors.border.lighter,
   },
   timeOptionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: `${Colors.primary}08`,
   },
   timeOptionText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: Colors.text.primary,
   },
   timeOptionTextSelected: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
   selectedIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: `${Colors.accent}10`,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: `${Colors.accent}20`,
   },
   infoText: {
     flex: 1,
     marginLeft: 12,
     fontSize: 14,
-    color: Colors.text.secondary,
     lineHeight: 20,
   },
 });

@@ -20,13 +20,30 @@ async function ensureSupabaseSignalId(signal: Signal): Promise<string> {
     throw new Error('Unable to share this article. Missing signal data.');
   }
 
-  const existingId = signal.id;
-  if (typeof existingId === 'string' && UUID_REGEX.test(existingId)) {
-    return existingId;
-  }
-
   if (!IS_SUPABASE_CONFIGURED || !supabase) {
     throw new Error('Supabase is not configured. Please add your credentials to .env');
+  }
+
+  const existingId = signal.id;
+  if (typeof existingId === 'string' && UUID_REGEX.test(existingId)) {
+    try {
+      const { data: existingRecord, error: existingError } = await supabase
+        .from('signals')
+        .select('id')
+        .eq('id', existingId)
+        .maybeSingle();
+
+      if (!existingError && existingRecord?.id) {
+        return existingId;
+      }
+
+      console.warn('Signal id looked like UUID but not found in Supabase. Creating new record.', {
+        id: existingId,
+        existingError,
+      });
+    } catch (error) {
+      console.warn('Failed to verify existing signal id. Falling back to upsert.', error);
+    }
   }
 
   const normalizedUrl = normaliseUrl(signal.url);

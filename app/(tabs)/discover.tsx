@@ -22,6 +22,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useTrendingByCategory, useSearchArticles } from '@/lib/hooks';
+import { Signal } from '@/types';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
@@ -117,6 +118,44 @@ export default function DiscoverScreen() {
     }
   };
 
+  const mapArticleToSignalPayload = (article: any): Signal => {
+    const source =
+      typeof article.source === 'string'
+        ? { name: article.source }
+        : article.source || { name: 'Discover' };
+
+    return {
+      id: article.id || article.url || `discover-${Date.now()}`,
+      title: article.title || 'Untitled',
+      summary: article.description || article.summary || '',
+      content: article.content || article.description || '',
+      sourceId: source.id || source.name || 'discover',
+      sourceName: source.name || 'Discover',
+      verified: false,
+      tags: Array.isArray(article.category)
+        ? article.category
+        : article.category
+          ? [article.category]
+          : [],
+      url: article.url,
+      relevanceScore: 0,
+      timestamp: article.publishedAt || new Date().toISOString(),
+      imageUrl: article.imageUrl || article.urlToImage,
+      saved: false,
+      liked: false,
+    };
+  };
+
+  const openArticleDetail = (article: any) => {
+    const payload = mapArticleToSignalPayload(article);
+    router.push({
+      pathname: '/article-detail',
+      params: {
+        article: encodeURIComponent(JSON.stringify(payload)),
+      },
+    });
+  };
+
   const InterestSection = ({ interest, apiCategory, formatTimeAgo, colors }: any) => {
     const { data: articles = [], isLoading } = useTrendingByCategory(apiCategory, language);
 
@@ -160,7 +199,7 @@ export default function DiscoverScreen() {
                    <TouchableOpacity
                      key={`${article.url}-${index}`}
                      style={[styles.articleCard, { backgroundColor: colors.card.secondary }]}
-                     onPress={() => router.push(`/article-detail?url=${encodeURIComponent(article.url)}`)}
+                    onPress={() => openArticleDetail(article)}
                    >
                     <Image 
                       source={{ 
@@ -212,7 +251,7 @@ export default function DiscoverScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        <View style={[styles.header, { backgroundColor: colors.background.light }]}> 
+        <View style={[styles.header, { backgroundColor: colors.background.primary }]}> 
           <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
           <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>Cut the Noise. Catch the Signal.</Text>
         </View>
@@ -245,7 +284,7 @@ export default function DiscoverScreen() {
                   <TouchableOpacity
                     key={`${article.url}-${index}`}
                     style={[styles.searchResultCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}
-                    onPress={() => router.push(`/article-detail?url=${encodeURIComponent(article.url)}`)}
+                    onPress={() => openArticleDetail(article)}
                   >
                     <Image 
                       source={{ 

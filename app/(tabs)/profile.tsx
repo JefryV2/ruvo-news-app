@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Alert,
   ActivityIndicator,
   Switch,
   TextInput,
@@ -58,6 +57,8 @@ import {
   useExportUserData
 } from '@/lib/hooks';
 import { communityService } from '@/lib/communityService';
+import { showPrompt, showAlert } from '@/lib/alertService';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 
 export default function ProfileScreen() {
   const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
@@ -70,6 +71,8 @@ export default function ProfileScreen() {
   const [isActive, setIsActive] = useState(true);
   const [newKeyword, setNewKeyword] = useState('');
   const [showFriends, setShowFriends] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -108,84 +111,24 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Initiating logout process');
-              await signOutMutation.mutateAsync();
-              console.log('Logout mutation successful, navigating to sign-in');
-            } catch (error: any) {
-              console.error('Logout error:', error);
-              // Even if there's an error, still try to navigate to sign-in
-            } finally {
-              // Always navigate to sign-in screen
-              setTimeout(() => {
-                router.replace('/auth/sign-in');
-                router.dismissAll(); // Clear navigation stack
-              }, 300);
-            }
-          },
-        },
-      ]
-    );
+    setShowLogoutModal(true);
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Confirm Deletion',
-              'This will permanently delete all your data. Are you absolutely sure?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete Permanently',
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      if (user?.id) {
-                        await deleteAccountMutation.mutateAsync(user.id);
-                        router.replace('/auth/sign-in');
-                      }
-                    } catch (error: any) {
-                      Alert.alert('Error', error.message || 'Failed to delete account');
-                    }
-                  },
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
+    setShowDeleteAccountModal(true);
   };
 
   const handleExportData = async () => {
     try {
       if (user?.id) {
         const data = await exportDataMutation.mutateAsync(user.id);
-        Alert.alert(
+        showAlert(
           'Export Complete',
-          'Your data has been exported. Check your downloads folder.',
-          [{ text: 'OK' }]
+          'Your data has been exported. Check your downloads folder.'
         );
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to export data');
+      showAlert('Error', error.message || 'Failed to export data');
     }
   };
 
@@ -193,7 +136,7 @@ export default function ProfileScreen() {
     try {
       await updateSettings.mutateAsync({ [setting]: value });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update setting');
+      showAlert('Error', error.message || 'Failed to update setting');
     }
   };
 
@@ -239,10 +182,10 @@ export default function ProfileScreen() {
       ]);
       setFriends(friendsData);
       setFriendRequests(requestsData);
-      Alert.alert('Success', 'Friend request accepted!');
+      showAlert('Success', 'Friend request accepted!');
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      Alert.alert('Error', 'Failed to accept friend request');
+      showAlert('Error', 'Failed to accept friend request');
     }
   };
 
@@ -269,7 +212,7 @@ export default function ProfileScreen() {
       setFriendRequests(requestsData);
     } catch (error) {
       console.error('Error rejecting friend request:', error);
-      Alert.alert('Error', 'Failed to reject friend request');
+      showAlert('Error', 'Failed to reject friend request');
     }
   };
 
@@ -281,7 +224,7 @@ export default function ProfileScreen() {
       setFriends(friendsData);
     } catch (error) {
       console.error('Error removing friend:', error);
-      Alert.alert('Error', 'Failed to remove friend');
+      showAlert('Error', 'Failed to remove friend');
     }
   };
 
@@ -401,7 +344,7 @@ export default function ProfileScreen() {
       const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
       if (seconds < 60) return `${seconds}s ago`;
       if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      if (seconds < 86600) return `${Math.floor(seconds / 3600)}h ago`;
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
@@ -751,102 +694,13 @@ export default function ProfileScreen() {
                 thumbColor={colors.background.white}
               />}
             />
-            {echoControlEnabled && (
-              <>
-                <View style={[styles.settingsCard, { backgroundColor: colors.card.elevated, borderColor: colors.border.lighter }]}> 
-                  <View style={styles.settingRow}>
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Grouping Method</Text>
-                    <View style={styles.settingsGroupingOptions}>
-                      <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, 
-                          { backgroundColor: colors.background.tertiary },
-                          echoControlGrouping === 'source' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
-                        ]}
-                        onPress={() => handleGroupingChange('source')}
-                      >
-                        <Text style={[styles.settingsGroupingOptionText, 
-                          { color: colors.text.primary },
-                          echoControlGrouping === 'source' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
-                        ]}>Source</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, 
-                          { backgroundColor: colors.background.tertiary },
-                          echoControlGrouping === 'topic' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
-                        ]}
-                        onPress={() => handleGroupingChange('topic')}
-                      >
-                        <Text style={[styles.settingsGroupingOptionText, 
-                          { color: colors.text.primary },
-                          echoControlGrouping === 'topic' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
-                        ]}>Topic</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, 
-                          { backgroundColor: colors.background.tertiary },
-                          echoControlGrouping === 'title' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
-                        ]}
-                        onPress={() => handleGroupingChange('title')}
-                      >
-                        <Text style={[styles.settingsGroupingOptionText, 
-                          { color: colors.text.primary },
-                          echoControlGrouping === 'title' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
-                        ]}>Title</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.settingsGroupingOption, 
-                          { backgroundColor: colors.background.tertiary },
-                          echoControlGrouping === 'keyword' && [styles.settingsGroupingOptionSelected, { backgroundColor: colors.primary }]
-                        ]}
-                        onPress={() => handleGroupingChange('keyword')}
-                      >
-                        <Text style={[styles.settingsGroupingOptionText, 
-                          { color: colors.text.primary },
-                          echoControlGrouping === 'keyword' && [styles.settingsGroupingOptionTextSelected, { color: colors.text.inverse }]
-                        ]}>Keyword</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  
-                  {echoControlGrouping === 'keyword' && (
-                    <View style={[styles.settingsKeywordSection, { backgroundColor: colors.background.light }]}> 
-                      <Text style={[styles.settingText, { color: colors.text.primary }]}>Custom Keywords</Text>
-                      <View style={styles.settingsKeywordInputContainer}>
-                        <TextInput
-                          style={[styles.settingsKeywordInput, { 
-                            backgroundColor: colors.background.white, 
-                            color: colors.text.primary, 
-                            borderColor: colors.border.lighter 
-                          }]}
-                          value={newKeyword}
-                          onChangeText={setNewKeyword}
-                          placeholder="Add keyword..."
-                          placeholderTextColor={colors.text.tertiary}
-                        />
-                        <TouchableOpacity style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary }]} onPress={handleAddKeyword}>
-                          <Plus size={16} color={colors.text.inverse} />
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.settingsKeywordList}>
-                        {customKeywords.map((keyword, index) => (
-                          <View key={index} style={[styles.settingsKeywordChip, { backgroundColor: colors.primary }]}> 
-                            <Text style={styles.settingsKeywordChipText}>{keyword}</Text>
-                            <TouchableOpacity onPress={() => handleRemoveKeyword(keyword)}>
-                              <X size={14} color={colors.text.inverse} />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </View>
-              </>
-            )}
-            <Row 
-              icon={<MessageCircle size={16} color={colors.primary} />} 
-              title={t('profile.help')} 
-              trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
-            />
+            <TouchableOpacity onPress={() => router.push('/screen-time-settings')}>
+              <Row 
+                icon={<Clock size={16} color={colors.primary} />} 
+                title="Screen Time" 
+                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+              />
+            </TouchableOpacity>
           </View>
 
           <Animated.View 
@@ -1071,6 +925,54 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+      <ConfirmationModal
+        visible={showLogoutModal}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        onCancel={() => setShowLogoutModal(false)}
+        onConfirm={async () => {
+          setShowLogoutModal(false);
+          try {
+            console.log('Initiating logout process');
+            await signOutMutation.mutateAsync();
+            console.log('Logout mutation successful');
+            // Don't navigate here - let the auth listener handle navigation
+          } catch (error: any) {
+            console.error('Logout error:', error);
+            // Even if there's an error, still try to navigate to sign-in
+            router.replace('/auth/sign-in');
+          }
+        }}
+      />
+      <ConfirmationModal
+        visible={showDeleteAccountModal}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        onCancel={() => setShowDeleteAccountModal(false)}
+        onConfirm={() => {
+          setShowDeleteAccountModal(false);
+          showPrompt(
+            'Confirm Deletion',
+            'This will permanently delete all your data. Are you absolutely sure?',
+            [
+              { text: 'Cancel' },
+              {
+                text: 'Delete Permanently',
+                onPress: async () => {
+                  try {
+                    if (user?.id) {
+                      await deleteAccountMutation.mutateAsync(user.id);
+                      router.replace('/auth/sign-in');
+                    }
+                  } catch (error: any) {
+                    showAlert('Error', error.message || 'Failed to delete account');
+                  }
+                },
+              },
+            ]
+          );
+        }}
+      />
       <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );

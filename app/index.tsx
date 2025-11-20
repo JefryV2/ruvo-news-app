@@ -12,10 +12,10 @@ export default function Index() {
     if (!isLoading) {
       // Use setTimeout to ensure navigation happens after render
       setTimeout(() => {
-        if (!hasCompletedOnboarding) {
-          router.replace('/auth/sign-in');
-        } else {
+        if (hasCompletedOnboarding) {
           router.replace('/(tabs)/feed');
+        } else {
+          router.replace('/auth/sign-in');
         }
       }, 100);
     }

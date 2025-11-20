@@ -230,8 +230,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const loadOnboardingStatus = async () => {
     try {
       const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+      console.log('AppContext - Loading onboarding status:', onboardingComplete);
       if (onboardingComplete === 'true') {
+        console.log('AppContext - User has completed onboarding');
         setHasCompletedOnboarding(true);
+      } else {
+        console.log('AppContext - User has not completed onboarding');
       }
     } catch (error) {
       console.error('Error loading onboarding status:', error);
@@ -321,9 +325,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
 
   const completeOnboarding = useCallback(async (newUser: UserProfile) => {
     try {
+      console.log('Completing onboarding and setting flag');
       await AsyncStorage.setItem('onboardingComplete', 'true');
+      console.log('Onboarding flag set successfully');
       await setUser(newUser);
       setHasCompletedOnboarding(true);
+      console.log('Onboarding completion status updated in context');
     } catch (error) {
       console.error('Error completing onboarding:', error);
     }

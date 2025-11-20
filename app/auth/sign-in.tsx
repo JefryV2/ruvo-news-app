@@ -121,10 +121,13 @@ export default function SignInScreen() {
       if (result.user) {
         // Check if user has completed onboarding
         const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+        console.log('Onboarding complete status:', onboardingComplete);
         
         if (onboardingComplete === 'true') {
+          console.log('User has completed onboarding, redirecting to feed');
           router.replace('/(tabs)/feed');
         } else {
+          console.log('User has not completed onboarding, redirecting to onboarding');
           router.replace('/onboarding');
         }
       }
@@ -249,7 +252,7 @@ export default function SignInScreen() {
             <View style={styles.formContainer}>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
-                  <Mail size={20} color={Colors.primary} strokeWidth={2} />
+                  <Mail size={20} color={Colors.accent} strokeWidth={2} />
                 </View>
                 <TextInput
                   style={styles.input}
@@ -266,7 +269,7 @@ export default function SignInScreen() {
 
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
-                  <Lock size={20} color={Colors.primary} strokeWidth={2} />
+                  <Lock size={20} color={Colors.accent} strokeWidth={2} />
                 </View>
                 <TextInput
                   style={styles.input}
@@ -334,7 +337,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#000000',
   },
   backgroundContainer: {
     position: 'absolute',
@@ -379,13 +382,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: Colors.text.inverse,
     marginBottom: 8,
     fontFamily: Fonts.bold,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: Colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: Fonts.regular,
   },
   scrollView: {
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 32,
     padding: 24,
     shadowColor: '#000',
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
   forgotButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: Colors.primary,
+    color: Colors.accent,
   },
   signInButton: {
     borderRadius: 16,
@@ -452,7 +455,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 18,
     gap: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.accent,
     borderRadius: 16,
   },
   signInButtonText: {
@@ -490,7 +493,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: Colors.primary,
+    color: Colors.accent,
   },
   errorContainer: {
     flexDirection: 'row',

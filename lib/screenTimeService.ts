@@ -20,6 +20,7 @@ class ScreenTimeService {
   private sessionStartTime: number | null = null;
   private currentData: ScreenTimeData | null = null;
   private appStateSubscription: any = null;
+  private interval: ReturnType<typeof setInterval> | null = null;
 
   async getLimit(): Promise<ScreenTimeLimit> {
     try {
@@ -47,6 +48,11 @@ class ScreenTimeService {
     const data = await this.getScreenTimeData();
     
     if (data && data.date === today) {
+      // Add any active session time that hasn't been saved yet
+      if (this.sessionStartTime) {
+        const activeSessionMinutes = Math.floor((Date.now() - this.sessionStartTime) / 1000 / 60);
+        return data.minutesUsed + activeSessionMinutes;
+      }
       return data.minutesUsed;
     }
     return 0;
@@ -71,13 +77,30 @@ class ScreenTimeService {
     this.currentData = await this.getScreenTimeData();
     
     // Subscribe to app state changes
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+    }
     this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
+    
+    // Start periodic saving
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+    this.interval = setInterval(() => {
+      this.saveSessionTime();
+    }, 60000); // Save every minute
   }
 
   async endSession(): Promise<void> {
     if (this.sessionStartTime) {
       await this.saveSessionTime();
       this.sessionStartTime = null;
+    }
+    
+    // Clear interval
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
     }
     
     // Unsubscribe from app state changes

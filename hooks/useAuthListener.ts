@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useAuthListener = () => {
   const queryClient = useQueryClient();
@@ -19,8 +21,10 @@ export const useAuthListener = () => {
           break;
           
         case 'SIGNED_OUT':
-          console.log('User signed out, clearing query cache');
+          console.log('User signed out, clearing query cache and navigating to sign-in');
           queryClient.clear();
+          // Navigate to sign-in screen
+          router.replace('/auth/sign-in');
           break;
           
         case 'TOKEN_REFRESHED':

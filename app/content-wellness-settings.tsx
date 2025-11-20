@@ -13,9 +13,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Shield, AlertTriangle, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { contentWellnessService, ContentWellnessSettings } from '@/lib/contentWellnessService';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ContentWellnessSettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [settings, setSettings] = useState<ContentWellnessSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,38 +83,44 @@ export default function ContentWellnessSettingsScreen() {
 
   if (loading || !settings) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text>Loading...</Text>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+        <Text style={{ color: colors.text.primary }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.background.primary,
+        borderBottomColor: colors.border.light
+      }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={Colors.text.primary} />
+          <X size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Content Wellness</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Content Wellness</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Enable/Disable */}
         <View style={styles.section}>
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, { 
+            backgroundColor: colors.background.white,
+            borderColor: colors.border.lighter
+          }]}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Content Wellness</Text>
-              <Text style={styles.settingDescription}>
+              <Text style={[styles.settingTitle, { color: colors.text.primary }]}>Content Wellness</Text>
+              <Text style={[styles.settingDescription, { color: colors.text.secondary }]}>
                 Get notified when you're reading potentially sensitive content
               </Text>
             </View>
             <Switch
               value={settings.enabled}
               onValueChange={handleToggle}
-              trackColor={{ false: Colors.border.light, true: `${Colors.primary}40` }}
-              thumbColor={settings.enabled ? Colors.primary : Colors.text.tertiary}
+              trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
+              thumbColor={settings.enabled ? colors.primary : colors.text.tertiary}
             />
           </View>
         </View>
@@ -121,8 +129,8 @@ export default function ContentWellnessSettingsScreen() {
           <>
             {/* Daily Limit */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Daily Limit</Text>
-              <Text style={styles.sectionDescription}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Daily Limit</Text>
+              <Text style={[styles.sectionDescription, { color: colors.text.secondary }]}>
                 Number of sensitive articles before getting a wellness reminder
               </Text>
               {limitOptions.map((limit) => (
@@ -130,19 +138,27 @@ export default function ContentWellnessSettingsScreen() {
                   key={limit}
                   style={[
                     styles.option,
-                    settings.dailyLimit === limit && styles.optionSelected
+                    settings.dailyLimit === limit && styles.optionSelected,
+                    { 
+                      backgroundColor: settings.dailyLimit === limit ? `${colors.primary}08` : colors.background.white,
+                      borderColor: settings.dailyLimit === limit ? colors.primary : colors.border.lighter
+                    }
                   ]}
                   onPress={() => handleDailyLimitChange(limit)}
                   activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.optionText,
-                    settings.dailyLimit === limit && styles.optionTextSelected
+                    settings.dailyLimit === limit && styles.optionTextSelected,
+                    { 
+                      color: settings.dailyLimit === limit ? colors.primary : colors.text.primary,
+                      fontWeight: settings.dailyLimit === limit ? '600' : '500'
+                    }
                   ]}>
                     {limit} {limit === 1 ? 'article' : 'articles'}
                   </Text>
                   {settings.dailyLimit === limit && (
-                    <View style={styles.selectedIndicator} />
+                    <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -150,8 +166,8 @@ export default function ContentWellnessSettingsScreen() {
 
             {/* Cooldown Period */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Reminder Cooldown</Text>
-              <Text style={styles.sectionDescription}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Reminder Cooldown</Text>
+              <Text style={[styles.sectionDescription, { color: colors.text.secondary }]}>
                 Minimum time between wellness reminders
               </Text>
               {cooldownOptions.map((hours) => (
@@ -159,19 +175,27 @@ export default function ContentWellnessSettingsScreen() {
                   key={hours}
                   style={[
                     styles.option,
-                    settings.cooldownPeriod === hours && styles.optionSelected
+                    settings.cooldownPeriod === hours && styles.optionSelected,
+                    { 
+                      backgroundColor: settings.cooldownPeriod === hours ? `${colors.primary}08` : colors.background.white,
+                      borderColor: settings.cooldownPeriod === hours ? colors.primary : colors.border.lighter
+                    }
                   ]}
                   onPress={() => handleCooldownChange(hours)}
                   activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.optionText,
-                    settings.cooldownPeriod === hours && styles.optionTextSelected
+                    settings.cooldownPeriod === hours && styles.optionTextSelected,
+                    { 
+                      color: settings.cooldownPeriod === hours ? colors.primary : colors.text.primary,
+                      fontWeight: settings.cooldownPeriod === hours ? '600' : '500'
+                    }
                   ]}>
                     {hours} {hours === 1 ? 'hour' : 'hours'}
                   </Text>
                   {settings.cooldownPeriod === hours && (
-                    <View style={styles.selectedIndicator} />
+                    <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -180,20 +204,26 @@ export default function ContentWellnessSettingsScreen() {
             {/* Reset History */}
             <View style={styles.section}>
               <TouchableOpacity 
-                style={styles.resetButton}
+                style={[styles.resetButton, { 
+                  backgroundColor: colors.background.white,
+                  borderColor: colors.border.lighter
+                }]}
                 onPress={handleResetHistory}
               >
-                <RotateCcw size={20} color={Colors.alert} />
-                <Text style={styles.resetButtonText}>Reset History</Text>
+                <RotateCcw size={20} color={colors.alert} />
+                <Text style={[styles.resetButtonText, { color: colors.alert }]}>Reset History</Text>
               </TouchableOpacity>
             </View>
           </>
         )}
 
         {/* Info */}
-        <View style={styles.infoCard}>
-          <AlertTriangle size={20} color={Colors.accent} />
-          <Text style={styles.infoText}>
+        <View style={[styles.infoCard, { 
+          backgroundColor: `${colors.accent}10`,
+          borderColor: `${colors.accent}20`
+        }]}>
+          <AlertTriangle size={20} color={colors.accent} />
+          <Text style={[styles.infoText, { color: colors.text.secondary }]}>
             This feature helps you maintain a healthy reading balance by monitoring 
             exposure to potentially sensitive topics like violence, politics, or mental health.
           </Text>
@@ -208,7 +238,6 @@ export default function ContentWellnessSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.light,
   },
   header: {
     flexDirection: 'row',
@@ -217,8 +246,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.background.white,
   },
   closeButton: {
     padding: 4,
@@ -226,7 +253,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text.primary,
   },
   placeholder: {
     width: 32,
@@ -241,12 +267,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
     marginBottom: 8,
   },
   sectionDescription: {
     fontSize: 14,
-    color: Colors.text.secondary,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -267,12 +291,10 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
-    color: Colors.text.secondary,
   },
   option: {
     flexDirection: 'row',
@@ -286,23 +308,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.border.lighter,
   },
   optionSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: `${Colors.primary}08`,
   },
   optionText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: Colors.text.primary,
   },
   optionTextSelected: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
   selectedIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
   },
   resetButton: {
     flexDirection: 'row',
@@ -318,7 +333,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.alert,
   },
   infoCard: {
     flexDirection: 'row',
@@ -332,7 +346,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 14,
-    color: Colors.text.secondary,
     lineHeight: 20,
   },
 });

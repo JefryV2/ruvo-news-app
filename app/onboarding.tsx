@@ -483,58 +483,80 @@ export default function OnboardingScreen() {
   );
 
   const renderComplete = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.completeScrollContent}>
-        <View style={styles.completeIconContainer}>
-          <Image 
-            source={require('@/assets/images/icon.png')} 
-            style={styles.completeLogoImage}
-            resizeMode="contain"
-          />
-          <View style={styles.checkmarkBadge}>
-            <Check size={20} color={Colors.text.inverse} strokeWidth={3} />
+    <Animated.View style={[styles.stepContainer, styles.completeContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <View style={styles.completeGradient} pointerEvents="none">
+        <LinearGradient
+          colors={['rgba(32,178,170,0.35)', 'rgba(0,0,0,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.completeBlobOne}
+        />
+        <LinearGradient
+          colors={['rgba(255,255,255,0.1)', 'rgba(0,0,0,0)']}
+          start={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 0 }}
+          style={styles.completeBlobTwo}
+        />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.completeScrollContent}
+        bounces={false}
+      >
+        <View style={styles.completeBadge}>
+          <Text style={styles.completeBadgeEmoji}>👏</Text>
+        </View>
+        <Text style={styles.completeKickerDark}>PERSONALIZED SIGNAL READY</Text>
+        <Text style={styles.completeTitleDark}>You’re all set</Text>
+        <Text style={styles.completeBodyDark}>
+          We’ve tuned your feed across {selectedInterests.length || '0'} interests. Keep the signal high and the noise low.
+        </Text>
+
+        <View style={styles.completeSummary}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabelDark}>Focus areas</Text>
+            <Text style={styles.summaryValueDark}>{selectedInterests.length || 0}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabelDark}>Smart alerts</Text>
+            <Text style={styles.summaryValueMuted}>Customize next</Text>
           </View>
         </View>
-        <Text style={styles.readyText}>READY</Text>
-        <Text style={styles.welcomeTitle}>You're All Set</Text>
-        <Text style={styles.welcomeSubtitle}>Curating your feed based on {selectedInterests.length} interests</Text>
-        
-        <View style={styles.featuresRow}>
-          <View style={styles.featureDot}>
-            <Text style={styles.featureLabel}>Curated</Text>
-          </View>
-          <View style={styles.featureDot}>
-            <Text style={styles.featureLabel}>Smart</Text>
-          </View>
-          <View style={styles.featureDot}>
-            <Text style={styles.featureLabel}>Fast</Text>
-          </View>
+
+        <View style={styles.featuresRowDark}>
+          {['Curated', 'Smart', 'Fast'].map((label) => (
+            <View key={label} style={styles.featureChip}>
+              <Text style={styles.featureChipText}>{label}</Text>
+            </View>
+          ))}
         </View>
-        
-        <View style={styles.askRuvoTip}>
-          <View style={[styles.askRuvoIconWrapper, { backgroundColor: 'transparent' }]}>
-            <Image 
-              source={require('@/assets/images/icon.png')} 
-              style={{ width: 40, height: 40 }}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.askRuvoTitle}>Ask Ruvo Anything</Text>
-          <Text style={styles.askRuvoDescription}>
-            Create smart alerts by simply asking. For example:
+
+        <View style={styles.askRuvoCardDark}>
+          <Text style={styles.askRuvoLabel}>Ask Ruvo anything</Text>
+          <Text style={styles.askRuvoDescriptionDark}>
+            Activate alerts with natural language prompts:
           </Text>
-          <View style={styles.askRuvoExamples}>
-            <Text style={styles.exampleText}>"Notify me about BTS news"</Text>
-            <Text style={styles.exampleText}>"Alert me on Apple releases"</Text>
-            <Text style={styles.exampleText}>"Track Tesla earnings"</Text>
-          </View>
+          <Text style={styles.askRuvoExample}>“Notify me about BTS news.”</Text>
+          <Text style={styles.askRuvoExample}>“Alert me when Apple releases products.”</Text>
+          <Text style={styles.askRuvoExample}>“Track EV policy updates in Europe.”</Text>
         </View>
-        
-        <Text style={styles.welcomeFooterText}>Welcome to mindful information</Text>
-        <View style={{ height: 20 }} />
+
+        <TouchableOpacity style={styles.primaryCTA} onPress={handleNext} activeOpacity={0.9}>
+          <Text style={styles.primaryCTAText}>Start exploring</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryCTA} onPress={handleNext} activeOpacity={0.85}>
+          <Text style={styles.secondaryCTAText}>Set up smart alerts later</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.completeFooterDark}>Welcome to mindful information.</Text>
       </ScrollView>
     </Animated.View>
   );
+
+  const stepsOrder: OnboardingStep[] = ['location', 'interests', 'subcategories', 'custom', 'alerts', 'complete'];
+  const isDarkStep = currentStep === 'welcome' || currentStep === 'location' || currentStep === 'complete';
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -545,6 +567,7 @@ export default function OnboardingScreen() {
           <LocationPermissionScreen
             onPermissionGranted={handleLocationPermission}
             onSkip={handleLocationSkip}
+            fullscreen
           />
         );
       case 'interests':
@@ -563,28 +586,31 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={[styles.container, currentStep === 'welcome' && styles.containerDark]}>
+    <View style={[styles.container, isDarkStep && styles.containerDark]}>
       <StatusBar 
-        barStyle={currentStep === 'welcome' ? 'light-content' : 'dark-content'} 
+        barStyle={isDarkStep ? 'light-content' : 'dark-content'} 
         translucent 
         backgroundColor="transparent"
       />
       {currentStep !== 'welcome' && (
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, isDarkStep && styles.topBarDark]}>
           <View style={styles.progressDots}>
-            {['location', 'interests', 'subcategories', 'custom', 'alerts', 'complete'].map((step, index) => (
+            {stepsOrder.map((step, index) => {
+              const isActive = stepsOrder.indexOf(currentStep) >= index;
+              return (
               <View 
                 key={step} 
                 style={[
                   styles.progressDot,
-                  ['location', 'interests', 'subcategories', 'custom', 'alerts', 'complete'].indexOf(currentStep) >= index && styles.progressDotActive
+                  isDarkStep && styles.progressDotDark,
+                  isActive && (isDarkStep ? styles.progressDotActiveDark : styles.progressDotActive)
                 ]} 
               />
-            ))}
+            );})}
           </View>
           {currentStep !== 'complete' && (
             <TouchableOpacity onPress={handleSkip} activeOpacity={0.8}>
-              <Text style={styles.skipText}>Skip</Text>
+              <Text style={[styles.skipText, isDarkStep && styles.skipTextDark]}>Skip</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -610,20 +636,22 @@ export default function OnboardingScreen() {
           </View>
         </>
       ) : (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
           <View style={styles.content}>{renderCurrentStep()}</View>
-          <View style={styles.footer}>
-            <TouchableOpacity 
-              style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
-              onPress={handleNext}
-              disabled={!canProceed()}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.continueButtonText}>
-                {currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {currentStep !== 'complete' && (
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
+                onPress={handleNext}
+                disabled={!canProceed()}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonText}>
+                  Continue
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </SafeAreaView>
       )}
     </View>
@@ -636,10 +664,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.white,
   },
   containerDark: {
-    backgroundColor: '#000000',
+    backgroundColor: '#050505',
   },
   safeArea: {
     flex: 1,
+    backgroundColor: Colors.background.white,
+  },
+  safeAreaDark: {
+    backgroundColor: '#050505',
   },
   topBar: {
     flexDirection: 'row',
@@ -648,6 +680,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 16,
+    backgroundColor: Colors.background.white,
+  },
+  topBarDark: {
+    backgroundColor: 'transparent',
   },
   progressDots: {
     flexDirection: 'row',
@@ -662,10 +698,19 @@ const styles = StyleSheet.create({
   progressDotActive: {
     backgroundColor: Colors.text.primary,
   },
+  progressDotDark: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  progressDotActiveDark: {
+    backgroundColor: Colors.text.inverse,
+  },
   skipText: {
     fontSize: 16,
     color: Colors.text.secondary,
     fontWeight: '600',
+  },
+  skipTextDark: {
+    color: 'rgba(255,255,255,0.7)',
   },
   content: {
     flex: 1,
@@ -846,129 +891,163 @@ const styles = StyleSheet.create({
   },
 
   // Complete Step
-  completeIconContainer: {
-    alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 32,
+  completeContainer: {
+    flex: 1,
+    backgroundColor: '#050505',
+    borderRadius: 32,
+    overflow: 'hidden',
   },
-  completeLogoImage: {
-    width: 100,
-    height: 100,
+  completeGradient: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
   },
-  checkmarkBadge: {
+  completeBlobOne: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: Colors.background.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    width: 420,
+    height: 420,
+    top: -100,
+    left: -120,
+    borderRadius: 210,
   },
-  readyText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text.tertiary,
-    textAlign: 'center',
-    letterSpacing: 2,
-    marginBottom: 16,
-  },
-  welcomeTitle: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: Colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 12,
-    fontFamily: Fonts.bold,
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 32,
-    marginBottom: 40,
-  },
-  featureDot: {
-    alignItems: 'center',
-  },
-  featureLabel: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginTop: 8,
-  },
-  welcomeFooterText: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    marginTop: 24,
+  completeBlobTwo: {
+    position: 'absolute',
+    width: 360,
+    height: 360,
+    bottom: -140,
+    right: -100,
+    borderRadius: 180,
   },
   completeScrollContent: {
-    paddingBottom: 20,
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+    gap: 22,
   },
-  askRuvoTip: {
-    backgroundColor: Colors.background.white,
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 24,
-    borderWidth: 2,
-    borderColor: Colors.border.light,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    alignItems: 'center',
-  },
-  askRuvoIconWrapper: {
-    width: 48,
-    height: 48,
+  completeBadge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    alignSelf: 'center',
   },
-  askRuvoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+  completeBadgeEmoji: {
+    fontSize: 48,
   },
-  askRuvoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text.primary,
-    fontFamily: Fonts.bold,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  askRuvoDescription: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  askRuvoExamples: {
-    gap: 6,
-    alignItems: 'center',
-  },
-  exampleText: {
+  completeKickerDark: {
     fontSize: 13,
-    color: Colors.text.primary,
-    lineHeight: 18,
     textAlign: 'center',
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  completeTitleDark: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: Colors.text.inverse,
+    textAlign: 'center',
+    fontFamily: Fonts.bold,
+  },
+  completeBodyDark: {
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.75)',
+  },
+  completeSummary: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  summaryLabelDark: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  summaryValueDark: {
+    fontSize: 16,
+    color: Colors.text.inverse,
+    fontWeight: '700',
+  },
+  summaryValueMuted: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.45)',
+  },
+  featuresRowDark: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  featureChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  featureChipText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  askRuvoCardDark: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: 20,
+  },
+  askRuvoLabel: {
+    fontSize: 15,
+    color: Colors.text.inverse,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  askRuvoDescriptionDark: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 12,
+  },
+  askRuvoExample: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 4,
+  },
+  primaryCTA: {
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: Colors.text.inverse,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryCTAText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#050505',
+    fontFamily: Fonts.bold,
+    letterSpacing: -0.2,
+  },
+  secondaryCTA: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  secondaryCTAText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.65)',
+    fontFamily: Fonts.semiBold,
+  },
+  completeFooterDark: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    marginTop: 12,
   },
 
   // Welcome Screen - Website Style

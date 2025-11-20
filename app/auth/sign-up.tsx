@@ -203,7 +203,7 @@ export default function SignUpScreen() {
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
-                <User size={20} color={Colors.primary} strokeWidth={2} />
+                <User size={20} color={Colors.accent} strokeWidth={2} />
               </View>
               <TextInput
                 style={styles.input}
@@ -218,7 +218,7 @@ export default function SignUpScreen() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
-                <Mail size={20} color={Colors.primary} strokeWidth={2} />
+                <Mail size={20} color={Colors.accent} strokeWidth={2} />
               </View>
               <TextInput
                 style={styles.input}
@@ -234,7 +234,7 @@ export default function SignUpScreen() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
-                <Lock size={20} color={Colors.primary} strokeWidth={2} />
+                <Lock size={20} color={Colors.accent} strokeWidth={2} />
               </View>
               <TextInput
                 style={styles.input}
@@ -298,7 +298,7 @@ export default function SignUpScreen() {
 
           <View style={styles.footerContainer}>
             <Text style={styles.footerText}>Already have an account?</Text>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.replace('/auth/sign-in')}>
               <Text style={styles.footerLink}>Sign in</Text>
             </TouchableOpacity>
           </View>
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   termsLink: {
-    color: Colors.primary,
+    color: Colors.accent,
     fontWeight: '600' as const,
   },
   dividerContainer: {
