@@ -107,6 +107,21 @@ export default function FeedScreen() {
     const isExpanded = expandedArticleId === signal.id;
     const animation = cardAnimations[signal.id] || new Animated.Value(1);
     
+    // Create a separate animated value for interpolation to avoid conflicts
+    const translateYAnim = useRef(new Animated.Value(20)).current;
+    
+    // Update the animated value when the main animation changes
+    useEffect(() => {
+      animation.addListener(({ value }) => {
+        const interpolatedValue = 20 - (value * 20); // Map 0-1 to 20-0
+        translateYAnim.setValue(interpolatedValue);
+      });
+      
+      return () => {
+        animation.removeAllListeners();
+      };
+    }, [animation]);
+
     // Find related articles using the improved service based on user's grouping preference
     const relatedArticles = echoControlEnabled ? 
       echoControlService.findRelatedArticles(signal, signals, echoControlGrouping, customKeywords, 3) : [];
@@ -126,12 +141,7 @@ export default function FeedScreen() {
           styles.card,
           {
             opacity: animation,
-            transform: [{
-              translateY: animation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 0],
-              })
-            }]
+            transform: [{ translateY: translateYAnim }]
           }
         ]}
       >
