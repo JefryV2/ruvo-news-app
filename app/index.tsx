@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
 import { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, Easing, Dimensions, StatusBar } from 'react-native';
 import { Text } from 'react-native';
 
 // Get screen dimensions for responsive design
@@ -72,6 +72,7 @@ export default function Index() {
   // Show loading indicator while determining route
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
       {/* Gradient background similar to the website */}
       <View style={styles.gradientBackground} />
       

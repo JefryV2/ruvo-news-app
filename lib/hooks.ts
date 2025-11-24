@@ -33,6 +33,28 @@ export const useSignUp = () => {
   });
 };
 
+export const useSignInWithGoogle = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => authService.signInWithGoogle(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+};
+
+export const useSignUpWithGoogle = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => authService.signUpWithGoogle(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+};
+
 export const useSignOut = () => {
   const queryClient = useQueryClient();
   

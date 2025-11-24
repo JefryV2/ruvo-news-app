@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
-  Animated, 
-  StatusBar, 
-  SafeAreaView,
-  Image,
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
   Platform,
-  KeyboardAvoidingView,
+  StatusBar,
+  SafeAreaView,
   TextInput,
+  KeyboardAvoidingView,
+  Image,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Sparkles, Check } from 'lucide-react-native';
@@ -443,6 +444,7 @@ export default function OnboardingScreen() {
                   source={{ uri: interest.imageUrl || 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=800&auto=format&fit=crop' }}
                   style={styles.interestImage}
                   resizeMode="cover"
+                  onError={(error) => console.log('Image load error:', error)}
                 />
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
@@ -621,12 +623,8 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={[styles.container, isDarkStep && styles.containerDark]}>
-      <StatusBar 
-        barStyle={isDarkStep ? 'light-content' : 'dark-content'} 
-        translucent 
-        backgroundColor="transparent"
-      />
+    <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
+      <StatusBar barStyle={isDarkStep ? 'light-content' : 'dark-content'} backgroundColor={isDarkStep ? '#050505' : Colors.background.white} translucent={true} />
       {currentStep !== 'welcome' && (
         <View style={[styles.topBar, isDarkStep && styles.topBarDark]}>
           <View style={styles.progressDots}>
@@ -655,23 +653,23 @@ export default function OnboardingScreen() {
         <>
           {renderCurrentStep()}
           <View style={styles.welcomeFooter}>
-        <TouchableOpacity 
-          style={[
-            currentStep === 'welcome' ? styles.getStartedButton : styles.continueButton,
-            !canProceed() && styles.continueButtonDisabled
-          ]}
-          onPress={handleNext}
-          disabled={!canProceed()}
-          activeOpacity={0.8}
-        >
-          <Text style={currentStep === 'welcome' ? styles.getStartedButtonText : styles.continueButtonText}>
-            {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                currentStep === 'welcome' ? styles.getStartedButton : styles.continueButton,
+                !canProceed() && styles.continueButtonDisabled
+              ]}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              activeOpacity={0.8}
+            >
+              <Text style={currentStep === 'welcome' ? styles.getStartedButtonText : styles.continueButtonText}>
+                {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </>
       ) : (
-        <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
+        <>
           <View style={styles.content}>{renderCurrentStep()}</View>
           {currentStep !== 'complete' && (
             <View style={styles.footer}>
@@ -687,9 +685,9 @@ export default function OnboardingScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </SafeAreaView>
+        </>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -785,6 +783,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border.lighter,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: Colors.background.secondary,
   },
   interestCardActive: {
     borderColor: Colors.primary,
@@ -796,6 +795,8 @@ const styles = StyleSheet.create({
   },
   interestImage: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     width: '100%',
     height: '100%',
     borderRadius: 17,

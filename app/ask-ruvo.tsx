@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -335,6 +336,7 @@ Your feed is curated based on your interests. Check:
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top', 'bottom']}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.light }]}>
         <View style={styles.headerContent}>
           <View style={[styles.headerIcon, { backgroundColor: mode === 'dark' ? `${colors.primary}20` : `${colors.primary}15` }]}>

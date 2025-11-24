@@ -18,7 +18,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 function FloatingTabBar({ state, descriptors, navigation }: any) {
 	const { t } = useLanguage();
 	const { notifications } = useApp();
-	const { colors } = useTheme();
+	const { colors, mode } = useTheme();
 	
 	// Map route names to translation keys
 	const getTabLabel = (routeName: string) => {
@@ -47,17 +47,17 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 					flexDirection: 'row',
 					alignItems: 'center',
 					justifyContent: 'space-between',
-					paddingHorizontal: 10,
-					height: 60,
+					paddingHorizontal: 12,
+					height: 64,
 					backgroundColor: colors.background.white,
 					borderWidth: 1,
 					borderColor: colors.border.lighter,
-					// shadow for hovering effect
+					// Enhanced shadow for better depth
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: Platform.OS === 'web' ? 4 : 8 },
-                    shadowOpacity: Platform.OS === 'web' ? 0.08 : 0.15,
-                    shadowRadius: Platform.OS === 'web' ? 8 : 16,
-                    elevation: Platform.OS === 'web' ? 4 : 10,
+                    shadowOffset: { width: 0, height: Platform.OS === 'web' ? 4 : 12 },
+                    shadowOpacity: Platform.OS === 'web' ? 0.12 : 0.2,
+                    shadowRadius: Platform.OS === 'web' ? 12 : 24,
+                    elevation: Platform.OS === 'web' ? 6 : 12,
 					zIndex: 1000,
 				}}
 			>
@@ -104,40 +104,51 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 							key={route.key}
 							accessibilityRole="button"
 							onPress={onPress}
-							activeOpacity={0.9}
+							activeOpacity={0.8}
 							style={{
 								flex: 1,
 								alignItems: 'center',
 								justifyContent: 'center',
-								gap: 2,
+								gap: 4,
+								paddingVertical: 8,
+								borderRadius: 20,
+								backgroundColor: isFocused ? colors.background.light : 'transparent',
 							}}
 						>
 							<IconComponent 
 								color={isFocused ? colors.primary : colors.text.secondary} 
-								size={22} 
+								size={24} 
 							/>
                             <Text style={{ 
 								color: isFocused ? colors.primary : colors.text.secondary, 
-                                fontWeight: '700', 
-                                fontSize: 12,
+                                fontWeight: isFocused ? '700' : '500', 
+                                fontSize: 11,
+                                lineHeight: 14,
                             }}>
 								{label}
 							</Text>
 							{route.name === 'notifications' && notificationCount > 0 && (
 								<View style={{
 									position: 'absolute',
-									top: -2,
-									right: 10,
+									top: 2,
+									right: 12,
 									backgroundColor: colors.alert,
-									borderRadius: 10,
-									width: 20,
+									borderRadius: 12,
+									minWidth: 20,
 									height: 20,
 									alignItems: 'center',
 									justifyContent: 'center',
+									paddingHorizontal: 4,
+									// Add shadow for better visibility
+									shadowColor: '#000',
+									shadowOffset: { width: 0, height: 2 },
+									shadowOpacity: 0.2,
+									shadowRadius: 4,
+									elevation: 3,
 								}}>
 									<Text style={{ 
 										color: 'white', 
-										fontSize: 10, 
+										fontSize: 11, 
 										fontWeight: 'bold' 
 									}}>
 										{notificationCount > 9 ? '9+' : notificationCount}
@@ -149,31 +160,35 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
 				})}
 			</View>
 			
-			{/* Simple floating button implementation */}
+			{/* Enhanced floating button implementation */}
 			<TouchableOpacity
 				activeOpacity={0.9}
 				onPress={() => navigation.navigate('ask-ruvo' as never)}
 				style={{
 					position: 'absolute',
-					right: 20,
-					bottom: 90,
-					width: 56,
-					height: 56,
-					borderRadius: 28,
+					right: 24,
+					bottom: 96,
+					width: 60,
+					height: 60,
+					borderRadius: 30,
 					backgroundColor: colors.primary,
 					alignItems: 'center',
 					justifyContent: 'center',
+					// Enhanced shadow for better depth
 					shadowColor: '#000',
-					shadowOffset: { width: 0, height: 8 },
-					shadowOpacity: 0.24,
-					shadowRadius: 16,
-					elevation: 10,
+					shadowOffset: { width: 0, height: 12 },
+					shadowOpacity: 0.3,
+					shadowRadius: 24,
+					elevation: 15,
 					zIndex: 9999,
+					// Add border for better definition
+					borderWidth: 2,
+					borderColor: 'rgba(255,255,255,0.2)',
 				}}
 			>
 				<Image 
 					source={require('@/assets/images/icon.png')} 
-					style={{ width: 40, height: 40 }}
+					style={{ width: 36, height: 36 }}
 					resizeMode="contain"
 				/>
 			</TouchableOpacity>

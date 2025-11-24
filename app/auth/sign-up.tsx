@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
   Text,
@@ -10,14 +11,18 @@ import {
   Platform,
   ScrollView,
   Image,
+  ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, User, ArrowRight, Sparkles, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, User, ArrowRight, Sparkles, AlertCircle, Chrome } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { authService } from '@/lib/authService';
+import { useSignUpWithGoogle } from '@/lib/hooks';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -28,6 +33,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const googleSignUpMutation = useSignUpWithGoogle();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -155,8 +161,43 @@ export default function SignUpScreen() {
     password.length >= 6 &&
     password === confirmPassword;
 
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      console.log('Starting Google sign up process...');
+      
+      // Get the OAuth URL from Supabase
+      const result = await authService.signUpWithGoogle();
+      console.log('Google OAuth result:', result);
+      
+      // Open the OAuth URL in a browser
+      if (result.url) {
+        const response = await WebBrowser.openAuthSessionAsync(result.url);
+        console.log('OAuth response:', response);
+        
+        if (response.type === 'success') {
+          // The user has successfully authenticated
+          // New user - go to onboarding
+          router.replace('/onboarding');
+        } else if (response.type === 'dismiss') {
+          setError('Google sign up was cancelled');
+        } else {
+          setError('Google sign up failed. Please try again.');
+        }
+      }
+    } catch (err: any) {
+      console.error('Google Sign up error:', err);
+      setError(err.message || 'Failed to sign up with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
       {/* Animated Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View 
@@ -307,6 +348,24 @@ export default function SignUpScreen() {
               <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
               <Text style={styles.termsLink}>Privacy Policy</Text>
             </Text>
+
+            <TouchableOpacity
+              style={styles.googleSignUpButton}
+              onPress={handleGoogleSignUp}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <View style={styles.googleSignUpButtonContent}>
+                {googleSignUpMutation.isPending || isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.text.primary} />
+                ) : (
+                  <>
+                    <Chrome size={20} color={Colors.text.primary} strokeWidth={2.5} />
+                    <Text style={styles.googleSignUpButtonText}>Sign up with Google</Text>
+                  </>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.dividerContainer}>
@@ -448,6 +507,33 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700' as const,
     color: Colors.text.inverse,
+    letterSpacing: -0.2,
+  },
+  googleSignUpButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: '#dadce0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleSignUpButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+  },
+  googleSignUpButtonText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: '#3c4043',
     letterSpacing: -0.2,
   },
   termsText: {

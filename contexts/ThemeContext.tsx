@@ -30,12 +30,14 @@ const DarkColors: typeof Colors = {
   },
   text: {
     ...Colors.text,
-    primary: '#F0F0F0', // Off-white for better readability
+    primary: '#FFFFFF', // Pure white for better contrast in dark mode
     secondary: '#B0B0B0', // Medium gray
     tertiary: '#808080', // Light gray
     inverse: '#0F0F0F', // Dark for light backgrounds
     onDark: '#FFFFFF',
     onLight: '#F0F0F0',
+    muted: '#666666', // Darker muted text
+    light: '#1E1E1E', // Dark background equivalent
   },
   card: {
     ...Colors.card,

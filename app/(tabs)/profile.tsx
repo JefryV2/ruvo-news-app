@@ -12,6 +12,7 @@ import {
   TextInput,
   Pressable,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -40,7 +41,9 @@ import {
   Plus,
   X,
   Clock,
-  RefreshCw
+  RefreshCw,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
@@ -352,23 +355,24 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
+      <View style={[styles.header, { backgroundColor: colors.background.primary, paddingTop: insets.top }]}>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
-        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
+        <Text style={[styles.headerTagline, { color: colors.text.tertiary }]}>Cut the Noise. Catch the Signal.</Text>
       </View>
       
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.background.primary }]}>
         <TouchableOpacity style={styles.navIcon}>
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>{t('profile.me')}</Text>
+        <Text style={[styles.topTitle, { color: colors.text.primary }]}>{t('profile.me')}</Text>
         <TouchableOpacity style={styles.navIcon} onPress={toggle}>
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: Platform.OS === 'web' ? 120 : 28 }]}>
         <Animated.View 
           style={[
             styles.headerCard,
@@ -380,25 +384,26 @@ export default function ProfileScreen() {
         >
           <Animated.View 
             style={[
-              styles.avatar,
+              styles.avatarContainer,
               {
                 transform: [{ scale: avatarScale }],
                 backgroundColor: colors.card.secondary,
+                borderColor: colors.primary,
               },
             ]}
           > 
             <UserIcon size={28} color={colors.primary} />
           </Animated.View>
-          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={[styles.username, { color: colors.text.onDark }]}>{user?.username || 'John Doe'}</Text>
+          <Text style={[styles.userEmail, { color: colors.text.tertiary }]}>{user?.email || 'user@example.com'}</Text>
           
           {profileStats && (
             <TouchableOpacity 
-              style={styles.statsButton}
+              style={[styles.statsButton, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}
               onPress={() => setShowStats(!showStats)}
               activeOpacity={0.7}
             >
-              <Text style={styles.statsButtonText}>
+              <Text style={[styles.statsButtonText, { color: colors.text.onDark }]}>
                 {showStats ? t('profile.hideStats') : t('profile.viewStats')}
               </Text>
             </TouchableOpacity>
@@ -417,26 +422,26 @@ export default function ProfileScreen() {
         >
           {profileStats && (
             <>
-              <Text style={styles.sectionLabel}>Activity Stats</Text>
+              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Activity Stats</Text>
               <View style={[styles.statsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.statItem}>
                   <Heart size={20} color={colors.alert} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalLikes || 0}</Text>
+                  <Text style={[styles.statValue, { color: colors.text.onDark }]}>{profileStats.totalLikes || 0}</Text>
                   <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Likes</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Bookmark size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalSaved || 0}</Text>
+                  <Text style={[styles.statValue, { color: colors.text.onDark }]}>{profileStats.totalSaved || 0}</Text>
                   <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Saved</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Eye size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalRead || 0}</Text>
+                  <Text style={[styles.statValue, { color: colors.text.onDark }]}>{profileStats.totalRead || 0}</Text>
                   <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Read</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Calendar size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}> 
+                  <Text style={[styles.statValue, { color: colors.text.onDark }]}> 
                     {profileStats.joinedDate ? new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                   </Text>
                   <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Joined</Text>
@@ -455,7 +460,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.onDark }]}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleToggleStatus}>
               <Row 
@@ -470,7 +475,12 @@ export default function ProfileScreen() {
                 />}
               />
             </TouchableOpacity>
-            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} trailing={<Info size={16} color={colors.text.secondary} />} />
+            <Row 
+              icon={<Dot />} 
+              title={t('profile.username')} 
+              subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} 
+              trailing={<Info size={16} color={colors.text.secondary} />} 
+            />
           </View>
         </Animated.View>
 
@@ -483,7 +493,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Library</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.onDark }]}>Library</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => router.push('/liked-articles')}>
               <Row 
@@ -516,7 +526,7 @@ export default function ProfileScreen() {
             ]}
           >
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Liked</Text>
+              <Text style={[styles.sectionLabel, { color: colors.text.onDark }]}>Recently Liked</Text>
               <TouchableOpacity onPress={() => router.push('/liked-articles')}>
                 <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
               </TouchableOpacity>
@@ -529,7 +539,7 @@ export default function ProfileScreen() {
                   onPress={() => router.push(`/article-detail?id=${signal.id}`)}
                 >
                   <View style={styles.articlePreviewContent}>
-                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                    <Text style={[styles.articlePreviewTitle, { color: colors.text.onDark }]} numberOfLines={2}>
                       {signal.title}
                     </Text>
                     <View style={styles.articlePreviewMeta}>
@@ -544,57 +554,8 @@ export default function ProfileScreen() {
                       </View>
                     </View>
                   </View>
-                  <View style={[styles.likedBadgeSmall, { backgroundColor: colors.card.light }]}>
-                    <Heart size={12} color={colors.alert} fill={colors.alert} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Saved Articles Preview */}
-        {savedSignals.length > 0 && (
-          <Animated.View 
-            style={[
-              styles.sectionBlock,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Saved</Text>
-              <TouchableOpacity onPress={() => router.push('/saved-articles')}>
-                <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.articlesPreviewContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-              {savedSignals.map((signal) => (
-                <TouchableOpacity
-                  key={signal.id}
-                  style={styles.articlePreviewCard}
-                  onPress={() => router.push(`/article-detail?id=${signal.id}`)}
-                >
-                  <View style={styles.articlePreviewContent}>
-                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
-                      {signal.title}
-                    </Text>
-                    <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
-                        {signal.sourceName}
-                      </Text>
-                      <View style={styles.timeContainer}>
-                        <Clock size={11} color={colors.text.tertiary} />
-                        <Text style={[styles.articlePreviewTime, { color: colors.text.tertiary }]}>
-                          {formatTimeAgo(signal.timestamp)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={[styles.savedBadgeSmall, { backgroundColor: colors.card.light }]}>
-                    <Bookmark size={12} color={colors.primary} fill={colors.primary} />
+                  <View style={[styles.likedBadgeSmall, { backgroundColor: colors.card.light, borderColor: colors.border.lighter }]}>
+                    <Heart size={14} color={colors.alert} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -611,20 +572,20 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Interests</Text>
             <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
-              <Row 
-                icon={<Heart size={16} color={colors.primary} />} 
-                title={t('profile.interests')} 
-                subtitle={`${userInterestCount} ${t('profile.selected')}`}
-                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
-              />
+              {showInterests ? (
+                <ChevronUp size={20} color={colors.primary} />
+              ) : (
+                <ChevronDown size={20} color={colors.primary} />
+              )}
             </TouchableOpacity>
           </View>
           
           <Animated.View 
             style={[
+              styles.interestsContainer,
               {
                 opacity: interestsAnim,
                 maxHeight: showInterests ? 500 : 0,
@@ -647,7 +608,7 @@ export default function ProfileScreen() {
                   >
                     <Text style={styles.interestEmoji}>{interest.emoji}</Text>
                     <Text style={[styles.interestText, 
-                      { color: colors.text.primary },
+                      { color: colors.text.onDark },
                       isSelected && styles.interestTextSelected, 
                       isSelected && { color: colors.text.inverse }
                     ]}>
@@ -669,13 +630,22 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionLabel, { color: colors.text.onDark }]}>{t('profile.preferences')}</Text>
+            <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
+              {showSettings ? (
+                <ChevronUp size={20} color={colors.primary} />
+              ) : (
+                <ChevronDown size={20} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
               <Row 
                 icon={<Bell size={16} color={colors.primary} />} 
                 title={t('profile.notifications')} 
-                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+                trailing={showSettings ? <ChevronUp size={16} color={colors.text.secondary} /> : <ChevronDown size={16} color={colors.text.secondary} />}
               />
             </TouchableOpacity>
             <Row 
@@ -717,7 +687,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
                     <Smartphone size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Push Notifications</Text>
+                    <Text style={[styles.settingText, { color: colors.text.onDark }]}>Push Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.pushNotifications}
@@ -729,7 +699,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
                     <Mail size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Email Notifications</Text>
+                    <Text style={[styles.settingText, { color: colors.text.onDark }]}>Email Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.emailNotifications}
@@ -741,7 +711,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
                     <Smartphone size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
+                    <Text style={[styles.settingText, { color: colors.text.onDark }]}>SMS Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.smsNotifications}
@@ -764,14 +734,23 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Community</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionLabel, { color: colors.text.onDark }]}>Community</Text>
+            <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
+              {showFriends ? (
+                <ChevronUp size={20} color={colors.primary} />
+              ) : (
+                <ChevronDown size={20} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
               <Row 
                 icon={<UserIcon size={16} color={colors.primary} />} 
                 title="Friends" 
                 subtitle={`${friends.length} friends, ${friendRequests.length} requests`}
-                trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
+                trailing={showFriends ? <ChevronUp size={16} color={colors.text.secondary} /> : <ChevronDown size={16} color={colors.text.secondary} />}
               />
             </TouchableOpacity>
           </View>
@@ -820,7 +799,7 @@ export default function ProfileScreen() {
             ]}
           >
             <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-              <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
+              <Text style={[styles.settingText, { color: colors.text.onDark, marginBottom: 12 }]}>Friend Requests</Text>
               {friendRequests.length > 0 ? (
                 friendRequests.map((request) => (
                   <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
@@ -828,7 +807,7 @@ export default function ProfileScreen() {
                       <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                      <Text style={[styles.rowTitle, { color: colors.text.onDark }]}>
                         {request.users?.username || 'Unknown User'}
                       </Text>
                     </View>
@@ -854,7 +833,7 @@ export default function ProfileScreen() {
                 </Text>
               )}
               
-              <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+              <Text style={[styles.settingText, { color: colors.text.onDark, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
               {friends.length > 0 ? (
                 friends.map((friend) => (
                   <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
@@ -862,7 +841,7 @@ export default function ProfileScreen() {
                       <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                      <Text style={[styles.rowTitle, { color: colors.text.onDark }]}>
                         {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
                       </Text>
                     </View>
@@ -892,7 +871,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleAccountSettings}>
               <Row 
@@ -993,13 +972,14 @@ type RowProps = {
 };
 
 function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.iconBubble}>{icon}</View>
         <View>
-          <Text style={[styles.rowTitle, titleStyle]}>{title}</Text>
-          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.rowTitle, { color: colors.text.onDark }, titleStyle]}>{title}</Text>
+          {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.text.tertiary }]}>{subtitle}</Text> : null}
         </View>
       </View>
       {trailing ? <View>{trailing}</View> : null}
@@ -1011,350 +991,264 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    // Ensure full height on web to avoid mid-page cutoff
-    minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  navIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: Platform.OS === 'web' ? 28 : 36,
-    fontWeight: '800' as const,
-    fontFamily: Fonts.bold,
-    color: 'inherit',
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  headerTagline: {
-    fontSize: 16,
-    fontWeight: '400' as const,
-    fontFamily: Fonts.regular,
-    color: 'inherit',
-    letterSpacing: 0.5,
-  },
-  topTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    fontFamily: 'PlayfairDisplay_700Bold',
-    color: Colors.text.primary,
   },
   scrollView: {
     flex: 1,
   },
-  headerCard: {
-    alignItems: 'center',
-    gap: 10,
-    paddingTop: 8,
-    paddingBottom: 20,
+  scrollContent: {
+    paddingBottom: 120, // Add padding for bottom navigation
   },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.background.secondary,
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: 'transparent',
   },
-  username: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    fontFamily: 'PlayfairDisplay_700Bold',
-    color: Colors.text.primary,
+  avatar: {
+    width: 94,
+    height: 94,
+    borderRadius: 47,
+    backgroundColor: 'transparent',
   },
-  userEmail: {
-    fontSize: 14,
-    color: Colors.text.tertiary,
-    marginTop: 4,
+  userName: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
+    color: 'inherit',
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
-  statsButton: {
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.primary + '20',
-    borderRadius: 12,
+  userHandle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'inherit',
+    marginBottom: 16,
+    opacity: 0.8,
   },
-  statsButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
+  userBio: {
+    fontSize: 16,
+    color: 'inherit',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 30,
+    marginBottom: 24,
   },
-  statsCard: {
+  statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: Colors.background.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
+    width: '100%',
+    marginBottom: 28,
   },
   statItem: {
     alignItems: 'center',
-    gap: 6,
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text.primary,
-    marginTop: 4,
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: 'inherit',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
-    color: Colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  settingsCard: {
-    marginTop: 12,
-    backgroundColor: Colors.background.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    padding: 16,
-    gap: 16,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  settingText: {
-    fontSize: 15,
+    fontSize: 14,
+    color: 'inherit',
+    opacity: 0.7,
     fontWeight: '500',
-    color: Colors.text.primary,
   },
-  sectionBlock: {
-    paddingHorizontal: 16,
-    marginBottom: 18,
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 28,
   },
-  sectionLabel: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    fontWeight: '600',
-  },
-  listCard: {
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconBubble: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.primary,
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.text.primary,
-  },
-  rowSubtitle: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
-    marginTop: 2,
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
+    color: 'inherit',
+    marginBottom: 20,
+    letterSpacing: -0.3,
   },
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    gap: 12,
   },
-  interestChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.background.secondary,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  interestItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderRadius: 20,
-    gap: 6,
-    borderWidth: 2,
-    borderColor: Colors.background.secondary,
-  },
-  interestChipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'inherit',
+    minWidth: 80,
+    alignItems: 'center',
   },
   interestEmoji: {
-    fontSize: 16,
+    fontSize: 20,
+    marginBottom: 6,
   },
-  interestText: {
-    fontSize: 14,
+  interestName: {
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: 'inherit',
   },
-  interestTextSelected: {
-    color: Colors.text.inverse,
+  interestSelected: {
+    backgroundColor: 'inherit',
+    borderColor: 'transparent',
   },
-  settingsGroupingOptions: {
+  interestSelectedText: {
+    color: 'inherit',
+  },
+  settingsCard: {
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  settingsItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'inherit',
+  },
+  settingsLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  settingsValue: {
+    fontSize: 16,
+    color: 'inherit',
+    opacity: 0.8,
+  },
+  settingsSwitch: {
+    transform: [{ scale: 1.1 }],
+  },
+  settingsGroupingContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  settingsGroupingOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: Colors.background.secondary,
-  },
-  settingsGroupingOptionSelected: {
-    backgroundColor: Colors.primary,
-  },
-  settingsGroupingOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.text.primary,
-  },
-  settingsGroupingOptionTextSelected: {
-    color: Colors.text.inverse,
-  },
-  settingsKeywordSection: {
-    padding: 16,
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 12,
+    gap: 10,
     marginTop: 12,
   },
-  settingsKeywordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
+  settingsGroupingOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  settingsGroupingOptionSelected: {
+    backgroundColor: 'inherit',
+    borderColor: 'transparent',
+  },
+  settingsGroupingText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  settingsGroupingTextSelected: {
+    color: 'inherit',
   },
   settingsKeywordInput: {
-    flex: 1,
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: Colors.text.primary,
-    borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 10,
   },
-  settingsKeywordAddButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
+  keywordInput: {
+    flex: 1,
+    height: 44,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginLeft: 8,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'inherit',
+    fontSize: 16,
+    color: 'inherit',
+  },
+  addKeywordButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'inherit',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsKeywordAddButtonText: {
-    color: Colors.text.inverse,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  settingsKeywordList: {
+  settingsKeywordsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
+    marginTop: 16,
   },
   settingsKeywordChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
+    backgroundColor: 'inherit',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
   },
   settingsKeywordChipText: {
-    color: Colors.text.inverse,
-    fontSize: 13,
-    fontWeight: '500',
+    color: 'inherit',
+    fontSize: 14,
+    fontWeight: '600',
   },
   settingsKeywordChipRemove: {
-    color: Colors.text.inverse,
-    fontSize: 16,
+    color: 'inherit',
+    fontSize: 18,
     fontWeight: '700',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionLink: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
+    color: 'inherit',
   },
   articlesPreviewContainer: {
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
-    padding: 12,
+    borderColor: 'inherit',
+    padding: 16,
   },
   articlePreviewCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: 'inherit',
   },
   articlePreviewContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 14,
   },
   articlePreviewTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.text.primary,
-    marginBottom: 4,
-    lineHeight: 20,
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'inherit',
+    marginBottom: 6,
+    lineHeight: 22,
   },
   articlePreviewMeta: {
     flexDirection: 'row',
@@ -1362,38 +1256,311 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   articlePreviewSource: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
-    color: Colors.text.tertiary,
+    color: 'inherit',
     flex: 1,
   },
   timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   articlePreviewTime: {
-    fontSize: 11,
-    color: Colors.text.tertiary,
+    fontSize: 12,
+    color: 'inherit',
   },
   likedBadgeSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.background.white,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'inherit',
   },
   savedBadgeSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.background.white,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  bottomActions: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    gap: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'inherit',
+    gap: 12,
+  },
+  actionButtonPrimary: {
+    backgroundColor: 'inherit',
+    borderColor: 'transparent',
+  },
+  actionButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: 'inherit',
+  },
+  actionButtonTextPrimary: {
+    color: 'inherit',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '70%',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'inherit',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: 'inherit',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  modalButtonCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  modalButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: 'inherit',
+  },
+  modalButtonTextCancel: {
+    color: 'inherit',
+  },
+  // Add missing styles
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
+    color: 'inherit',
+    letterSpacing: -1,
+    marginBottom: 8,
+  },
+  headerTagline: {
+    fontSize: 16,
+    fontWeight: '400',
+    fontFamily: Fonts.regular,
+    color: 'inherit',
+    letterSpacing: 0.5,
+    marginBottom: 20,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 16,
+  },
+  navIcon: {
+    padding: 8,
+  },
+  topTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'inherit',
+  },
+  headerCard: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'inherit',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 16,
+    color: 'inherit',
+    opacity: 0.7,
+    marginBottom: 20,
+  },
+  statsButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  statsButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  sectionBlock: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
+    color: 'inherit',
+    marginBottom: 16,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'inherit',
+    marginVertical: 4,
+  },
+  listCard: {
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'inherit',
+    overflow: 'hidden',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  iconBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'inherit',
+    marginBottom: 2,
+  },
+  rowSubtitle: {
+    fontSize: 14,
+    color: 'inherit',
+    opacity: 0.7,
+  },
+  // Add missing styles for interest chips
+  interestsContainer: {
+    marginBottom: 24,
+  },
+  interestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'inherit',
+  },
+  interestChipSelected: {
+    backgroundColor: 'inherit',
+    borderColor: 'inherit',
+  },
+  interestText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  interestTextSelected: {
+    color: 'inherit',
+  },
+  // Add missing styles for settings
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'inherit',
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'inherit',
+  },
+  settingsKeywordAddButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: 'inherit',
+  },
+  settingsKeywordAddButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'inherit',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'inherit',
+  },
 });
-
 // Remove last border from rows
 const removeLastBorder = (index: number, total: number) => {
   return index === total - 1 ? { borderBottomWidth: 0 } : {};

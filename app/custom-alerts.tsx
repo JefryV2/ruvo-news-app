@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -15,9 +16,11 @@ import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { CustomAlert } from '@/types';
 import { useCustomAlerts } from '@/hooks/useCustomAlerts';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function CustomAlertsScreen() {
   const { getUserAlerts, deleteAlert, toggleAlert, getAlertStats } = useCustomAlerts();
+  const { mode, colors } = useTheme();
   const [alerts, setAlerts] = useState<CustomAlert[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, triggered: 0 });
   const [loading, setLoading] = useState(true);
@@ -135,7 +138,8 @@ export default function CustomAlertsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]} edges={['top']}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color={Colors.text.primary} />
@@ -206,7 +210,7 @@ export default function CustomAlertsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',

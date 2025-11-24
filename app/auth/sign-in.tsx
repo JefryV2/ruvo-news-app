@@ -12,14 +12,17 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, ArrowRight, Sparkles, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, ArrowRight, Sparkles, AlertCircle, Chrome } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { authService } from '@/lib/authService';
+import { useSignInWithGoogle } from '@/lib/hooks';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -28,6 +31,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const googleSignInMutation = useSignInWithGoogle();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -177,8 +181,52 @@ export default function SignInScreen() {
 
   const isFormValid = email.length > 0 && password.length > 0;
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      console.log('Starting Google sign in process...');
+      
+      // Get the OAuth URL from Supabase
+      const result = await authService.signInWithGoogle();
+      console.log('Google OAuth result:', result);
+      
+      // Open the OAuth URL in a browser
+      if (result.url) {
+        const response = await WebBrowser.openAuthSessionAsync(result.url);
+        console.log('OAuth response:', response);
+        
+        if (response.type === 'success') {
+          // The user has successfully authenticated
+          // Check if user has completed onboarding
+          const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+          console.log('Onboarding complete status:', onboardingComplete);
+          
+          if (onboardingComplete === 'true') {
+            console.log('User has completed onboarding, redirecting to feed');
+            router.replace('/(tabs)/feed');
+          } else {
+            console.log('User has not completed onboarding, redirecting to onboarding');
+            router.replace('/onboarding');
+          }
+        } else if (response.type === 'dismiss') {
+          setError('Google sign in was cancelled');
+        } else {
+          setError('Google sign in failed. Please try again.');
+        }
+      }
+    } catch (err: any) {
+      console.error('Google Sign in error:', err);
+      setError(err.message || 'Failed to sign in with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
       {/* Animated Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View 
@@ -327,6 +375,24 @@ export default function SignInScreen() {
                     <>
                       <Text style={styles.signInButtonText}>Sign In</Text>
                       <ArrowRight size={20} color={Colors.text.inverse} strokeWidth={2.5} />
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.googleSignInButton}
+                onPress={handleGoogleSignIn}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                <View style={styles.googleSignInButtonContent}>
+                  {googleSignInMutation.isPending || isLoading ? (
+                    <ActivityIndicator size="small" color={Colors.text.primary} />
+                  ) : (
+                    <>
+                      <Chrome size={20} color={Colors.text.primary} strokeWidth={2.5} />
+                      <Text style={styles.googleSignInButtonText}>Continue with Google</Text>
                     </>
                   )}
                 </View>
@@ -481,6 +547,33 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700' as const,
     color: Colors.text.inverse,
+    letterSpacing: -0.2,
+  },
+  googleSignInButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#dadce0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleSignInButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+  },
+  googleSignInButtonText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: '#3c4043',
     letterSpacing: -0.2,
   },
   dividerContainer: {

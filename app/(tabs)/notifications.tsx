@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Clock, Sparkles, TrendingUp, AlertCircle } from 'lucide-react-native';
@@ -24,7 +25,7 @@ export default function NotificationsScreen() {
   const { notifications, markNotificationRead } = useApp();
   const [filter, setFilter] = useState<FilterType>('all');
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { mode, colors } = useTheme();
 
   const filteredNotifications = notifications.filter((notif) => {
     if (filter === 'unread') return !notif.read;
@@ -83,38 +84,39 @@ export default function NotificationsScreen() {
     return '📰';
   };
 
-  const NotificationCard = ({ notif, index }: { notif: NotificationType; index: number }) => {
+  const NotificationCard = React.memo(({ notif, index }: { notif: NotificationType; index: number }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
-    React.useEffect(() => {
+    useEffect(() => {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 400,
-          delay: index * 80,
+          duration: 300,
+          delay: index * 50,
           useNativeDriver: true,
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
-          delay: index * 80,
+          delay: index * 50,
           useNativeDriver: true,
-          tension: 50,
-          friction: 7,
+          tension: 60,
+          friction: 8,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          delay: index * 80,
+          delay: index * 50,
           useNativeDriver: true,
-          tension: 50,
-          friction: 7,
+          tension: 60,
+          friction: 8,
         }),
       ]).start();
     }, [fadeAnim, slideAnim, scaleAnim, index]);
 
     const UrgencyIcon = getUrgencyIcon(notif.urgency);
     const urgencyColor = getUrgencyColor(notif.urgency);
+    const { colors } = useTheme();
 
     return (
       <Animated.View
@@ -129,37 +131,45 @@ export default function NotificationsScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.notificationCard, !notif.read && [styles.notificationUnread, { backgroundColor: colors.background.white, borderColor: colors.border.light }]]}
+          style={[styles.notificationCard, !notif.read && [styles.notificationUnread, { backgroundColor: colors.card.elevated, borderColor: colors.border.light }]]}
           onPress={() => markNotificationRead(notif.id)}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <View style={[styles.emojiIcon, { backgroundColor: colors.background.secondary }]}><Text style={[styles.emojiText, { color: colors.text.primary }]}>{getCategoryEmoji(notif.category)}</Text></View>
+          <View style={[styles.emojiIcon, { backgroundColor: colors.card.secondary }]}>
+            <Text style={[styles.emojiText, { color: colors.text.primary }]}>{getCategoryEmoji(notif.category)}</Text>
+          </View>
           <View style={styles.notificationContent}>
             <View style={styles.notificationHeader}>
-              <Text numberOfLines={1} style={[styles.notificationTitle, { color: colors.text.primary }]}>{notif.title}</Text>
+              <Text numberOfLines={2} style={[styles.notificationTitle, { color: colors.text.primary }]}>{notif.title}</Text>
               <View style={styles.timeContainer}>
-                <Clock size={11} color={colors.text.tertiary} strokeWidth={2} />
+                <Clock size={12} color={colors.text.tertiary} strokeWidth={2.5} />
                 <Text style={[styles.notificationTime, { color: colors.text.tertiary }]}>{formatTimeAgo(notif.timestamp)}</Text>
               </View>
             </View>
-            <Text style={[styles.notificationMessage, { color: colors.text.secondary }]}>{notif.message}</Text>
+            <Text style={[styles.notificationMessage, { color: colors.text.secondary }]} numberOfLines={3}>{notif.message}</Text>
             {!notif.read && (
-              <TouchableOpacity style={[styles.markRead, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]} onPress={() => markNotificationRead(notif.id)}>
-                <Text style={[styles.markReadText, { color: colors.text.onLight }]}>Mark read</Text>
+              <TouchableOpacity 
+                style={[styles.markRead, { backgroundColor: colors.primary }]} 
+                onPress={() => markNotificationRead(notif.id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={[styles.markReadText, { color: colors.text.inverse }]}>Mark as Read</Text>
               </TouchableOpacity>
             )}
           </View>
+          <UrgencyIcon size={20} color={urgencyColor} style={styles.urgencyIcon} />
         </TouchableOpacity>
         
         <View style={[styles.itemDivider, { backgroundColor: colors.border.lighter }]} />
       </Animated.View>
     );
-  };
+  });
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-
+  
   return (
     <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
         <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
@@ -168,31 +178,42 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      <View style={[styles.filtersWrapper, { backgroundColor: colors.background.white, borderBottomColor: colors.border.lighter }]}>
-        <View style={styles.dotsRow}>
+      <View style={styles.filtersWrapper}>
+        <View style={styles.filtersContainer}>
           <TouchableOpacity
             onPress={() => setFilter('all')}
             activeOpacity={0.8}
             accessibilityLabel="All"
-            style={styles.dotButton}
+            style={[styles.filterButton, filter === 'all' && { backgroundColor: colors.primary + '20' }]}
           >
-            <View style={[styles.dot, { backgroundColor: '#34C759' }, filter === 'all' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
+            <Text style={[styles.filterText, { color: filter === 'all' ? colors.primary : colors.text.secondary }]}>All</Text>
+            <View style={[styles.filterBadge, { backgroundColor: colors.border.light }]}>
+              <Text style={[styles.filterBadgeText, { color: colors.text.tertiary }]}>{counts.all}</Text>
+            </View>
           </TouchableOpacity>
+          
           <TouchableOpacity
             onPress={() => setFilter('unread')}
             activeOpacity={0.8}
             accessibilityLabel="Unread"
-            style={styles.dotButton}
+            style={[styles.filterButton, filter === 'unread' && { backgroundColor: colors.primary + '20' }]}
           >
-            <View style={[styles.dot, { backgroundColor: '#FFD60A' }, filter === 'unread' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
+            <Text style={[styles.filterText, { color: filter === 'unread' ? colors.primary : colors.text.secondary }]}>Unread</Text>
+            <View style={[styles.filterBadge, { backgroundColor: colors.border.light }]}>
+              <Text style={[styles.filterBadgeText, { color: colors.text.tertiary }]}>{counts.unread}</Text>
+            </View>
           </TouchableOpacity>
+          
           <TouchableOpacity
             onPress={() => setFilter('high')}
             activeOpacity={0.8}
             accessibilityLabel="Urgent"
-            style={styles.dotButton}
+            style={[styles.filterButton, filter === 'high' && { backgroundColor: colors.primary + '20' }]}
           >
-            <View style={[styles.dot, { backgroundColor: '#FF453A' }, filter === 'high' && [styles.dotActive, { backgroundColor: colors.primary }]]} />
+            <Text style={[styles.filterText, { color: filter === 'high' ? colors.primary : colors.text.secondary }]}>Urgent</Text>
+            <View style={[styles.filterBadge, { backgroundColor: colors.border.light }]}>
+              <Text style={[styles.filterBadgeText, { color: colors.text.tertiary }]}>{counts.high}</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -222,18 +243,16 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
-  },
-  largeHeader: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
+    backgroundColor: 'transparent',
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
@@ -246,166 +265,112 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: 'inherit',
     letterSpacing: 0.5,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   headerSubtitle: {
-    fontSize: 15,
-    fontFamily: Fonts.regular,
+    fontSize: 16,
     color: 'inherit',
-  },
-  largeTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-    color: 'inherit',
-  },
-  largeSubtitle: {
-    marginTop: 4,
-    color: 'inherit',
+    fontWeight: '600',
+    opacity: 0.9,
   },
   filtersWrapper: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'transparent',
-    borderBottomWidth: 1,
-    borderBottomColor: 'inherit',
   },
   filtersContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    padding: 4,
   },
-  dotsRow: {
+  filterButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  dotButton: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  dotActive: {
-    transform: [{ scale: 1.2 }],
-    borderWidth: 2,
-  },
-  filterChip: {
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+    paddingHorizontal: 6,
+    borderRadius: 20,
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: 'inherit',
-    overflow: 'hidden',
-  },
-  filterChipGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  filterChipActive: {
-    borderColor: 'inherit',
+    marginHorizontal: 2,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: 'inherit',
+    marginRight: 6,
   },
-  filterTextActive: {
-    color: 'inherit',
-  },
-  countDot: {
-    marginLeft: 8,
-    minWidth: 20,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-  },
-  countDotActive: {
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'inherit',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
   },
-  countDotText: {
-    color: 'inherit',
-    fontSize: 12,
+  filterBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
+    color: 'inherit',
   },
-  scrollView: {
+  notificationList: {
     flex: 1,
-  },
-  notificationsContainer: {
-    padding: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   notificationCard: {
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 0,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'inherit',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 80,
   },
   notificationUnread: {
-    backgroundColor: 'transparent',
+    borderWidth: 1,
     borderColor: 'inherit',
   },
-  urgencyIndicator: {
-    display: 'none',
-  },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 4,
-  },
   emojiIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
-    backgroundColor: 'transparent',
+    marginRight: 16,
+    alignSelf: 'flex-start',
   },
   emojiText: {
-    fontSize: 18,
+    fontSize: 22,
   },
   notificationContent: {
     flex: 1,
+    marginRight: 12,
   },
   notificationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    marginBottom: 8,
   },
-  categoryBadge: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  notificationCategory: {
-    fontSize: 9,
+  notificationTitle: {
+    fontSize: 18,
     fontWeight: '700',
     color: 'inherit',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    flex: 1,
+    marginRight: 12,
+    lineHeight: 24,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -413,81 +378,76 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   notificationTime: {
-    fontSize: 11,
-    fontFamily: Fonts.regular,
+    fontSize: 12,
     color: 'inherit',
-    fontWeight: '500',
-  },
-  notificationTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    fontFamily: Fonts.bold,
-    color: 'inherit',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-    lineHeight: 20,
   },
   notificationMessage: {
-    fontSize: 13,
-    fontFamily: Fonts.regular,
+    fontSize: 15,
     color: 'inherit',
-    lineHeight: 18,
-    letterSpacing: -0.1,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  markRead: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: 'inherit',
+  },
+  markReadText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'inherit',
   },
   itemDivider: {
     height: 1,
     backgroundColor: 'inherit',
-    marginLeft: 60,
-    marginVertical: 6,
+    opacity: 0.1,
+    marginHorizontal: 20,
   },
-  unreadDot: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'inherit',
-  },
-  markRead: {
+  urgencyIcon: {
     alignSelf: 'flex-start',
-    marginTop: 10,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'inherit',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  markReadText: {
-    color: 'inherit',
-    fontWeight: '700',
+    marginTop: 2,
   },
   emptyState: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 40,
+    alignItems: 'center',
+    paddingVertical: 100,
+    paddingHorizontal: 30,
   },
   emptyIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    marginBottom: 24,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'inherit',
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: 'inherit',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontFamily: Fonts.bold,
   },
   emptyMessage: {
-    fontSize: 15,
+    fontSize: 16,
     color: 'inherit',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  notificationsContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
 });

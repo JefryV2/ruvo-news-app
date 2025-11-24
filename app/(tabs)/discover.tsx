@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Animated,
-  Image,
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Animated, 
   RefreshControl,
-  Dimensions,
+  Image,
   Platform,
+  StatusBar,
+  Dimensions,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -34,7 +35,7 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useApp();
   const { t, language } = useLanguage();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -243,10 +244,11 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
@@ -256,7 +258,7 @@ export default function DiscoverScreen() {
           <Text style={[styles.headerSubtitle, { color: colors.text.tertiary }]}>Cut the Noise. Catch the Signal.</Text>
         </View>
 
-        <View style={styles.content}>
+        <View style={styles.searchSection}>
           <View style={[styles.searchContainer, { backgroundColor: colors.background.secondary, borderColor: colors.border.lighter }]}> 
             <SearchIcon size={20} color={colors.text.tertiary} />
             <TextInput
@@ -275,7 +277,7 @@ export default function DiscoverScreen() {
         </View>
 
         {searchQuery.length > 2 ? (
-          <View style={styles.content}>
+          <View style={styles.searchResultsList}>
             {searchLoading ? (
               <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('feed.loading')}</Text>
             ) : searchResults.length > 0 ? (
@@ -320,7 +322,7 @@ export default function DiscoverScreen() {
             )}
           </View>
         ) : (
-          <>
+          <View style={styles.content}>
             {userInterests.length > 0 ? (
               userInterests.map((interest: any) => renderInterestSection(interest))
             ) : (
@@ -329,7 +331,7 @@ export default function DiscoverScreen() {
                 <Text style={[styles.emptyStateSubtext, { color: colors.text.secondary }]}>{t('discover.addInterests')}</Text>
               </View>
             )}
-          </>
+          </View>
         )}
 
         <View style={[styles.bottomPadding, { height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom) }]} />
@@ -344,115 +346,145 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  headerTagline: {
+    fontSize: 16,
+    fontWeight: '400',
+    fontFamily: Fonts.regular,
+    color: 'inherit',
+    letterSpacing: 0.5,
+    marginBottom: 20,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: 'inherit',
+    fontSize: 16,
+    fontWeight: '400',
     fontFamily: Fonts.regular,
-    letterSpacing: 0.2,
+    color: 'inherit',
+    letterSpacing: 0.5,
+    marginBottom: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
     backgroundColor: 'transparent',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    borderRadius: 20,
     borderWidth: 1,
+    borderColor: 'inherit',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: 'inherit',
     fontFamily: Fonts.regular,
-    paddingVertical: 0,
   },
-  scrollView: {
-    flex: 1,
+  searchIcon: {
+    opacity: 0.7,
   },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+  clearButton: {
+    padding: 4,
   },
   sectionContainer: {
     marginBottom: 32,
+    paddingHorizontal: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 20,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   sectionEmoji: {
-    fontSize: 20,
+    fontSize: 24,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
-    color: 'inherit',
     fontFamily: Fonts.bold,
+    color: 'inherit',
     letterSpacing: -0.3,
   },
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'inherit',
   },
   seeAllText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: 'inherit',
-    fontFamily: Fonts.semiBold,
   },
   articlesRow: {
-    paddingHorizontal: 16,
     gap: 16,
-    paddingVertical: 8,
   },
   articleCard: {
-    width: CARD_WIDTH * 0.9,
+    width: CARD_WIDTH,
     backgroundColor: 'transparent',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   articleImage: {
     width: '100%',
-    height: 160,
-    backgroundColor: 'transparent',
+    height: 140,
   },
   articleContent: {
     padding: 16,
   },
-  articleSource: {
-    fontSize: 13,
+  articleTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: 'inherit',
+    lineHeight: 24,
+    marginBottom: 10,
+    fontFamily: Fonts.semiBold,
+    letterSpacing: -0.2,
+  },
+  articleDescription: {
+    fontSize: 14,
+    color: 'inherit',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  articleTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  articleCategory: {
+    fontSize: 12,
     fontWeight: '700',
     color: 'inherit',
     marginBottom: 8,
@@ -460,63 +492,54 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  articleTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: 'inherit',
-    lineHeight: 22,
-    marginBottom: 8,
-    fontFamily: Fonts.bold,
-    letterSpacing: -0.2,
-  },
-  articleDescription: {
-    fontSize: 14,
-    color: 'inherit',
-    lineHeight: 20,
-    marginBottom: 10,
-    fontFamily: Fonts.regular,
-  },
-  articleTimeContainer: {
+  articleMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    justifyContent: 'space-between',
   },
-  articleTime: {
+  articleSource: {
     fontSize: 13,
     color: 'inherit',
     fontFamily: Fonts.regular,
+    fontWeight: '500',
   },
-  searchResultsList: {
-    gap: 20,
-    paddingTop: 8,
+  articleTime: {
+    fontSize: 12,
+    color: 'inherit',
+    fontFamily: Fonts.regular,
+  },
+  searchResultsContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   searchResultCard: {
     flexDirection: 'row',
     backgroundColor: 'transparent',
     borderRadius: 16,
-    overflow: 'hidden',
-    gap: 16,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
+    borderColor: 'transparent',
   },
   searchResultImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
+    borderRadius: 12,
     backgroundColor: 'transparent',
   },
   searchResultContent: {
     flex: 1,
-    paddingVertical: 12,
-    paddingRight: 16,
+    paddingVertical: 8,
+    paddingLeft: 16,
     justifyContent: 'center',
   },
   searchResultCategory: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: 'inherit',
     marginBottom: 6,
@@ -525,10 +548,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   searchResultTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: 'inherit',
-    lineHeight: 22,
+    lineHeight: 24,
     marginBottom: 8,
     fontFamily: Fonts.semiBold,
     letterSpacing: -0.2,
@@ -540,51 +563,70 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   searchResultSource: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'inherit',
     fontFamily: Fonts.regular,
+    fontWeight: '500',
   },
   newsDot: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'inherit',
   },
   searchResultTime: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'inherit',
     fontFamily: Fonts.regular,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 17,
     color: 'inherit',
     textAlign: 'center',
-    paddingVertical: 50,
+    paddingVertical: 60,
     fontFamily: Fonts.regular,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 80,
+    paddingVertical: 100,
     paddingHorizontal: 40,
     marginTop: 20,
   },
   emptyStateText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: 'inherit',
-    marginBottom: 12,
+    marginBottom: 14,
     fontFamily: Fonts.semiBold,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   emptyStateSubtext: {
-    fontSize: 16,
+    fontSize: 17,
     color: 'inherit',
     fontFamily: Fonts.regular,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
     paddingHorizontal: 20,
   },
   bottomPadding: {
     height: 140,
     backgroundColor: 'transparent',
+  },
+  searchResultsList: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  content: {
+    flex: 1,
   },
 });

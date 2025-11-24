@@ -18,6 +18,11 @@ export interface SignInData {
   password: string;
 }
 
+export interface OAuthResult {
+  provider: string;
+  url: string;
+}
+
 export const authService = {
   /**
    * Sign up a new user
@@ -130,6 +135,52 @@ export const authService = {
       
       throw new Error(error.message || 'Failed to sign in. Please check your credentials and try again.');
     }
+  },
+
+  /**
+   * Sign in with Google OAuth
+   */
+  async signInWithGoogle(): Promise<OAuthResult> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      throw new Error('Supabase is not configured. Please add your credentials to .env');
+    }
+
+    try {
+      console.log('Attempting to sign in with Google OAuth...');
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'ruvo://auth/callback',
+          skipBrowserRedirect: true
+        }
+      });
+
+      console.log('Google OAuth response:', { data, error });
+
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+      }
+
+      // For mobile apps, we typically handle the redirect differently
+      // The OAuth flow will be handled by Expo's auth session
+      return {
+        provider: data.provider,
+        url: data.url,
+      };
+    } catch (error: any) {
+      console.error('Google Sign In error:', error);
+      throw new Error(error.message || 'Failed to sign in with Google');
+    }
+  },
+
+  /**
+   * Sign up with Google OAuth
+   */
+  async signUpWithGoogle(): Promise<OAuthResult> {
+    // Google OAuth signup is the same as signin - Supabase handles account creation automatically
+    return this.signInWithGoogle();
   },
 
   /**

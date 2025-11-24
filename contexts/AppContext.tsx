@@ -68,9 +68,13 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const userInterests = user?.interests || [];
   
   // Use News API to fetch personalized or top headlines
-  const { data: newsApiSignals, isLoading: newsApiLoading, error: newsApiError } = userInterests.length > 0
-    ? useNewsAPIPersonalized(userInterests)
-    : useTopHeadlines('us');
+  const { data: newsApiSignals, isLoading: newsApiLoading, error: newsApiError } = useNewsAPIPersonalized(userInterests);
+  const { data: topHeadlinesSignals, isLoading: topHeadlinesLoading, error: topHeadlinesError } = useTopHeadlines('us');
+  
+  // Select which data to use based on user interests
+  const selectedNewsApiSignals = userInterests.length > 0 ? newsApiSignals : topHeadlinesSignals;
+  const selectedNewsApiLoading = userInterests.length > 0 ? newsApiLoading : topHeadlinesLoading;
+  const selectedNewsApiError = userInterests.length > 0 ? newsApiError : topHeadlinesError;
   
   // Use Webz.io for additional news sources
   const { data: webzioSignals, isLoading: webzioLoading, error: webzioError } = useWebzioPersonalized(userInterests);
@@ -81,10 +85,20 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     language: user?.language || 'en',
   };
   
+  // Call both hooks unconditionally
   const { data: aiSignals, isLoading: aiLoading, error: aiError } = useAIPersonalizedNews(
     userPreferences,
     20
   );
+  const { data: fallbackAiSignals, isLoading: fallbackAiLoading, error: fallbackAiError } = useAIPersonalizedNews(
+    { ...userPreferences, interests: [] },
+    20
+  );
+  
+  // Select which AI data to use based on user interests
+  const selectedAiSignals = userInterests.length > 0 ? aiSignals : fallbackAiSignals;
+  const selectedAiLoading = userInterests.length > 0 ? aiLoading : fallbackAiLoading;
+  const selectedAiError = userInterests.length > 0 ? aiError : fallbackAiError;
   
   // Fallback chain: AI → News API → Database → Mock Data
   const { data: dbSignals, isLoading: dbLoading, error: dbError } = useSignalsForUser(user?.id || '', 20);
@@ -92,13 +106,13 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   // Combine multiple news sources and merge with user interactions
   const combinedSignals = useMemo(() => {
     // Handle errors gracefully
-    if (aiError || newsApiError || webzioError || dbError) {
-      console.warn('Data fetching errors:', { aiError, newsApiError, webzioError, dbError });
+    if (selectedAiError || selectedNewsApiError || webzioError || dbError) {
+      console.warn('Data fetching errors:', { selectedAiError, selectedNewsApiError, webzioError, dbError });
     }
     
     const allSignals = [
-      ...(aiSignals || []),
-      ...(newsApiSignals || []),
+      ...(selectedAiSignals || []),
+      ...(selectedNewsApiSignals || []),
       ...(webzioSignals || []),
       ...(dbSignals || []),
     ];
@@ -144,10 +158,10 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       const dateB = timestampB instanceof Date ? timestampB : new Date(timestampB);
       return dateB.getTime() - dateA.getTime();
     });
-  }, [aiSignals, newsApiSignals, webzioSignals, dbSignals, userInteractions, aiError, newsApiError, webzioError, dbError]);
+  }, [selectedAiSignals, selectedNewsApiSignals, webzioSignals, dbSignals, userInteractions, selectedAiError, selectedNewsApiError, webzioError, dbError]);
   
   const signals = combinedSignals.length > 0 ? combinedSignals : localSignals;
-  const signalsLoading = aiLoading || newsApiLoading || webzioLoading || dbLoading || interactionsLoading;
+  const signalsLoading = selectedAiLoading || selectedNewsApiLoading || webzioLoading || dbLoading || interactionsLoading;
   
   const { data: dbNotifications = [], isLoading: notificationsLoading, error: notificationsError } = useNotificationsForUser(user?.id || '', 50);
   

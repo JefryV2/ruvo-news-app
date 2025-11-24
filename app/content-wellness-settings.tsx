@@ -7,12 +7,13 @@ import {
   Switch,
   ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Shield, AlertTriangle, RotateCcw } from 'lucide-react-native';
 import Colors from '@/constants/colors';
-import { contentWellnessService, ContentWellnessSettings } from '@/lib/contentWellnessService';
+import contentWellnessService from '@/lib/contentWellnessService';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ContentWellnessSettingsScreen() {
@@ -84,6 +85,7 @@ export default function ContentWellnessSettingsScreen() {
   if (loading || !settings) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+        <StatusBar barStyle="dark-content" translucent={true} />
         <Text style={{ color: colors.text.primary }}>Loading...</Text>
       </View>
     );
@@ -91,6 +93,7 @@ export default function ContentWellnessSettingsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+      <StatusBar barStyle="dark-content" translucent={true} />
       {/* Header */}
       <View style={[styles.header, { 
         backgroundColor: colors.background.primary,
@@ -200,36 +203,23 @@ export default function ContentWellnessSettingsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {/* Reset History */}
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={[styles.resetButton, { 
-                  backgroundColor: colors.background.white,
-                  borderColor: colors.border.lighter
-                }]}
-                onPress={handleResetHistory}
-              >
-                <RotateCcw size={20} color={colors.alert} />
-                <Text style={[styles.resetButtonText, { color: colors.alert }]}>Reset History</Text>
-              </TouchableOpacity>
-            </View>
           </>
         )}
 
-        {/* Info */}
-        <View style={[styles.infoCard, { 
-          backgroundColor: `${colors.accent}10`,
-          borderColor: `${colors.accent}20`
-        }]}>
-          <AlertTriangle size={20} color={colors.accent} />
-          <Text style={[styles.infoText, { color: colors.text.secondary }]}>
-            This feature helps you maintain a healthy reading balance by monitoring 
-            exposure to potentially sensitive topics like violence, politics, or mental health.
-          </Text>
+        {/* Reset History */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.resetButton, { 
+              backgroundColor: colors.background.white,
+              borderColor: colors.border.lighter
+            }]}
+            onPress={handleResetHistory}
+            activeOpacity={0.7}
+          >
+            <RotateCcw size={20} color={colors.alert} />
+            <Text style={[styles.resetButtonText, { color: colors.alert }]}>Reset History</Text>
+          </TouchableOpacity>
         </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -238,6 +228,7 @@ export default function ContentWellnessSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -246,31 +237,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
+    borderBottomColor: Colors.border.lighter,
   },
   closeButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: Colors.text.primary,
+    fontFamily: 'PlayfairDisplay_700Bold',
   },
   placeholder: {
     width: 32,
   },
   content: {
     flex: 1,
-    padding: 20,
   },
   section: {
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.text.primary,
     marginBottom: 8,
   },
   sectionDescription: {
     fontSize: 14,
+    color: Colors.text.secondary,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -278,11 +274,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background.white,
-    borderRadius: 12,
     padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    backgroundColor: Colors.background.white,
   },
   settingInfo: {
     flex: 1,
@@ -291,61 +286,54 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.text.primary,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
+    color: Colors.text.secondary,
+    lineHeight: 20,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background.white,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    padding: 16,
+    borderWidth: 1,
     marginBottom: 8,
-    borderWidth: 2,
-    borderColor: Colors.border.lighter,
   },
   optionSelected: {
+    borderWidth: 2,
   },
   optionText: {
     fontSize: 16,
+    color: Colors.text.primary,
   },
   optionTextSelected: {
+    fontWeight: '600',
   },
   selectedIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
   },
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.background.white,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    backgroundColor: Colors.background.white,
   },
   resetButtonText: {
-    marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
-  },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: `${Colors.accent}10`,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: `${Colors.accent}20`,
-  },
-  infoText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
-    lineHeight: 20,
+    color: Colors.alert,
+    marginLeft: 8,
   },
 });
