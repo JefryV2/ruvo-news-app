@@ -76,6 +76,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/reset-password(.*)",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

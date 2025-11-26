@@ -1,19 +1,34 @@
 import { communityService } from '../lib/communityService';
+import { Signal } from '../types';
 
 // Test the sharing functionality
 async function testShareFunctionality() {
   console.log('Testing share functionality...');
   
-  // Mock user ID and signal ID for testing
+  // Mock user ID and signal for testing
   const testUserId = 'test-user-id';
-  const testSignalId = 'test-signal-id';
+  const testSignal: Signal = {
+    id: 'test-signal-id',
+    title: 'Test Article',
+    summary: 'This is a test article for sharing functionality',
+    sourceId: 'test-source',
+    sourceName: 'Test Source',
+    verified: true,
+    tags: ['test', 'sharing'],
+    url: 'https://example.com/test-article',
+    relevanceScore: 0.8,
+    timestamp: new Date(),
+    imageUrl: 'https://example.com/test-image.jpg',
+    saved: false,
+    liked: false
+  };
   const testMessage = 'Testing share functionality';
   
   try {
     console.log('Attempting to share article with all friends...');
     const result = await communityService.shareArticleWithAllFriends(
       testUserId,
-      testSignalId,
+      testSignal,
       testMessage
     );
     

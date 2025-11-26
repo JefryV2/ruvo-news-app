@@ -10,7 +10,6 @@ import {
   Modal,
   TouchableWithoutFeedback,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -187,7 +186,6 @@ export default function ArticleDetailScreen() {
   if (!signal) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background.primary, alignItems: 'center', justifyContent: 'center' }]}>
-        <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
         {isRemoteLoading ? (
           <ActivityIndicator size="large" color={colors.primary} />
         ) : (
@@ -339,7 +337,6 @@ export default function ArticleDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
-      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       {/* Header */}
       <View style={[styles.header, { 
         backgroundColor: colors.background.primary,

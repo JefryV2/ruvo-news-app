@@ -85,20 +85,39 @@ export default function SavedArticlesScreen() {
               if (buttonIndex === 1) {
                 // Share with all friends
                 console.log('Sharing with all friends in saved articles');
-                await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
-                Alert.alert('Success', 'Article shared with all friends and to community feed');
+                // Get the full signal object
+                const signal = savedSignals.find(s => s.id === signalId);
+                if (signal) {
+                  await communityService.shareArticleWithAllFriends(user.id, signal, 'Check out this article!');
+                  Alert.alert('Success', 'Article shared with all friends and to community feed');
+                } else {
+                  Alert.alert('Error', 'Failed to share article. Please try again.');
+                }
               } else if (buttonIndex === 2) {
                 // Share to Community Feed only
                 console.log('Sharing to community feed only in saved articles');
-                await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
-                Alert.alert('Success', 'Article shared to community feed');
+                // Get the full signal object
+                const signal = savedSignals.find(s => s.id === signalId);
+                if (signal) {
+                  await communityService.shareArticleToCommunity(user.id, signal, 'Check out this article!');
+                  Alert.alert('Success', 'Article shared to community feed');
+                } else {
+                  Alert.alert('Error', 'Failed to share article. Please try again.');
+                }
               } else {
                 // Share with specific friend
                 const friendId = friendOptions[buttonIndex - 3];
                 console.log('Sharing with specific friend in saved articles:', friendId);
-                await communityService.shareArticleWithFriend(user.id, signalId, friendId, 'Check out this article!');
-                Alert.alert('Success', 'Article shared with friend');
+                // Get the full signal object
+                const signal = savedSignals.find(s => s.id === signalId);
+                if (signal) {
+                  await communityService.shareArticleWithFriend(user.id, signal, friendId, 'Check out this article!');
+                  Alert.alert('Success', 'Article shared with friend');
+                } else {
+                  Alert.alert('Error', 'Failed to share article. Please try again.');
+                }
               }
+
             } catch (error) {
               console.error('Error sharing article in saved articles:', error);
               Alert.alert('Error', 'Failed to share article');
@@ -113,8 +132,14 @@ export default function SavedArticlesScreen() {
           { text: 'Share with all friends', onPress: async () => {
             try {
               console.log('Sharing with all friends in saved articles');
-              await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
-              Alert.alert('Success', 'Article shared with all friends and to community feed');
+              // Get the full signal object
+              const signal = savedSignals.find(s => s.id === signalId);
+              if (signal) {
+                await communityService.shareArticleWithAllFriends(user.id, signal, 'Check out this article!');
+                Alert.alert('Success', 'Article shared with all friends and to community feed');
+              } else {
+                Alert.alert('Error', 'Failed to share article. Please try again.');
+              }
             } catch (error) {
               console.error('Error sharing article in saved articles:', error);
               Alert.alert('Error', 'Failed to share article');
@@ -123,9 +148,14 @@ export default function SavedArticlesScreen() {
           { text: 'Share to Community Feed', onPress: async () => {
             try {
               console.log('Sharing to community feed only in saved articles');
-              // For community feed only, we'll still use shareArticleWithAllFriends but it will show in community
-              await communityService.shareArticleWithAllFriends(user.id, signalId, 'Check out this article!');
-              Alert.alert('Success', 'Article shared to community feed');
+              // Get the full signal object
+              const signal = savedSignals.find(s => s.id === signalId);
+              if (signal) {
+                await communityService.shareArticleToCommunity(user.id, signal, 'Check out this article!');
+                Alert.alert('Success', 'Article shared to community feed');
+              } else {
+                Alert.alert('Error', 'Failed to share article. Please try again.');
+              }
             } catch (error) {
               console.error('Error sharing article in saved articles:', error);
               Alert.alert('Error', 'Failed to share article');
@@ -136,8 +166,14 @@ export default function SavedArticlesScreen() {
             onPress: async () => {
               try {
                 console.log('Sharing with specific friend in saved articles:', friendId);
-                await communityService.shareArticleWithFriend(user.id, signalId, friendId, 'Check out this article!');
-                Alert.alert('Success', 'Article shared with friend');
+                // Get the full signal object
+                const signal = savedSignals.find(s => s.id === signalId);
+                if (signal) {
+                  await communityService.shareArticleWithFriend(user.id, signal, friendId, 'Check out this article!');
+                  Alert.alert('Success', 'Article shared with friend');
+                } else {
+                  Alert.alert('Error', 'Failed to share article. Please try again.');
+                }
               } catch (error) {
                 console.error('Error sharing article in saved articles:', error);
                 Alert.alert('Error', 'Failed to share article');

@@ -77,7 +77,7 @@ export const useSession = () => {
   return useQuery({
     queryKey: ['session'],
     queryFn: authService.getSession,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
   });
 };
 
@@ -86,7 +86,7 @@ export const useCurrentUser = () => {
   return useQuery<User | null, Error>({
     queryKey: ['user', 'current'],
     queryFn: userService.getCurrentUser,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
     retry: 0, // Don't retry on failure - prevents crash on startup
     retryOnMount: false,
   });
@@ -133,7 +133,7 @@ export const useNewsAPIPersonalized = (interests: string[]) => {
   return useQuery({
     queryKey: ['news-api', 'personalized', interests],
     queryFn: () => newsApiService.fetchPersonalizedNews(interests),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
     retry: 2,
   });
 };
@@ -142,7 +142,7 @@ export const useTopHeadlines = (country: string = 'us', category?: string) => {
   return useQuery({
     queryKey: ['news-api', 'headlines', country, category],
     queryFn: () => newsApiService.fetchTopHeadlines(country, category),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
     retry: 2,
   });
 };
@@ -153,7 +153,7 @@ export const useAIPersonalizedNews = (preferences: UserPreferences, limit = 20) 
     queryKey: ['ai-news', 'personalized', preferences.interests, limit],
     queryFn: () => aiNewsService.fetchPersonalizedNews(preferences, limit),
     enabled: preferences.interests.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes - AI calls are expensive
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 10 - AI calls are expensive
     retry: 1,
   });
 };
@@ -166,7 +166,7 @@ export const useAIRecommendations = (
     queryKey: ['ai-news', 'recommendations', preferences.interests, userHistory],
     queryFn: () => aiNewsService.getAIRecommendations(preferences, userHistory),
     enabled: preferences.interests.length > 0,
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 45 * 60 * 1000, // 45 minutes instead of 15
     retry: 1,
   });
 };
@@ -176,7 +176,7 @@ export const useDailyDigest = (signals: any[]) => {
     queryKey: ['ai-digest', signals.map(s => s.id).join(',')],
     queryFn: () => aiNewsService.generateDailyDigest(signals),
     enabled: signals.length > 0,
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 2 * 60 * 60 * 1000, // 2 hours instead of 1 hour
   });
 };
 
@@ -185,7 +185,7 @@ export const useAITrendingTopics = (recentSignals: any[]) => {
     queryKey: ['ai-trending', recentSignals.map(s => s.id).join(',')],
     queryFn: () => aiNewsService.analyzeTrendingTopics(recentSignals),
     enabled: recentSignals.length > 0,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 60 * 60 * 1000, // 1 hour instead of 30 minutes
   });
 };
 
@@ -195,7 +195,7 @@ export const useSignalsForUser = (userId: string, limit = 20) => {
     queryKey: ['signals', 'user', userId, limit],
     queryFn: () => signalService.getSignalsForUser(userId, limit),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 2
   });
 };
 
@@ -203,7 +203,7 @@ export const useTrendingSignals = (limit = 10) => {
   return useQuery({
     queryKey: ['signals', 'trending', limit],
     queryFn: () => signalService.getTrendingSignals(limit),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
   });
 };
 
@@ -212,7 +212,7 @@ export const useSearchSignals = (query: string, limit = 20) => {
     queryKey: ['signals', 'search', query, limit],
     queryFn: () => signalService.searchSignals(query, limit),
     enabled: query.length > 2,
-    staleTime: 1 * 60 * 1000, // 1 minute
+    staleTime: 10 * 60 * 1000, // 10 minutes instead of 1
   });
 };
 
@@ -221,7 +221,7 @@ export const useSignalById = (id: string) => {
     queryKey: ['signals', id],
     queryFn: () => signalService.getSignalById(id),
     enabled: !!id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 10
   });
 };
 
@@ -294,7 +294,7 @@ export const useUserSignalInteractions = (userId: string) => {
     queryKey: ['user-signals', 'interactions', userId],
     queryFn: () => userSignalService.getUserSignalInteractions(userId),
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 5 * 60 * 1000, // 5 minutes instead of 30 seconds
     retry: 0, // Prevent crash on startup if database is unavailable
   });
 };
@@ -323,7 +323,7 @@ export const useNotificationsForUser = (userId: string, limit = 50) => {
     queryKey: ['notifications', 'user', userId, limit],
     queryFn: () => notificationService.getNotificationsForUser(userId, limit),
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 30 seconds
   });
 };
 
@@ -332,8 +332,8 @@ export const useUnreadNotificationCount = (userId: string) => {
     queryKey: ['notifications', 'unread-count', userId],
     queryFn: () => notificationService.getUnreadCount(userId),
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 30 seconds
+    refetchInterval: 300000, // 5 minutes instead of 30 seconds
   });
 };
 
@@ -383,7 +383,7 @@ export const useTrendingTopics = (userInterests: string[] = []) => {
   return useQuery({
     queryKey: ['discovery', 'trending', userInterests],
     queryFn: () => discoveryService.getTrendingTopics(userInterests),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 5
   });
 };
 
@@ -392,7 +392,7 @@ export const useSearchArticles = (query: string, category?: string, language: st
     queryKey: ['discovery', 'search', query, category, language],
     queryFn: () => discoveryService.searchArticles(query, category, language),
     enabled: query.length > 2,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 2
   });
 };
 
@@ -401,7 +401,7 @@ export const usePersonalizedRecommendations = (userInterests: string[]) => {
     queryKey: ['discovery', 'personalized', userInterests],
     queryFn: () => discoveryService.getPersonalizedRecommendations(userInterests),
     enabled: userInterests.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 10
   });
 };
 
@@ -410,7 +410,7 @@ export const useTrendingByCategory = (category: string, language: string = 'en')
     queryKey: ['discovery', 'category', category, language],
     queryFn: () => discoveryService.getTrendingByCategory(category, language),
     enabled: category !== 'All',
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
   });
 };
 
@@ -420,7 +420,7 @@ export const useWebzioPersonalized = (interests: string[]) => {
     queryKey: ['webzio', 'personalized', interests],
     queryFn: () => webzioService.fetchPersonalizedNews(interests),
     enabled: interests.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
     retry: 2,
   });
 };
@@ -430,7 +430,7 @@ export const useWebzioByCategory = (category: string) => {
     queryKey: ['webzio', 'category', category],
     queryFn: () => webzioService.fetchByCategory(category),
     enabled: !!category && category !== 'All',
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
     retry: 2,
   });
 };
@@ -440,7 +440,7 @@ export const useWebzioSearch = (query: string) => {
     queryKey: ['webzio', 'search', query],
     queryFn: () => webzioService.searchNews(query),
     enabled: query.length > 2,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes instead of 2
     retry: 2,
   });
 };
@@ -451,7 +451,7 @@ export const useProfileStats = (userId: string) => {
     queryKey: ['profile-stats', userId],
     queryFn: () => accountSettingsService.getProfileStats(userId),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
   });
 };
 
@@ -462,7 +462,7 @@ export const useAccountSettings = () => {
     queryKey: ['account-settings', user?.id],
     queryFn: () => accountSettingsService.getAccountSettings(user?.id || ''),
     enabled: !!user?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes instead of 10
   });
 };
 

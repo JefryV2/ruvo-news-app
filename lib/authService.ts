@@ -262,8 +262,14 @@ export const authService = {
     }
 
     try {
+      // Determine redirect URL based on environment
+      const isDev = __DEV__ || process.env.NODE_ENV === 'development';
+      const redirectTo = isDev 
+        ? 'http://localhost:8081/reset-password'
+        : 'https://ruvo-news-app.vercel.app/reset-password';
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'ruvo://reset-password',
+        redirectTo,
       });
       
       if (error) throw error;

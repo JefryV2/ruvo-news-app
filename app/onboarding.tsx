@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Animated,
-  Platform,
-  StatusBar,
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  Animated, 
+  StatusBar, 
   SafeAreaView,
-  TextInput,
-  KeyboardAvoidingView,
   Image,
-  Alert,
+  Platform,
+  KeyboardAvoidingView,
+  TextInput,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Sparkles, Check } from 'lucide-react-native';
@@ -40,11 +39,6 @@ export default function OnboardingScreen() {
   const [slideAnim] = useState(new Animated.Value(20));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [glowAnim] = useState(new Animated.Value(0.3));
-  // Create separate animated values for interpolation to avoid conflicts
-  const [scaleInterpolated] = useState(new Animated.Value(1.1));
-  const [glowInterpolated] = useState(new Animated.Value(0.5));
-  const [scaleInterpolated2] = useState(new Animated.Value(1));
-  const [glowInterpolated2] = useState(new Animated.Value(0.3));
 
   React.useEffect(() => {
     fadeAnim.setValue(0);
@@ -67,7 +61,7 @@ export default function OnboardingScreen() {
   React.useEffect(() => {
     let pulseAnimation: Animated.CompositeAnimation | null = null;
 
-    // Continuous pulsating animation - using consistent useNativeDriver: true
+    // Continuous pulsating animation
     const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -79,28 +73,7 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.6,
             duration: 2000,
-            useNativeDriver: true, // Changed from false to true
-          }),
-          // Animate the interpolated values separately
-          Animated.timing(scaleInterpolated, {
-            toValue: 1.4,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowInterpolated, {
-            toValue: 0.8,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleInterpolated2, {
-            toValue: 1.3,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowInterpolated2, {
-            toValue: 0.6,
-            duration: 2000,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ]),
         Animated.parallel([
@@ -112,28 +85,7 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.3,
             duration: 2000,
-            useNativeDriver: true, // Changed from false to true
-          }),
-          // Animate the interpolated values separately
-          Animated.timing(scaleInterpolated, {
-            toValue: 1.1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowInterpolated, {
-            toValue: 0.5,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleInterpolated2, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowInterpolated2, {
-            toValue: 0.3,
-            duration: 2000,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ]),
       ])
@@ -283,8 +235,14 @@ export default function OnboardingScreen() {
           style={[
             styles.gradientOrb2,
             {
-              transform: [{ scale: scaleInterpolated }],
-              opacity: glowInterpolated,
+              transform: [{ scale: pulseAnim.interpolate({
+                inputRange: [1, 1.3],
+                outputRange: [1.1, 1.4],
+              })}],
+              opacity: glowAnim.interpolate({
+                inputRange: [0.3, 0.6],
+                outputRange: [0.5, 0.8],
+              }),
             },
           ]} 
         >
@@ -300,8 +258,14 @@ export default function OnboardingScreen() {
           style={[
             styles.gradientOrb3,
             {
-              transform: [{ scale: scaleInterpolated2 }],
-              opacity: glowInterpolated2,
+              transform: [{ scale: pulseAnim.interpolate({
+                inputRange: [1, 1.3],
+                outputRange: [1, 1.3],
+              })}],
+              opacity: glowAnim.interpolate({
+                inputRange: [0.3, 0.6],
+                outputRange: [0.3, 0.6],
+              }),
             },
           ]} 
         >
@@ -444,7 +408,6 @@ export default function OnboardingScreen() {
                   source={{ uri: interest.imageUrl || 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=800&auto=format&fit=crop' }}
                   style={styles.interestImage}
                   resizeMode="cover"
-                  onError={(error) => console.log('Image load error:', error)}
                 />
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
@@ -623,8 +586,12 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
-      <StatusBar barStyle={isDarkStep ? 'light-content' : 'dark-content'} backgroundColor={isDarkStep ? '#050505' : Colors.background.white} translucent={true} />
+    <View style={[styles.container, isDarkStep && styles.containerDark]}>
+      <StatusBar 
+        barStyle={isDarkStep ? 'light-content' : 'dark-content'} 
+        translucent 
+        backgroundColor="transparent"
+      />
       {currentStep !== 'welcome' && (
         <View style={[styles.topBar, isDarkStep && styles.topBarDark]}>
           <View style={styles.progressDots}>
@@ -653,23 +620,23 @@ export default function OnboardingScreen() {
         <>
           {renderCurrentStep()}
           <View style={styles.welcomeFooter}>
-            <TouchableOpacity 
-              style={[
-                currentStep === 'welcome' ? styles.getStartedButton : styles.continueButton,
-                !canProceed() && styles.continueButtonDisabled
-              ]}
-              onPress={handleNext}
-              disabled={!canProceed()}
-              activeOpacity={0.8}
-            >
-              <Text style={currentStep === 'welcome' ? styles.getStartedButtonText : styles.continueButtonText}>
-                {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
-              </Text>
-            </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            currentStep === 'welcome' ? styles.getStartedButton : styles.continueButton,
+            !canProceed() && styles.continueButtonDisabled
+          ]}
+          onPress={handleNext}
+          disabled={!canProceed()}
+          activeOpacity={0.8}
+        >
+          <Text style={currentStep === 'welcome' ? styles.getStartedButtonText : styles.continueButtonText}>
+            {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
+          </Text>
+        </TouchableOpacity>
           </View>
         </>
       ) : (
-        <>
+        <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
           <View style={styles.content}>{renderCurrentStep()}</View>
           {currentStep !== 'complete' && (
             <View style={styles.footer}>
@@ -685,9 +652,9 @@ export default function OnboardingScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </>
+        </SafeAreaView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -783,7 +750,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border.lighter,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: Colors.background.secondary,
   },
   interestCardActive: {
     borderColor: Colors.primary,
@@ -795,8 +761,6 @@ const styles = StyleSheet.create({
   },
   interestImage: {
     position: 'absolute',
-    top: 0,
-    left: 0,
     width: '100%',
     height: '100%',
     borderRadius: 17,

@@ -70,7 +70,7 @@ export default function CommunityScreen() {
   useEffect(() => {
     const interval = setInterval(() => {
       loadSharedArticles();
-    }, 30000); // Refresh every 30 seconds
+    }, 300000); // Refresh every 5 minutes instead of 30 seconds
     
     return () => clearInterval(interval);
   }, [user?.id]); // Add user ID as dependency
@@ -160,10 +160,10 @@ export default function CommunityScreen() {
       </View>
       
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.navIcon}>
+        <TouchableOpacity style={styles.navIcon} onPress={() => router.back()}>
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Shared Articles</Text>
+        <Text style={[styles.topTitle, { color: colors.text.primary }]}>Shared Articles</Text>
         <TouchableOpacity style={styles.navIcon} onPress={toggle}>
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>

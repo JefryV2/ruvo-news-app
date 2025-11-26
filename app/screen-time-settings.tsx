@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Switch,
   ScrollView,
-  StatusBar,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -89,9 +88,7 @@ export default function ScreenTimeSettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>      
-      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
-
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       <View style={[styles.header, { 
@@ -224,9 +221,7 @@ export default function ScreenTimeSettingsScreen() {
             </View>
             <Switch
               value={wellbeingPreferences.trackingEnabled}
-              onValueChange={(value) => {
-                setPreference({ trackingEnabled: value });
-              }}
+              onValueChange={(value) => setPreference({ trackingEnabled: value })}
               disabled={prefsLoading}
               trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
               thumbColor={wellbeingPreferences.trackingEnabled ? colors.primary : colors.text.tertiary}
@@ -242,9 +237,7 @@ export default function ScreenTimeSettingsScreen() {
             </View>
             <Switch
               value={wellbeingPreferences.showSensitiveBanner}
-              onValueChange={(value) => {
-                setPreference({ showSensitiveBanner: value });
-              }}
+              onValueChange={(value) => setPreference({ showSensitiveBanner: value })}
               disabled={prefsLoading}
               trackColor={{ false: colors.border.light, true: `${colors.primary}40` }}
               thumbColor={wellbeingPreferences.showSensitiveBanner ? colors.primary : colors.text.tertiary}

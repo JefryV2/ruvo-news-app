@@ -72,9 +72,17 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const { data: topHeadlinesSignals, isLoading: topHeadlinesLoading, error: topHeadlinesError } = useTopHeadlines('us');
   
   // Select which data to use based on user interests
-  const selectedNewsApiSignals = userInterests.length > 0 ? newsApiSignals : topHeadlinesSignals;
-  const selectedNewsApiLoading = userInterests.length > 0 ? newsApiLoading : topHeadlinesLoading;
-  const selectedNewsApiError = userInterests.length > 0 ? newsApiError : topHeadlinesError;
+  const selectedNewsApiSignals = useMemo(() => {
+    return userInterests.length > 0 ? newsApiSignals : topHeadlinesSignals;
+  }, [userInterests, newsApiSignals, topHeadlinesSignals]);
+  
+  const selectedNewsApiLoading = useMemo(() => {
+    return userInterests.length > 0 ? newsApiLoading : topHeadlinesLoading;
+  }, [userInterests, newsApiLoading, topHeadlinesLoading]);
+  
+  const selectedNewsApiError = useMemo(() => {
+    return userInterests.length > 0 ? newsApiError : topHeadlinesError;
+  }, [userInterests, newsApiError, topHeadlinesError]);
   
   // Use Webz.io for additional news sources
   const { data: webzioSignals, isLoading: webzioLoading, error: webzioError } = useWebzioPersonalized(userInterests);
@@ -96,10 +104,18 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   );
   
   // Select which AI data to use based on user interests
-  const selectedAiSignals = userInterests.length > 0 ? aiSignals : fallbackAiSignals;
-  const selectedAiLoading = userInterests.length > 0 ? aiLoading : fallbackAiLoading;
-  const selectedAiError = userInterests.length > 0 ? aiError : fallbackAiError;
+  const selectedAiSignals = useMemo(() => {
+    return userInterests.length > 0 ? aiSignals : fallbackAiSignals;
+  }, [userInterests, aiSignals, fallbackAiSignals]);
   
+  const selectedAiLoading = useMemo(() => {
+    return userInterests.length > 0 ? aiLoading : fallbackAiLoading;
+  }, [userInterests, aiLoading, fallbackAiLoading]);
+  
+  const selectedAiError = useMemo(() => {
+    return userInterests.length > 0 ? aiError : fallbackAiError;
+  }, [userInterests, aiError, fallbackAiError]);
+
   // Fallback chain: AI → News API → Database → Mock Data
   const { data: dbSignals, isLoading: dbLoading, error: dbError } = useSignalsForUser(user?.id || '', 20);
   

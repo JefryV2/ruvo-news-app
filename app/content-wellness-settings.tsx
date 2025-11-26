@@ -12,9 +12,10 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Shield, AlertTriangle, RotateCcw } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import contentWellnessService from '@/lib/contentWellnessService';
-import { useTheme } from '@/contexts/ThemeContext';
+import Colors from '../constants/colors';
+import { contentWellnessService } from '../lib/contentWellnessService';
+import type { ContentWellnessSettings } from '../lib/contentWellnessService';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function ContentWellnessSettingsScreen() {
   const insets = useSafeAreaInsets();

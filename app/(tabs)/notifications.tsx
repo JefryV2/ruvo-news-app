@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Clock, Sparkles, TrendingUp, AlertCircle } from 'lucide-react-native';
+import { Bell, Clock, Sparkles, TrendingUp, AlertCircle, Info, AlertTriangle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Colors from '@/constants/colors';
@@ -20,6 +20,148 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Notification as NotificationType } from '@/types';
 
 type FilterType = 'all' | 'unread' | 'high';
+
+const getUrgencyColor = (urgency: string) => {
+  switch (urgency) {
+    case 'high': return '#EF4444';
+    case 'medium': return '#F59E0B';
+    case 'low': return '#10B981';
+    default: return '#6B7280';
+  }
+};
+
+// Move NotificationCard outside of the main component to fix hook issues
+const NotificationCard = React.memo(({ 
+  notif, 
+  index,
+  markNotificationRead,
+  colors,
+  mode
+}: { 
+  notif: NotificationType; 
+  index: number;
+  markNotificationRead: (id: string) => void;
+  colors: any;
+  mode: string;
+}) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        delay: index * 50,
+        useNativeDriver: true,
+        tension: 60,
+        friction: 8,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        delay: index * 50,
+        useNativeDriver: true,
+        tension: 60,
+        friction: 8,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim, scaleAnim, index]);
+
+  const getUrgencyIcon = (urgency: string) => {
+    switch (urgency) {
+      case 'high': return AlertTriangle;
+      case 'medium': return AlertCircle;
+      case 'low': return Info;
+      default: return Bell;
+    }
+  };
+
+  const getCategoryEmoji = (category: string) => {
+    const key = category.toLowerCase();
+    if (key.includes('tech') || key.includes('ai') || key.includes('digital')) return '💻';
+    if (key.includes('finance') || key.includes('market') || key.includes('economy')) return '💰';
+    if (key.includes('health') || key.includes('medical') || key.includes('wellness')) return '🏥';
+    if (key.includes('sports') || key.includes('game')) return '⚽';
+    if (key.includes('politic') || key.includes('government')) return '🏛️';
+    if (key.includes('entertain') || key.includes('movie') || key.includes('music')) return '🎬';
+    if (key.includes('science') || key.includes('research')) return '🔬';
+    if (key.includes('environment') || key.includes('climate')) return '🌍';
+    if (key.includes('food') || key.includes('cooking')) return '🍽️';
+    if (key.includes('travel') || key.includes('tourism')) return '✈️';
+    if (key.includes('education') || key.includes('learn')) return '📚';
+    if (key.includes('taste') || key.includes('flavor')) return '😋';
+    if (key.includes('bonus') || key.includes('deal')) return '🎁';
+    if (key.includes('delivery')) return '📦';
+    if (key.includes('alert') || key.includes('urgent')) return '⚠️';
+    return '📰';
+  };
+
+  const formatTimeAgo = (timestamp: string | Date) => {
+    const now = new Date();
+    const past = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
+
+  const UrgencyIcon = getUrgencyIcon(notif.urgency);
+  const urgencyColor = getUrgencyColor(notif.urgency);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          opacity: fadeAnim,
+          transform: [
+            { translateY: slideAnim },
+            { scale: scaleAnim },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={[styles.notificationCard, !notif.read && [styles.notificationUnread, { backgroundColor: colors.card.elevated, borderColor: colors.border.light }]]}
+        onPress={() => markNotificationRead(notif.id)}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.emojiIcon, { backgroundColor: colors.card.secondary }]}>
+          <Text style={[styles.emojiText, { color: colors.text.primary }]}>{getCategoryEmoji(notif.category)}</Text>
+        </View>
+        <View style={styles.notificationContent}>
+          <View style={styles.notificationHeader}>
+            <Text numberOfLines={2} style={[styles.notificationTitle, { color: colors.text.primary }]}>{notif.title}</Text>
+            <View style={styles.timeContainer}>
+              <Clock size={12} color={colors.text.tertiary} strokeWidth={2.5} />
+              <Text style={[styles.notificationTime, { color: colors.text.tertiary }]}>{formatTimeAgo(notif.timestamp)}</Text>
+            </View>
+          </View>
+          <Text style={[styles.notificationMessage, { color: colors.text.secondary }]} numberOfLines={3}>{notif.message}</Text>
+          {!notif.read && (
+            <TouchableOpacity 
+              style={[styles.markRead, { backgroundColor: colors.primary }]} 
+              onPress={() => markNotificationRead(notif.id)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={[styles.markReadText, { color: colors.text.inverse }]}>Mark as Read</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <UrgencyIcon size={20} color={urgencyColor} style={styles.urgencyIcon} />
+      </TouchableOpacity>
+      
+      <View style={[styles.itemDivider, { backgroundColor: colors.border.lighter }]} />
+    </Animated.View>
+  );
+});
 
 export default function NotificationsScreen() {
   const { notifications, markNotificationRead } = useApp();
@@ -47,19 +189,6 @@ export default function NotificationsScreen() {
     return `${Math.floor(seconds / 86400)}d ago`;
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'high':
-        return Colors.alert;
-      case 'medium':
-        return '#FFA500';
-      case 'low':
-        return Colors.success;
-      default:
-        return Colors.text.secondary;
-    }
-  };
-
   const getUrgencyIcon = (urgency: string) => {
     switch (urgency) {
       case 'high':
@@ -83,87 +212,6 @@ export default function NotificationsScreen() {
     if (key.includes('alert') || key.includes('urgent')) return '⚠️';
     return '📰';
   };
-
-  const NotificationCard = React.memo(({ notif, index }: { notif: NotificationType; index: number }) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(30)).current;
-    const scaleAnim = useRef(new Animated.Value(0.95)).current;
-
-    useEffect(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          delay: index * 50,
-          useNativeDriver: true,
-          tension: 60,
-          friction: 8,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          delay: index * 50,
-          useNativeDriver: true,
-          tension: 60,
-          friction: 8,
-        }),
-      ]).start();
-    }, [fadeAnim, slideAnim, scaleAnim, index]);
-
-    const UrgencyIcon = getUrgencyIcon(notif.urgency);
-    const urgencyColor = getUrgencyColor(notif.urgency);
-    const { colors } = useTheme();
-
-    return (
-      <Animated.View
-        style={[
-          {
-            opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim },
-            ],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.notificationCard, !notif.read && [styles.notificationUnread, { backgroundColor: colors.card.elevated, borderColor: colors.border.light }]]}
-          onPress={() => markNotificationRead(notif.id)}
-          activeOpacity={0.8}
-        >
-          <View style={[styles.emojiIcon, { backgroundColor: colors.card.secondary }]}>
-            <Text style={[styles.emojiText, { color: colors.text.primary }]}>{getCategoryEmoji(notif.category)}</Text>
-          </View>
-          <View style={styles.notificationContent}>
-            <View style={styles.notificationHeader}>
-              <Text numberOfLines={2} style={[styles.notificationTitle, { color: colors.text.primary }]}>{notif.title}</Text>
-              <View style={styles.timeContainer}>
-                <Clock size={12} color={colors.text.tertiary} strokeWidth={2.5} />
-                <Text style={[styles.notificationTime, { color: colors.text.tertiary }]}>{formatTimeAgo(notif.timestamp)}</Text>
-              </View>
-            </View>
-            <Text style={[styles.notificationMessage, { color: colors.text.secondary }]} numberOfLines={3}>{notif.message}</Text>
-            {!notif.read && (
-              <TouchableOpacity 
-                style={[styles.markRead, { backgroundColor: colors.primary }]} 
-                onPress={() => markNotificationRead(notif.id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={[styles.markReadText, { color: colors.text.inverse }]}>Mark as Read</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <UrgencyIcon size={20} color={urgencyColor} style={styles.urgencyIcon} />
-        </TouchableOpacity>
-        
-        <View style={[styles.itemDivider, { backgroundColor: colors.border.lighter }]} />
-      </Animated.View>
-    );
-  });
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   
@@ -222,7 +270,7 @@ export default function NotificationsScreen() {
         <View style={styles.notificationsContainer}>
           {filteredNotifications.length > 0 ? (
             filteredNotifications.map((notif, index) => (
-              <NotificationCard key={notif.id} notif={notif} index={index} />
+              <NotificationCard key={notif.id} notif={notif} index={index} markNotificationRead={markNotificationRead} colors={colors} mode={mode} />
             ))
           ) : (
             <View style={styles.emptyState}>

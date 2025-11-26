@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Pressable,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -108,21 +107,6 @@ export default function FeedScreen() {
     const isExpanded = expandedArticleId === signal.id;
     const animation = cardAnimations[signal.id] || new Animated.Value(1);
     
-    // Create a separate animated value for interpolation to avoid conflicts
-    const translateYAnim = useRef(new Animated.Value(20)).current;
-    
-    // Update the animated value when the main animation changes
-    useEffect(() => {
-      animation.addListener(({ value }) => {
-        const interpolatedValue = 20 - (value * 20); // Map 0-1 to 20-0
-        translateYAnim.setValue(interpolatedValue);
-      });
-      
-      return () => {
-        animation.removeAllListeners();
-      };
-    }, [animation]);
-
     // Find related articles using the improved service based on user's grouping preference
     const relatedArticles = echoControlEnabled ? 
       echoControlService.findRelatedArticles(signal, signals, echoControlGrouping, customKeywords, 3) : [];
@@ -142,7 +126,12 @@ export default function FeedScreen() {
           styles.card,
           {
             opacity: animation,
-            transform: [{ translateY: translateYAnim }]
+            transform: [{
+              translateY: animation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0],
+              })
+            }]
           }
         ]}
       >
@@ -281,8 +270,7 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
-      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <Animated.ScrollView
         style={styles.mainScrollView}
         showsVerticalScrollIndicator={false}
@@ -366,28 +354,26 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.background.primary,
   },
   mainScrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100, // Add padding for bottom navigation
   },
   carouselSection: {
     marginBottom: 0,
   },
   recommendationsSection: {
     marginTop: 16,
-    paddingHorizontal: 16,
   },
   bottomPadding: {
     height: 140,
     backgroundColor: 'transparent',
   },
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 12,
     paddingTop: 0,
     flexDirection: 'row',
@@ -395,7 +381,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
@@ -404,25 +390,18 @@ const styles = StyleSheet.create({
   sectionLink: {
     color: 'inherit',
     fontWeight: '700',
-    fontSize: 14,
   },
   carouselContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 0,
   },
   slide: {
     width: CAROUSEL_SLIDE_WIDTH,
-    height: 220,
+    height: 200,
     marginRight: CAROUSEL_SPACING,
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: 'transparent',
-    // Enhanced shadow for better depth
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
   },
   slideImage: {
     width: '100%',
@@ -437,273 +416,254 @@ const styles = StyleSheet.create({
   },
   slideContent: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 16,
+    left: 12,
+    right: 12,
+    bottom: 12,
   },
   slideTag: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: 14,
+    marginBottom: 8,
   },
   slideTagText: {
     color: 'inherit',
     fontWeight: '700',
     fontFamily: Fonts.bold,
-    fontSize: 13,
+    fontSize: 12,
   },
   slideTitle: {
     color: 'inherit',
     fontWeight: '800',
     fontFamily: Fonts.bold,
-    fontSize: 18,
+    fontSize: 16,
     letterSpacing: -0.2,
-    lineHeight: 24,
   },
   slideMeta: {
-    marginTop: 6,
-    color: '#E6F3F0',
-    fontSize: 13,
+    marginTop: 4,
+    color: 'inherit',
+    fontSize: 12,
     fontFamily: Fonts.regular,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 16,
+    gap: 6,
+    paddingVertical: 12,
     paddingBottom: 8,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: 'inherit',
   },
   dotActive: {
-    width: 24,
-    borderRadius: 4,
+    width: 16,
+    borderRadius: 3,
     backgroundColor: 'inherit',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   headerTagline: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
     fontFamily: Fonts.regular,
     color: 'inherit',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   feed: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
     paddingTop: 0,
-    gap: 20,
+    gap: 16,
   },
   card: {
     backgroundColor: 'transparent',
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-    marginHorizontal: 16,
-    // Add subtle border for better definition
-    borderWidth: 0.5,
-    borderColor: 'transparent',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    marginBottom: 16,
   },
   cardImage: {
     width: '100%',
-    height: 200,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: 180,
   },
   cardContent: {
     padding: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   sourceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   sourceName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: 'inherit',
     letterSpacing: -0.2,
   },
   verifiedBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'inherit',
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedText: {
     color: 'inherit',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   timestamp: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'inherit',
-    fontWeight: '500',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   relatedBadge: {
     backgroundColor: 'inherit',
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    minWidth: 28,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 24,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   relatedBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: 'inherit',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: 'inherit',
-    marginBottom: 10,
-    lineHeight: 28,
+    marginBottom: 8,
+    lineHeight: 26,
     letterSpacing: -0.4,
   },
   summary: {
-    fontSize: 16,
+    fontSize: 15,
     color: 'inherit',
-    lineHeight: 24,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 14,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 18,
+    gap: 8,
+    marginBottom: 16,
   },
   tag: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'inherit',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: 'inherit',
     letterSpacing: -0.1,
   },
   reactionsRow: {
-    marginTop: 10,
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   reactionPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'inherit',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   morePill: {
     marginLeft: 'auto',
     backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'inherit',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   reactionText: {
     color: 'inherit',
     fontWeight: '700',
-    fontSize: 15,
   },
   expandedContent: {
-    marginTop: 16,
-    paddingTop: 20,
+    marginTop: 12,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: Colors.border.lighter,
   },
   fullText: {
-    fontSize: 16,
+    fontSize: 15,
     color: 'inherit',
-    lineHeight: 26,
+    lineHeight: 24,
   },
   tapToExpand: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: 'inherit',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 50,
   },
   loadingText: {
-    marginTop: 20,
-    fontSize: 17,
+    marginTop: 16,
+    fontSize: 16,
     color: 'inherit',
-    fontWeight: '600',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 100,
+    paddingVertical: 80,
   },
   emptyStateTitle: {
-    marginTop: 20,
-    fontSize: 22,
-    fontWeight: '800',
+    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '700',
     color: 'inherit',
   },
   emptyStateText: {
-    marginTop: 12,
-    fontSize: 17,
+    marginTop: 8,
+    fontSize: 16,
     color: 'inherit',
     textAlign: 'center',
     paddingHorizontal: 40,
-    lineHeight: 24,
   },
 });
