@@ -1,5 +1,7 @@
 import { supabase, IS_SUPABASE_CONFIGURED } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 
 export interface AuthUser {
   id: string;
@@ -148,10 +150,18 @@ export const authService = {
     try {
       console.log('Attempting to sign in with Google OAuth...');
       
+      // Determine redirect URL based on platform
+      const isWeb = Platform.OS === 'web';
+      const redirectTo = isWeb 
+        ? `${window.location.origin}/auth/callback`
+        : 'ruvo://auth/callback';
+      
+      console.log('Using redirect URL:', redirectTo);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'ruvo://auth/callback',
+          redirectTo,
           skipBrowserRedirect: true
         }
       });
@@ -163,15 +173,27 @@ export const authService = {
         throw error;
       }
 
-      // For mobile apps, we typically handle the redirect differently
-      // The OAuth flow will be handled by Expo's auth session
+      // For mobile apps, we return the URL and let the component handle opening it
+      // This gives us better control over the OAuth flow
+      
       return {
         provider: data.provider,
         url: data.url,
       };
     } catch (error: any) {
       console.error('Google Sign In error:', error);
-      throw new Error(error.message || 'Failed to sign in with Google');
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Provide more specific error messages
+      if (error.message && error.message.includes('redirect_uri_mismatch')) {
+        throw new Error('Redirect URL mismatch. Please check your Supabase Google Auth configuration.');
+      }
+      
+      throw new Error(error.message || 'Failed to sign in with Google. Please try again.');
     }
   },
 

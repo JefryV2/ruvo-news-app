@@ -3,7 +3,7 @@ import { Interest, Signal, Notification, TrendingTopic, Source } from '@/types';
 export const INTERESTS: Interest[] = [
   { id: '1', name: 'Tech', emoji: '💻', imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop' },
   { id: '2', name: 'Finance', emoji: '💰', imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=800&auto=format&fit=crop' },
-  { id: '3', name: 'K-Pop', emoji: '🎵', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=800&auto=format&fit=crop' },
+  // Removed K-Pop interest from onboarding/category list
   { id: '4', name: 'Local Events', emoji: '🎪', imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800&auto=format&fit=crop' },
   { id: '5', name: 'Science', emoji: '🔬', imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=800&auto=format&fit=crop' },
   { id: '6', name: 'Sports', emoji: '⚽', imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=800&auto=format&fit=crop' },

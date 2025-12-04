@@ -154,16 +154,21 @@ export default function SignInScreen() {
       console.log('Sign in result:', result);
       
       if (result.user) {
-        // Check if user has completed onboarding
-        const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
-        console.log('Onboarding complete status:', onboardingComplete);
-        
-        if (onboardingComplete === 'true') {
-          console.log('User has completed onboarding, redirecting to feed');
-          router.replace('/(tabs)/feed');
-        } else {
-          console.log('User has not completed onboarding, redirecting to onboarding');
-          router.replace('/onboarding');
+        try {
+          // Check if user has completed onboarding
+          const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+          console.log('Onboarding complete status:', onboardingComplete);
+          
+          if (onboardingComplete === 'true') {
+            console.log('User has completed onboarding, redirecting to feed');
+            router.replace('/(tabs)/feed');
+          } else {
+            console.log('User has not completed onboarding, redirecting to onboarding');
+            router.replace('/onboarding');
+          }
+        } catch (redirectError) {
+          console.error('Error during redirect:', redirectError);
+          setError('Sign in successful but redirect failed. Please try again.');
         }
       }
     } catch (err: any) {
@@ -220,21 +225,26 @@ export default function SignInScreen() {
       
       // Open the OAuth URL in a browser
       if (result.url) {
-        const response = await WebBrowser.openAuthSessionAsync(result.url);
+        const response = await WebBrowser.openAuthSessionAsync(result.url, 'ruvo://auth/callback');
         console.log('OAuth response:', response);
         
         if (response.type === 'success') {
           // The user has successfully authenticated
-          // Check if user has completed onboarding
-          const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
-          console.log('Onboarding complete status:', onboardingComplete);
-          
-          if (onboardingComplete === 'true') {
-            console.log('User has completed onboarding, redirecting to feed');
-            router.replace('/(tabs)/feed');
-          } else {
-            console.log('User has not completed onboarding, redirecting to onboarding');
-            router.replace('/onboarding');
+          try {
+            // Check if user has completed onboarding
+            const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+            console.log('Onboarding complete status:', onboardingComplete);
+            
+            if (onboardingComplete === 'true') {
+              console.log('User has completed onboarding, redirecting to feed');
+              router.replace('/(tabs)/feed');
+            } else {
+              console.log('User has not completed onboarding, redirecting to onboarding');
+              router.replace('/onboarding');
+            }
+          } catch (redirectError) {
+            console.error('Error during redirect:', redirectError);
+            setError('Authentication successful but redirect failed. Please try again.');
           }
         } else if (response.type === 'dismiss') {
           setError('Google sign in was cancelled');
@@ -244,7 +254,12 @@ export default function SignInScreen() {
       }
     } catch (err: any) {
       console.error('Google Sign in error:', err);
-      setError(err.message || 'Failed to sign in with Google. Please try again.');
+      setError(err.message || 'Failed to sign in with Google. Please check your configuration and try again.');
+      
+      // Show a more detailed error for redirect mismatches
+      if (err.message && err.message.includes('Redirect URL mismatch')) {
+        console.log('Redirect URL mismatch detected. Please ensure the redirect URLs are properly configured in Supabase.');
+      }
     } finally {
       setIsLoading(false);
     }

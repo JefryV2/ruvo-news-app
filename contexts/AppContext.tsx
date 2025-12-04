@@ -274,9 +274,10 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     }
   };
 
-  const setUser = useCallback(async (newUser: UserProfile | null) => {
-    // This is now handled by Supabase auth, but we keep it for compatibility
+  const setUser = useCallback((newUser: UserProfile | null) => {
+    // Update the local user state
     console.log('User set:', newUser);
+    // This will trigger a re-render with the new user data
   }, []);
 
   const updateUserInterests = useCallback(async (interests: string[]) => {

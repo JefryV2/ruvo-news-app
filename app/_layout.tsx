@@ -49,6 +49,14 @@ function RootLayoutNav() {
         console.log('Navigating to reset password screen');
         router.push('/reset-password');
       }
+      
+      // Handle auth callback links
+      if (path && path.includes('auth/callback')) {
+        console.log('Navigating to auth callback');
+        // The auth callback is handled by Supabase and Expo WebBrowser
+        // We don't need to navigate anywhere specific here
+        // The WebBrowser.openAuthSessionAsync will handle the callback
+      }
     };
     
     // Get the initial URL

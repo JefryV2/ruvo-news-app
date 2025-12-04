@@ -127,10 +127,10 @@ export default function LocationPermissionScreen({
             end={{ x: 1, y: 0 }}
             style={styles.gradientBlobTwo}
           />
-        </View>
+      </View>
       )}
 
-      <ScrollView
+      <ScrollView 
         style={styles.scrollContainer}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: 20 }]}
         showsVerticalScrollIndicator={false}
@@ -140,7 +140,7 @@ export default function LocationPermissionScreen({
           <TouchableOpacity onPress={onSkip} style={styles.skipButton}>
             <Text style={[styles.skipText, { color: colors.text.tertiary }]}>Skip</Text>
           </TouchableOpacity>
-        </View>
+          </View>
 
         <View
           style={[
@@ -157,8 +157,8 @@ export default function LocationPermissionScreen({
           <Text style={[styles.title, { color: colors.text.primary }]}>Get Local News</Text>
           <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
             Grant access once to unlock thoughtful regional coverage, tailored around where you live and travel.
-          </Text>
-        </View>
+              </Text>
+            </View>
 
         <View style={styles.benefitsContainer}>
           {benefitCards.map(({ title, description, icon: Icon }) => (
@@ -174,14 +174,14 @@ export default function LocationPermissionScreen({
             >
               <View style={[styles.benefitIconWrap, { backgroundColor: `${colors.primary}12` }]}>
                 <Icon size={18} color={colors.primary} />
-              </View>
+            </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.benefitTitle, { color: colors.text.primary }]}>{title}</Text>
                 <Text style={[styles.benefitDescription, { color: colors.text.secondary }]}>{description}</Text>
-              </View>
+            </View>
             </View>
           ))}
-        </View>
+          </View>
 
         <View
           style={[
@@ -196,24 +196,24 @@ export default function LocationPermissionScreen({
           <Text style={[styles.privacyText, { color: colors.text.secondary }]}>
             🔒 Location never leaves your device. We only use it to curate nearby stories and alerts. You can disable it anytime
             in Settings.
-          </Text>
-        </View>
+            </Text>
+          </View>
 
         <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
-            onPress={handleRequestPermission}
-            disabled={isRequesting}
+        <TouchableOpacity
+          style={[styles.button, styles.primaryButton]}
+          onPress={handleRequestPermission}
+          disabled={isRequesting}
             activeOpacity={0.85}
-          >
+        >
             <Text style={styles.primaryButtonText}>{isRequesting ? 'Requesting…' : 'Allow Location Access'}</Text>
             <ArrowRight size={18} color={Colors.text.inverse} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.button, styles.linkButton]} onPress={onSkip} activeOpacity={0.85}>
             <Text style={[styles.linkText, { color: colors.text.secondary }]}>Continue without location</Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
     </SafeAreaView>
   );

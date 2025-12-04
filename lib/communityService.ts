@@ -389,7 +389,7 @@ export const communityService = {
         console.error('Missing required parameters for sharing article with friend');
         throw new Error('Missing required parameters for sharing article with friend');
       }
-
+      
       const supabaseSignalId = await ensureSupabaseSignalId(signal);
 
       const { data, error } = await supabase
@@ -445,7 +445,7 @@ export const communityService = {
       );
       
       console.log('Friend IDs:', friendIds);
-
+      
       const supabaseSignalId = await ensureSupabaseSignalId(signal);
 
       // Share to community feed (using null friend_id)
@@ -456,13 +456,13 @@ export const communityService = {
         message: string;
       }[] = [
         {
-          user_id: userId,
+        user_id: userId,
           signal_id: supabaseSignalId,
           friend_id: null,
-          message
+        message
         }
       ];
-
+      
       const friendShares = friendIds.map(friendId => ({
         user_id: userId,
         signal_id: supabaseSignalId,

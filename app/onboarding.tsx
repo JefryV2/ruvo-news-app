@@ -23,6 +23,21 @@ import { INTERESTS } from '@/constants/mockData';
 import LocationPermissionScreen from '@/components/LocationPermissionScreen';
 import { GeolocationService } from '@/lib/geolocationService';
 
+// Local images for each interest card - must be at module level for React Native require()
+const interestImages: { [key: string]: any } = {
+  '1': require('./onboarding_pics/Tech.jpg'),
+  '2': require('./onboarding_pics/Finance.jpg'),
+  '4': require('./onboarding_pics/LocalEvents.jpg'),
+  '5': require('./onboarding_pics/Science.jpg'),
+  '6': require('./onboarding_pics/Sports.jpg'),
+  '7': require('./onboarding_pics/Food.jpg'),
+  '8': require('./onboarding_pics/Travel.jpg'),
+  '9': require('./onboarding_pics/Gaming.jpg'),
+  '10': require('./onboarding_pics/Fashion.jpg'),
+  '11': require('./onboarding_pics/Health.jpg'),
+  '12': require('./onboarding_pics/Music.jpg'),
+};
+
 type OnboardingStep = 'welcome' | 'location' | 'interests' | 'subcategories' | 'custom' | 'alerts' | 'complete';
 
 export default function OnboardingScreen() {
@@ -73,7 +88,7 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.6,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
@@ -85,7 +100,7 @@ export default function OnboardingScreen() {
           Animated.timing(glowAnim, {
             toValue: 0.3,
             duration: 2000,
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ]),
       ])
@@ -196,7 +211,6 @@ export default function OnboardingScreen() {
     const subcategoriesMap: { [key: string]: string[] } = {
       '1': ['AI/ML', 'Cybersecurity', 'Blockchain', 'Mobile Apps', 'Web Dev', 'Hardware', 'Cloud'],
       '2': ['Stocks', 'Crypto', 'Real Estate', 'Personal Finance', 'Economics', 'Banking'],
-      '3': ['K-Pop', 'Hip-Hop', 'R&B', 'Indie', 'Pop', 'Electronic'],
       '4': ['Concerts', 'Festivals', 'Markets', 'Sports Events', 'Community', 'Exhibitions'],
       '5': ['Space', 'Physics', 'Biology', 'Chemistry', 'Environment', 'Research'],
       '6': ['Football', 'Basketball', 'Tennis', 'Soccer', 'Baseball', 'F1', 'MMA'],
@@ -303,7 +317,6 @@ export default function OnboardingScreen() {
           return (
             <View key={interestId} style={styles.subcategorySection}>
               <View style={styles.subcategoryHeader}>
-                <Text style={styles.subcategoryEmoji}>{interest.emoji}</Text>
                 <Text style={styles.subcategoryTitle}>{interest.name}</Text>
               </View>
               
@@ -388,34 +401,60 @@ export default function OnboardingScreen() {
     </KeyboardAvoidingView>
   );
 
-  const renderInterests = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.interestsTitle}>What interests you?</Text>
-      <Text style={styles.interestsSubtitle}>Pick your topics. We'll handle the rest.</Text>
-      
-      <ScrollView style={styles.interestsScroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.interestsGrid}>
-          {INTERESTS.map((interest) => {
-            const active = selectedInterests.includes(interest.id);
+  const renderInterests = () => {
+    console.log('Rendering interests, count:', INTERESTS.length);
+    console.log('Interest images available:', Object.keys(interestImages));
+    
+    return (
+      <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Text style={styles.interestsTitle}>What interests you?</Text>
+        <Text style={styles.interestsSubtitle}>Pick your topics. We'll handle the rest.</Text>
+
+        <ScrollView style={styles.interestsScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.interestsGrid}>
+            {INTERESTS.map((interest) => {
+              const active = selectedInterests.includes(interest.id);
+              
+              // Use local images on native platforms, remote URLs on web
+              const imageSource = Platform.OS === 'web' 
+                ? (interest.imageUrl ? { uri: interest.imageUrl } : null)
+                : (interestImages[interest.id] || (interest.imageUrl ? { uri: interest.imageUrl } : null));
+              
+              console.log(`Interest ${interest.id} (${interest.name}):`, {
+                platform: Platform.OS,
+                hasLocalImage: !!interestImages[interest.id],
+                hasRemoteUrl: !!interest.imageUrl,
+                usingSource: imageSource ? (imageSource.uri ? 'remote' : 'local') : 'none'
+              });
+
             return (
               <TouchableOpacity
                 key={interest.id}
                 activeOpacity={0.8}
-                style={[styles.interestCard, active && styles.interestCardActive]}
+                style={[
+                  styles.interestCard,
+                  active && styles.interestCardActive,
+                ]}
                 onPress={() => toggleInterest(interest.id)}
               >
-                <Image 
-                  source={{ uri: interest.imageUrl || 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=800&auto=format&fit=crop' }}
-                  style={styles.interestImage}
-                  resizeMode="cover"
-                />
+                {imageSource ? (
+                  <Image
+                    source={imageSource}
+                    style={styles.interestImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.interestImage, { backgroundColor: Colors.background.secondary }]} />
+                )}
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
                   style={styles.interestGradient}
                 />
+
                 <View style={styles.interestContent}>
                   <Text style={[styles.interestName, active && styles.interestNameActive]}>{interest.name}</Text>
                 </View>
+
                 {active && (
                   <View style={styles.interestCheckmark}>
                     <Check size={18} color={Colors.text.inverse} strokeWidth={3} />
@@ -423,11 +462,12 @@ export default function OnboardingScreen() {
                 )}
               </TouchableOpacity>
             );
-          })}
-        </View>
-      </ScrollView>
-    </Animated.View>
-  );
+            })}
+          </View>
+        </ScrollView>
+      </Animated.View>
+    );
+  };
 
   const renderAlerts = () => (
     <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -497,7 +537,7 @@ export default function OnboardingScreen() {
           end={{ x: 0, y: 0 }}
           style={styles.completeBlobTwo}
         />
-      </View>
+          </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -512,7 +552,7 @@ export default function OnboardingScreen() {
         <Text style={styles.completeBodyDark}>
           We’ve tuned your feed across {selectedInterests.length || '0'} interests. Keep the signal high and the noise low.
         </Text>
-
+        
         <View style={styles.completeSummary}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabelDark}>Focus areas</Text>
@@ -523,12 +563,12 @@ export default function OnboardingScreen() {
             <Text style={styles.summaryValueMuted}>Customize next</Text>
           </View>
         </View>
-
+        
         <View style={styles.featuresRowDark}>
           {['Curated', 'Smart', 'Fast'].map((label) => (
             <View key={label} style={styles.featureChip}>
               <Text style={styles.featureChipText}>{label}</Text>
-            </View>
+          </View>
           ))}
         </View>
 
@@ -541,7 +581,7 @@ export default function OnboardingScreen() {
           <Text style={styles.askRuvoExample}>“Alert me when Apple releases products.”</Text>
           <Text style={styles.askRuvoExample}>“Track EV policy updates in Europe.”</Text>
         </View>
-
+        
         <TouchableOpacity style={styles.primaryCTA} onPress={handleNext} activeOpacity={0.9}>
           <Text style={styles.primaryCTAText}>Start exploring</Text>
         </TouchableOpacity>
@@ -639,18 +679,18 @@ export default function OnboardingScreen() {
         <SafeAreaView style={[styles.safeArea, isDarkStep && styles.safeAreaDark]}>
           <View style={styles.content}>{renderCurrentStep()}</View>
           {currentStep !== 'complete' && (
-            <View style={styles.footer}>
-              <TouchableOpacity 
-                style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
-                onPress={handleNext}
-                disabled={!canProceed()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.continueButtonText}>
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.continueButtonText}>
                   Continue
-                </Text>
-              </TouchableOpacity>
-            </View>
+              </Text>
+            </TouchableOpacity>
+          </View>
           )}
         </SafeAreaView>
       )}
@@ -751,6 +791,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  interestCardAndroid: {
+    backgroundColor: Colors.background.secondary,
+  },
   interestCardActive: {
     borderColor: Colors.primary,
     shadowColor: Colors.primary,
@@ -780,6 +823,14 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'flex-end',
+  },
+  interestContentAndroid: {
+    position: 'relative',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   interestEmoji: {
     fontSize: 40,

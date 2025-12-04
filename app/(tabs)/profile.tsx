@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Alert,
   ActivityIndicator,
   Switch,
   TextInput,
@@ -57,8 +58,6 @@ import {
   useExportUserData
 } from '@/lib/hooks';
 import { communityService } from '@/lib/communityService';
-import { showPrompt, showAlert } from '@/lib/alertService';
-import { ConfirmationModal } from '@/components/ConfirmationModal';
 
 export default function ProfileScreen() {
   const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
@@ -71,8 +70,6 @@ export default function ProfileScreen() {
   const [isActive, setIsActive] = useState(true);
   const [newKeyword, setNewKeyword] = useState('');
   const [showFriends, setShowFriends] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -111,24 +108,83 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    setShowLogoutModal(true);
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Initiating logout process');
+              await signOutMutation.mutateAsync();
+              console.log('Logout mutation successful, navigating to sign-in');
+            } catch (error: any) {
+              console.error('Logout error:', error);
+              // Even if there's an error, still try to navigate to sign-in
+            } finally {
+              // Always navigate to sign-in screen
+              setTimeout(() => {
+                router.replace('/auth/sign-in');
+              }, 150);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteAccount = () => {
-    setShowDeleteAccountModal(true);
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirm Deletion',
+              'This will permanently delete all your data. Are you absolutely sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Permanently',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      if (user?.id) {
+                        await deleteAccountMutation.mutateAsync(user.id);
+                        router.replace('/auth/sign-in');
+                      }
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'Failed to delete account');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   const handleExportData = async () => {
     try {
       if (user?.id) {
         const data = await exportDataMutation.mutateAsync(user.id);
-        showAlert(
+        Alert.alert(
           'Export Complete',
-          'Your data has been exported. Check your downloads folder.'
+          'Your data has been exported. Check your downloads folder.',
+          [{ text: 'OK' }]
         );
       }
     } catch (error: any) {
-      showAlert('Error', error.message || 'Failed to export data');
+      Alert.alert('Error', error.message || 'Failed to export data');
     }
   };
 
@@ -136,7 +192,7 @@ export default function ProfileScreen() {
     try {
       await updateSettings.mutateAsync({ [setting]: value });
     } catch (error: any) {
-      showAlert('Error', error.message || 'Failed to update setting');
+      Alert.alert('Error', error.message || 'Failed to update setting');
     }
   };
 
@@ -182,10 +238,10 @@ export default function ProfileScreen() {
       ]);
       setFriends(friendsData);
       setFriendRequests(requestsData);
-      showAlert('Success', 'Friend request accepted!');
+      Alert.alert('Success', 'Friend request accepted!');
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      showAlert('Error', 'Failed to accept friend request');
+      Alert.alert('Error', 'Failed to accept friend request');
     }
   };
 
@@ -212,7 +268,7 @@ export default function ProfileScreen() {
       setFriendRequests(requestsData);
     } catch (error) {
       console.error('Error rejecting friend request:', error);
-      showAlert('Error', 'Failed to reject friend request');
+      Alert.alert('Error', 'Failed to reject friend request');
     }
   };
 
@@ -224,7 +280,7 @@ export default function ProfileScreen() {
       setFriends(friendsData);
     } catch (error) {
       console.error('Error removing friend:', error);
-      showAlert('Error', 'Failed to remove friend');
+      Alert.alert('Error', 'Failed to remove friend');
     }
   };
 
@@ -344,7 +400,7 @@ export default function ProfileScreen() {
       const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
       if (seconds < 60) return `${seconds}s ago`;
       if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86600) return `${Math.floor(seconds / 3600)}h ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
@@ -359,10 +415,10 @@ export default function ProfileScreen() {
       </View>
       
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.navIcon} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.navIcon}>
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: colors.text.primary }]}>{t('profile.me')}</Text>
+        <Text style={styles.topTitle}>{t('profile.me')}</Text>
         <TouchableOpacity style={styles.navIcon} onPress={toggle}>
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
@@ -389,8 +445,8 @@ export default function ProfileScreen() {
           > 
             <UserIcon size={28} color={colors.primary} />
           </Animated.View>
-          <Text style={[styles.username, { color: colors.text.primary }]}>{user?.username || 'John Doe'}</Text>
-          <Text style={[styles.userEmail, { color: colors.text.tertiary }]}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
           
           {profileStats && (
             <TouchableOpacity 
@@ -901,13 +957,6 @@ export default function ProfileScreen() {
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleExportData} disabled={exportDataMutation.isPending}>
-              <Row 
-                icon={<Download size={16} color={colors.primary} />} 
-                title={t('profile.exportData')} 
-                trailing={exportDataMutation.isPending ? <ActivityIndicator size="small" color={colors.primary} /> : <ChevronRight size={16} color={colors.text.secondary} />}
-              />
-            </TouchableOpacity>
             <TouchableOpacity onPress={handleDeleteAccount}>
               <Row 
                 icon={<Trash2 size={16} color={colors.alert} />} 
@@ -925,64 +974,14 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
       </ScrollView>
-      <ConfirmationModal
-        visible={showLogoutModal}
-        title="Logout"
-        message="Are you sure you want to logout?"
-        onCancel={() => setShowLogoutModal(false)}
-        onConfirm={async () => {
-          setShowLogoutModal(false);
-          try {
-            console.log('Initiating logout process');
-            await signOutMutation.mutateAsync();
-            console.log('Logout mutation successful');
-            // Don't navigate here - let the auth listener handle navigation
-          } catch (error: any) {
-            console.error('Logout error:', error);
-            // Even if there's an error, still try to navigate to sign-in
-            router.replace('/auth/sign-in');
-          }
-        }}
-      />
-      <ConfirmationModal
-        visible={showDeleteAccountModal}
-        title="Delete Account"
-        message="Are you sure you want to delete your account? This action cannot be undone."
-        onCancel={() => setShowDeleteAccountModal(false)}
-        onConfirm={() => {
-          setShowDeleteAccountModal(false);
-          showPrompt(
-            'Confirm Deletion',
-            'This will permanently delete all your data. Are you absolutely sure?',
-            [
-              { text: 'Cancel' },
-              {
-                text: 'Delete Permanently',
-                onPress: async () => {
-                  try {
-                    if (user?.id) {
-                      await deleteAccountMutation.mutateAsync(user.id);
-                      router.replace('/auth/sign-in');
-                    }
-                  } catch (error: any) {
-                    showAlert('Error', error.message || 'Failed to delete account');
-                  }
-                },
-              },
-            ]
-          );
-        }}
-      />
-      <View style={{ height: (Platform.OS === 'web' ? 0 : 40 + insets.bottom), backgroundColor: colors.background.primary }} />
+      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );
 }
 
 function Dot() {
-  const { colors } = useTheme();
-  
   return (
-    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+    <View style={styles.dot} />
   );
 }
 
@@ -995,15 +994,13 @@ type RowProps = {
 };
 
 function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
-  const { colors } = useTheme();
-  
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.iconBubble}>{icon}</View>
         <View>
-          <Text style={[styles.rowTitle, { color: colors.text.primary }, titleStyle]}>{title}</Text>
-          {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.text.tertiary }]}>{subtitle}</Text> : null}
+          <Text style={[styles.rowTitle, titleStyle]}>{title}</Text>
+          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
       {trailing ? <View>{trailing}</View> : null}
@@ -1015,13 +1012,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+    // Ensure full height on web to avoid mid-page cutoff
+    minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   navIcon: {
     width: 36,
@@ -1033,8 +1032,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
     fontSize: Platform.OS === 'web' ? 28 : 36,
@@ -1062,9 +1061,9 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     alignItems: 'center',
-    gap: 6,
-    paddingTop: 6,
-    paddingBottom: 16,
+    gap: 10,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   avatar: {
     width: 64,
@@ -1104,7 +1103,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border.lighter,
-    paddingVertical: 16,
+    paddingVertical: 20,
     paddingHorizontal: 12,
   },
   statItem: {
@@ -1124,13 +1123,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   settingsCard: {
-    marginTop: 8,
+    marginTop: 12,
     backgroundColor: Colors.background.white,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border.lighter,
-    padding: 12,
-    gap: 12,
+    padding: 16,
+    gap: 16,
   },
   settingRow: {
     flexDirection: 'row',
@@ -1150,7 +1149,7 @@ const styles = StyleSheet.create({
   },
   sectionBlock: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 18,
   },
   sectionLabel: {
     fontSize: 12,
@@ -1207,10 +1206,10 @@ const styles = StyleSheet.create({
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 12,
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   interestChip: {
     flexDirection: 'row',
@@ -1337,7 +1336,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border.lighter,
-    padding: 8,
+    padding: 12,
   },
   articlePreviewCard: {
     flexDirection: 'row',
@@ -1400,6 +1399,5 @@ const styles = StyleSheet.create({
 const removeLastBorder = (index: number, total: number) => {
   return index === total - 1 ? { borderBottomWidth: 0 } : {};
 };
-
 
 

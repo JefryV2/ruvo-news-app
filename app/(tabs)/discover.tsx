@@ -184,10 +184,7 @@ export default function DiscoverScreen() {
             <Text style={styles.sectionEmoji}>{interest.emoji}</Text>
             <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>{t(getInterestTranslation(interest.name))}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.seeAllButton}
-            onPress={() => setSearchQuery(interest.name)}
-          >
+          <TouchableOpacity style={styles.seeAllButton}>
             <Text style={[styles.seeAllText, { color: colors.primary }]}>{t('actions.view')} All</Text>
             <ChevronRight size={16} color={colors.primary} />
           </TouchableOpacity>

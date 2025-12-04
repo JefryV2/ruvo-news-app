@@ -235,7 +235,7 @@ export default function ArticleDetailScreen() {
       setShareFeedback({ type: 'error', message: 'Unable to share this article.' });
       return;
     }
-
+    
     if (!user?.id) {
       console.log('User not logged in');
       setShareFeedback({ type: 'error', message: 'You must be logged in to share articles' });
@@ -248,7 +248,7 @@ export default function ArticleDetailScreen() {
       // Get friends
       const friendsData = await communityService.getFriends(user.id);
       console.log('Friends data received:', friendsData);
-      
+
       const normalizedFriends = (friendsData as FriendWithProfile[]).map((friend) => {
         const isSender = friend.user_id === user.id;
         const friendId = isSender ? friend.friend_id : friend.user_id;
@@ -509,7 +509,7 @@ export default function ArticleDetailScreen() {
             (shareLoading || shareProcessing) && styles.actionButtonDisabled,
           ]}
             onPress={() => handleShareArticle(signal)}
-          activeOpacity={0.8}
+              activeOpacity={0.8}
           disabled={shareLoading || shareProcessing}
             >
           {shareLoading || shareProcessing ? (
