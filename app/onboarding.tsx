@@ -23,19 +23,19 @@ import { INTERESTS } from '@/constants/mockData';
 import LocationPermissionScreen from '@/components/LocationPermissionScreen';
 import { GeolocationService } from '@/lib/geolocationService';
 
-// Local images for each interest card - must be at module level for React Native require()
+// Local images for each interest card - using assets folder (standard Expo location)
 const interestImages: { [key: string]: any } = {
-  '1': require('./onboarding_pics/Tech.jpg'),
-  '2': require('./onboarding_pics/Finance.jpg'),
-  '4': require('./onboarding_pics/LocalEvents.jpg'),
-  '5': require('./onboarding_pics/Science.jpg'),
-  '6': require('./onboarding_pics/Sports.jpg'),
-  '7': require('./onboarding_pics/Food.jpg'),
-  '8': require('./onboarding_pics/Travel.jpg'),
-  '9': require('./onboarding_pics/Gaming.jpg'),
-  '10': require('./onboarding_pics/Fashion.jpg'),
-  '11': require('./onboarding_pics/Health.jpg'),
-  '12': require('./onboarding_pics/Music.jpg'),
+  '1': require('@/assets/images/onboarding/Tech.jpg'),
+  '2': require('@/assets/images/onboarding/Finance.jpg'),
+  '4': require('@/assets/images/onboarding/LocalEvents.jpg'),
+  '5': require('@/assets/images/onboarding/Science.jpg'),
+  '6': require('@/assets/images/onboarding/Sports.jpg'),
+  '7': require('@/assets/images/onboarding/Food.jpg'),
+  '8': require('@/assets/images/onboarding/Travel.jpg'),
+  '9': require('@/assets/images/onboarding/Gaming.jpg'),
+  '10': require('@/assets/images/onboarding/Fashion.jpg'),
+  '11': require('@/assets/images/onboarding/Health.jpg'),
+  '12': require('@/assets/images/onboarding/Music.jpg'),
 };
 
 type OnboardingStep = 'welcome' | 'location' | 'interests' | 'subcategories' | 'custom' | 'alerts' | 'complete';
@@ -402,9 +402,6 @@ export default function OnboardingScreen() {
   );
 
   const renderInterests = () => {
-    console.log('Rendering interests, count:', INTERESTS.length);
-    console.log('Interest images available:', Object.keys(interestImages));
-    
     return (
       <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <Text style={styles.interestsTitle}>What interests you?</Text>
@@ -415,53 +412,73 @@ export default function OnboardingScreen() {
             {INTERESTS.map((interest) => {
               const active = selectedInterests.includes(interest.id);
               
-              // Use local images on native platforms, remote URLs on web
-              const imageSource = Platform.OS === 'web' 
-                ? (interest.imageUrl ? { uri: interest.imageUrl } : null)
-                : (interestImages[interest.id] || (interest.imageUrl ? { uri: interest.imageUrl } : null));
-              
-              console.log(`Interest ${interest.id} (${interest.name}):`, {
-                platform: Platform.OS,
-                hasLocalImage: !!interestImages[interest.id],
-                hasRemoteUrl: !!interest.imageUrl,
-                usingSource: imageSource ? (imageSource.uri ? 'remote' : 'local') : 'none'
-              });
+              // Determine image source: prefer local images on native, remote URLs on web
+              let imageSource: any = null;
+              if (Platform.OS === 'web') {
+                // Web: use remote URLs
+                imageSource = interest.imageUrl ? { uri: interest.imageUrl } : null;
+              } else {
+                // Native (Android/iOS): try local images first, fallback to remote
+                try {
+                  if (interestImages[interest.id]) {
+                    imageSource = interestImages[interest.id];
+                  } else if (interest.imageUrl) {
+                    imageSource = { uri: interest.imageUrl };
+                  }
+                } catch (error) {
+                  console.warn(`Failed to load image for interest ${interest.id}:`, error);
+                  // Fallback to remote URL if local image fails
+                  if (interest.imageUrl) {
+                    imageSource = { uri: interest.imageUrl };
+                  }
+                }
+              }
 
-            return (
-              <TouchableOpacity
-                key={interest.id}
-                activeOpacity={0.8}
-                style={[
-                  styles.interestCard,
-                  active && styles.interestCardActive,
-                ]}
-                onPress={() => toggleInterest(interest.id)}
-              >
-                {imageSource ? (
-                  <Image
-                    source={imageSource}
-                    style={styles.interestImage}
-                    resizeMode="cover"
+              return (
+                <TouchableOpacity
+                  key={interest.id}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.interestCard,
+                    active && styles.interestCardActive,
+                  ]}
+                  onPress={() => toggleInterest(interest.id)}
+                >
+                  {/* Image background */}
+                  {imageSource ? (
+                    <Image
+                      source={imageSource}
+                      style={styles.interestImage}
+                      resizeMode="cover"
+                      onError={(error) => {
+                        console.warn(`Image load error for ${interest.name}:`, error.nativeEvent.error);
+                      }}
+                    />
+                  ) : (
+                    <View style={[styles.interestImage, { backgroundColor: Colors.background.secondary }]} />
+                  )}
+                  
+                  {/* Gradient overlay for text readability */}
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+                    style={styles.interestGradient}
                   />
-                ) : (
-                  <View style={[styles.interestImage, { backgroundColor: Colors.background.secondary }]} />
-                )}
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
-                  style={styles.interestGradient}
-                />
 
-                <View style={styles.interestContent}>
-                  <Text style={[styles.interestName, active && styles.interestNameActive]}>{interest.name}</Text>
-                </View>
-
-                {active && (
-                  <View style={styles.interestCheckmark}>
-                    <Check size={18} color={Colors.text.inverse} strokeWidth={3} />
+                  {/* Interest name - always visible */}
+                  <View style={styles.interestContent}>
+                    <Text style={[styles.interestName, active && styles.interestNameActive]}>
+                      {interest.name}
+                    </Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            );
+
+                  {/* Active checkmark */}
+                  {active && (
+                    <View style={styles.interestCheckmark}>
+                      <Check size={18} color={Colors.text.inverse} strokeWidth={3} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
             })}
           </View>
         </ScrollView>
@@ -814,6 +831,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '70%',
+    zIndex: 5,
   },
   interestContent: {
     position: 'absolute',
@@ -823,6 +841,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'flex-end',
+    zIndex: 10,
   },
   interestContentAndroid: {
     position: 'relative',
@@ -863,6 +882,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+    zIndex: 15,
   },
 
   // Alerts Step
