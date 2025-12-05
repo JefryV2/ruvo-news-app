@@ -24,18 +24,19 @@ import LocationPermissionScreen from '@/components/LocationPermissionScreen';
 import { GeolocationService } from '@/lib/geolocationService';
 
 // Local images for each interest card - using assets folder (standard Expo location)
+// Use relative paths to avoid alias resolution issues in release Android builds.
 const interestImages: { [key: string]: any } = {
-  '1': require('@/assets/images/onboarding/Tech.jpg'),
-  '2': require('@/assets/images/onboarding/Finance.jpg'),
-  '4': require('@/assets/images/onboarding/LocalEvents.jpg'),
-  '5': require('@/assets/images/onboarding/Science.jpg'),
-  '6': require('@/assets/images/onboarding/Sports.jpg'),
-  '7': require('@/assets/images/onboarding/Food.jpg'),
-  '8': require('@/assets/images/onboarding/Travel.jpg'),
-  '9': require('@/assets/images/onboarding/Gaming.jpg'),
-  '10': require('@/assets/images/onboarding/Fashion.jpg'),
-  '11': require('@/assets/images/onboarding/Health.jpg'),
-  '12': require('@/assets/images/onboarding/Music.jpg'),
+  '1': require('../assets/images/onboarding/Tech.jpg'),
+  '2': require('../assets/images/onboarding/Finance.jpg'),
+  '4': require('../assets/images/onboarding/LocalEvents.jpg'),
+  '5': require('../assets/images/onboarding/Science.jpg'),
+  '6': require('../assets/images/onboarding/Sports.jpg'),
+  '7': require('../assets/images/onboarding/Food.jpg'),
+  '8': require('../assets/images/onboarding/Travel.jpg'),
+  '9': require('../assets/images/onboarding/Gaming.jpg'),
+  '10': require('../assets/images/onboarding/Fashion.jpg'),
+  '11': require('../assets/images/onboarding/Health.jpg'),
+  '12': require('../assets/images/onboarding/Music.jpg'),
 };
 
 type OnboardingStep = 'welcome' | 'location' | 'interests' | 'subcategories' | 'custom' | 'alerts' | 'complete';
