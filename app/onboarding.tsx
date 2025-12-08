@@ -21,11 +21,9 @@ import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { INTERESTS } from '@/constants/mockData';
 import LocationPermissionScreen from '@/components/LocationPermissionScreen';
-import { GeolocationService } from '@/lib/geolocationService';
 
-// Local images for each interest card - using assets folder (standard Expo location)
-// Use relative paths to avoid alias resolution issues in release Android builds.
-const interestImages: { [key: string]: any } = {
+// Bundled onboarding images (offline-safe and included in APK)
+const interestImages: Record<string, any> = {
   '1': require('../assets/images/onboarding/Tech.jpg'),
   '2': require('../assets/images/onboarding/Finance.jpg'),
   '4': require('../assets/images/onboarding/LocalEvents.jpg'),
@@ -407,80 +405,81 @@ export default function OnboardingScreen() {
       <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <Text style={styles.interestsTitle}>What interests you?</Text>
         <Text style={styles.interestsSubtitle}>Pick your topics. We'll handle the rest.</Text>
+        <Text style={styles.interestsCount}>Selected: {selectedInterests.length}</Text>
 
-        <ScrollView style={styles.interestsScroll} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.interestsScroll} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.interestsScrollContent}
+          bounces={false}
+        >
           <View style={styles.interestsGrid}>
-            {INTERESTS.map((interest) => {
-              const active = selectedInterests.includes(interest.id);
-              
-              // Determine image source: prefer local images on native, remote URLs on web
-              let imageSource: any = null;
-              if (Platform.OS === 'web') {
-                // Web: use remote URLs
-                imageSource = interest.imageUrl ? { uri: interest.imageUrl } : null;
-              } else {
-                // Native (Android/iOS): try local images first, fallback to remote
-                try {
-                  if (interestImages[interest.id]) {
-                    imageSource = interestImages[interest.id];
-                  } else if (interest.imageUrl) {
-                    imageSource = { uri: interest.imageUrl };
-                  }
-                } catch (error) {
-                  console.warn(`Failed to load image for interest ${interest.id}:`, error);
-                  // Fallback to remote URL if local image fails
-                  if (interest.imageUrl) {
-                    imageSource = { uri: interest.imageUrl };
-                  }
-                }
-              }
+            {INTERESTS.length === 0 ? (
+              <Text style={{ color: Colors.text.secondary, textAlign: 'center', padding: 20 }}>
+                No interests available
+              </Text>
+            ) : (
+              INTERESTS.map((interest) => {
+                const active = selectedInterests.includes(interest.id);
+                
+              // Prefer bundled images (APK-safe); fallback to remote URL if needed
+              const imageSource =
+                interestImages[interest.id] ||
+                (interest.imageUrl ? { uri: interest.imageUrl } : null);
 
-              return (
-                <TouchableOpacity
-                  key={interest.id}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.interestCard,
-                    active && styles.interestCardActive,
-                  ]}
-                  onPress={() => toggleInterest(interest.id)}
-                >
-                  {/* Image background */}
-                  {imageSource ? (
-                    <Image
-                      source={imageSource}
-                      style={styles.interestImage}
-                      resizeMode="cover"
-                      onError={(error) => {
-                        console.warn(`Image load error for ${interest.name}:`, error.nativeEvent.error);
-                      }}
-                    />
-                  ) : (
-                    <View style={[styles.interestImage, { backgroundColor: Colors.background.secondary }]} />
-                  )}
-                  
-                  {/* Gradient overlay for text readability */}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
-                    style={styles.interestGradient}
-                  />
-
-                  {/* Interest name - always visible */}
-                  <View style={styles.interestContent}>
-                    <Text style={[styles.interestName, active && styles.interestNameActive]}>
-                      {interest.name}
-                    </Text>
-                  </View>
-
-                  {/* Active checkmark */}
-                  {active && (
-                    <View style={styles.interestCheckmark}>
-                      <Check size={18} color={Colors.text.inverse} strokeWidth={3} />
+                return (
+                  <TouchableOpacity
+                    key={interest.id}
+                    activeOpacity={0.9}
+                    style={[
+                      styles.interestCard,
+                      active && styles.interestCardActive,
+                    ]}
+                    onPress={() => toggleInterest(interest.id)}
+                  >
+                    {/* Background color fallback - ensures card is always visible */}
+                    <View style={[styles.interestCardBackground, { backgroundColor: Colors.background.secondary }]} />
+                    
+                    {/* Image background */}
+                    {imageSource && (
+                      <Image
+                        source={imageSource}
+                        style={styles.interestImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    
+                    {/* Corner chip */}
+                    <View style={styles.interestChip}>
+                      <Text style={styles.interestChipText}>{interest.emoji || '★'}</Text>
                     </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+                    
+                    {/* Gradient overlay for text readability */}
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.85)']}
+                      style={styles.interestGradient}
+                    />
+
+                    {/* Interest name - always visible */}
+                    <View style={styles.interestContent}>
+                      <Text 
+                        style={[styles.interestName, active && styles.interestNameActive]}
+                        numberOfLines={2}
+                      >
+                        {interest.name}
+                      </Text>
+                    </View>
+
+                    {/* Active checkmark */}
+                    {active && (
+                      <View style={styles.interestCheckmark}>
+                        <Check size={18} color={Colors.text.inverse} strokeWidth={3} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
         </ScrollView>
       </Animated.View>
@@ -794,27 +793,44 @@ const styles = StyleSheet.create({
   interestsScroll: {
     flex: 1,
   },
+  interestsScrollContent: {
+    paddingBottom: 20,
+  },
+  interestsCount: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginBottom: 12,
+  },
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingBottom: 20,
+    gap: 14,
   },
   interestCard: {
     width: '47%',
-    aspectRatio: 1.5,
+    minHeight: 190,
+    aspectRatio: 1.4,
     borderRadius: 20,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: Colors.border.lighter,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: Colors.background.secondary,
+  },
+  interestCardBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   interestCardAndroid: {
     backgroundColor: Colors.background.secondary,
   },
   interestCardActive: {
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
+    borderColor: Colors.accent,
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -822,9 +838,13 @@ const styles = StyleSheet.create({
   },
   interestImage: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100%',
     height: '100%',
-    borderRadius: 17,
+    zIndex: 2,
   },
   interestGradient: {
     position: 'absolute',
@@ -833,6 +853,21 @@ const styles = StyleSheet.create({
     right: 0,
     height: '70%',
     zIndex: 5,
+  },
+  interestChip: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    zIndex: 6,
+  },
+  interestChipText: {
+    color: Colors.text.inverse,
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
   interestContent: {
     position: 'absolute',
