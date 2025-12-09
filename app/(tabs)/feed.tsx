@@ -326,7 +326,10 @@ export default function FeedScreen() {
           <View style={styles.recommendationsSection}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Recommendations</Text>
-              <TouchableOpacity activeOpacity={0.8}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => router.push('/(tabs)/discover')}
+              >
                 <Text style={[styles.sectionLink, { color: colors.primary }]}>{t('actions.view')} all</Text>
               </TouchableOpacity>
             </View>
@@ -361,6 +364,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 20,
   },
   carouselSection: {
     marginBottom: 0,
@@ -369,7 +373,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   bottomPadding: {
-    height: 140,
+    height: 80,
     backgroundColor: 'transparent',
   },
   sectionHeader: {
@@ -468,16 +472,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   headerTagline: {
     fontSize: 16,

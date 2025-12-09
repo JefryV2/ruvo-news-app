@@ -276,7 +276,7 @@ export default function CommunityScreen() {
           </View>
         </Animated.View>
       </ScrollView>
-      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
+      <View style={{ height: (Platform.OS === 'web' ? 0 : 80 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );
 }
@@ -290,20 +290,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 60,
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   headerTagline: {
     fontSize: 16,
@@ -317,15 +317,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
   navIcon: {
     padding: 8,
   },
   topTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: 'inherit',
   },
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   articlesContainer: {
     flex: 1,
-    paddingBottom: 100,
+    paddingBottom: 60,
   },
   timeContainer: {
     flexDirection: 'row',

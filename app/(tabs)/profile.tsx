@@ -48,7 +48,10 @@ import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { INTERESTS } from '@/constants/mockData';
+import { authService } from '@/lib/authService';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   useProfileStats, 
   useAccountSettings, 
@@ -64,6 +67,7 @@ export default function ProfileScreen() {
   const { t } = useLanguage();
   const { mode, colors, toggle } = useTheme();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [showInterests, setShowInterests] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -107,35 +111,33 @@ export default function ProfileScreen() {
     updateUserInterests(newInterests);
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Initiating logout process');
-              await signOutMutation.mutateAsync();
-              console.log('Logout mutation successful, navigating to sign-in');
-            } catch (error: any) {
-              console.error('Logout error:', error);
-              // Even if there's an error, still try to navigate to sign-in
-            } finally {
-              // Always navigate to sign-in screen
-              setTimeout(() => {
-                router.replace('/auth/sign-in');
-              }, 150);
-            }
-          },
-        },
-      ]
-    );
+  const handleLogout = async () => {
+    console.log('handleLogout function called - bypassing alert');
+    // Directly execute logout without Alert
+    try {
+      console.log('Initiating logout process');
+      await signOutMutation.mutateAsync();
+      console.log('Logout mutation successful, navigating to sign-in');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      // Fallback direct signOut
+      try {
+        await authService.signOut();
+        console.log('Fallback signOut successful');
+      } catch (fallbackErr) {
+        console.error('Fallback signOut error:', fallbackErr);
+      }
+    } finally {
+      // Always clear local session and navigate to sign-in
+      try {
+        await AsyncStorage.removeItem('supabase_session');
+      } catch {}
+      try {
+        queryClient.clear();
+      } catch {}
+      router.replace('/auth/sign-in');
+    }
   };
-
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -400,7 +402,7 @@ export default function ProfileScreen() {
       const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
       if (seconds < 60) return `${seconds}s ago`;
       if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      if (seconds < 86600) return `${Math.floor(seconds / 3600)}h ago`;
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
@@ -415,7 +417,10 @@ export default function ProfileScreen() {
       </View>
       
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.navIcon}>
+        <TouchableOpacity 
+          style={styles.navIcon}
+          onPress={() => router.back()}
+        >
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.topTitle}>{t('profile.me')}</Text>
@@ -423,7 +428,6 @@ export default function ProfileScreen() {
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
       </View>
-
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
         <Animated.View 
           style={[
@@ -964,14 +968,18 @@ export default function ProfileScreen() {
                 titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout}>
+            <TouchableOpacity 
+              onPress={() => {
+                console.log('Logout button pressed');
+                handleLogout();
+              }}
+            >
               <Row 
                 icon={<LogOut size={16} color={colors.alert} />} 
                 title={t('profile.logout')} 
                 titleStyle={{ color: colors.alert }}
               />
-            </TouchableOpacity>
-          </View>
+            </TouchableOpacity>          </View>
         </Animated.View>
       </ScrollView>
       <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
@@ -1007,7 +1015,6 @@ function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1020,7 +1027,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   navIcon: {
     width: 36,
@@ -1032,16 +1039,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: Platform.OS === 'web' ? 28 : 36,
+    fontSize: Platform.OS === 'web' ? 24 : 32,
     fontWeight: '800' as const,
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   headerTagline: {
     fontSize: 16,

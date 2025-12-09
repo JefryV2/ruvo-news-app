@@ -734,9 +734,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 12,
     backgroundColor: Colors.background.white,
   },
   topBarDark: {

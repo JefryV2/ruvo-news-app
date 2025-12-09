@@ -31,6 +31,7 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const scrollRef = useRef<ScrollView | null>(null);
   const insets = useSafeAreaInsets();
   const { user } = useApp();
   const { t, language } = useLanguage();
@@ -156,7 +157,7 @@ export default function DiscoverScreen() {
     });
   };
 
-  const InterestSection = ({ interest, apiCategory, formatTimeAgo, colors }: any) => {
+  const InterestSection = ({ interest, apiCategory, formatTimeAgo, colors, onSeeAll }: any) => {
     const { data: articles = [], isLoading } = useTrendingByCategory(apiCategory, language);
 
     if (isLoading) {
@@ -184,7 +185,11 @@ export default function DiscoverScreen() {
             <Text style={styles.sectionEmoji}>{interest.emoji}</Text>
             <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>{t(getInterestTranslation(interest.name))}</Text>
           </View>
-          <TouchableOpacity style={styles.seeAllButton}>
+          <TouchableOpacity
+            style={styles.seeAllButton}
+            onPress={() => onSeeAll && onSeeAll(interest, apiCategory)}
+            activeOpacity={0.85}
+          >
             <Text style={[styles.seeAllText, { color: colors.primary }]}>{t('actions.view')} All</Text>
             <ChevronRight size={16} color={colors.primary} />
           </TouchableOpacity>
@@ -238,6 +243,12 @@ export default function DiscoverScreen() {
         apiCategory={apiCategory}
         formatTimeAgo={formatTimeAgo}
         colors={colors}
+        onSeeAll={(interestItem: any, category: string) => {
+          // Set search query to the category to surface more results in this interest
+          setSearchQuery(category || interestItem.name || '');
+          // Optionally, scroll to top
+          scrollRef?.current?.scrollTo({ y: 0, animated: true });
+        }}
       />
     );
   };
@@ -245,6 +256,7 @@ export default function DiscoverScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <ScrollView 
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -345,12 +357,12 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
     backgroundColor: 'transparent',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
@@ -584,7 +596,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   bottomPadding: {
-    height: 140,
+    height: 80,
     backgroundColor: 'transparent',
   },
 });

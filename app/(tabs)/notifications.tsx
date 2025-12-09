@@ -283,7 +283,7 @@ export default function NotificationsScreen() {
           )}
         </View>
       </ScrollView>
-      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
+      <View style={{ height: (Platform.OS === 'web' ? 0 : 80 + insets.bottom), backgroundColor: colors.background.primary }} />
     </View>
   );
 }
@@ -295,17 +295,17 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
     backgroundColor: 'transparent',
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     fontFamily: Fonts.bold,
     color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   headerTagline: {
     fontSize: 16,

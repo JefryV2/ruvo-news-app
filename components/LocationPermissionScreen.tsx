@@ -49,7 +49,11 @@ export default function LocationPermissionScreen({
         const location = await GeolocationService.getCurrentLocation();
         
         if (location) {
-          onPermissionGranted(location);
+          Alert.alert(
+            'Location enabled',
+            'Location access granted.',
+            [{ text: 'OK', onPress: () => onPermissionGranted(location) }]
+          );
         } else {
           Alert.alert(
             'Location Error',
@@ -64,7 +68,7 @@ export default function LocationPermissionScreen({
             'Location Permission Denied',
             'Ruvo works better with location access to show you relevant regional news. You can enable it later in Settings.',
             [
-              { text: 'Skip', onPress: onSkip },
+              { text: 'Continue without location', onPress: onSkip },
               { text: 'Settings', onPress: () => Linking.openSettings() }
             ]
           );
@@ -73,7 +77,7 @@ export default function LocationPermissionScreen({
             'Location Permission Blocked',
             'Location access has been permanently denied. You can enable it in your device Settings > Privacy > Location Services.',
             [
-              { text: 'Skip', onPress: onSkip },
+              { text: 'Continue without location', onPress: onSkip },
               { text: 'Open Settings', onPress: () => Linking.openSettings() }
             ]
           );

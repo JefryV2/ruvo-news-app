@@ -10,6 +10,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import ScreenTimeTracker from '@/components/ScreenTimeTracker';
 import * as Linking from 'expo-linking';
+import { useAuthListener } from '@/hooks/useAuthListener';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +34,7 @@ const linking = {
 
 function RootLayoutNav() {
   const router = useRouter();
+  useAuthListener();
   
   // Handle deep links
   useEffect(() => {
