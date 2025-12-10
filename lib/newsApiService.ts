@@ -19,7 +19,22 @@ export const newsApiService = {
         url += `&category=${category}`;
       }
 
-      const response = await fetch(url);
+      // Add timeout wrapper for fetch requests
+      const fetchWithTimeout = async (url: string, timeout: number = 10000): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
+
+      const response = await fetchWithTimeout(url);
       const data = await response.json();
 
       if (data.status !== 'ok') {
@@ -43,7 +58,23 @@ export const newsApiService = {
 
     try {
       const url = `${NEWS_API_URL}/everything?q=${encodeURIComponent(query)}&sortBy=${sortBy}&pageSize=20&apiKey=${NEWS_API_KEY}`;
-      const response = await fetch(url);
+      
+      // Add timeout wrapper for fetch requests
+      const fetchWithTimeout = async (url: string, timeout: number = 10000): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
+
+      const response = await fetchWithTimeout(url);
       const data = await response.json();
 
       if (data.status !== 'ok') {
@@ -52,7 +83,7 @@ export const newsApiService = {
 
       return this.convertToSignals(data.articles);
     } catch (error) {
-      console.error('News search error:', error);
+      console.error('News API error:', error);
       throw error;
     }
   },

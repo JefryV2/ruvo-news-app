@@ -204,9 +204,9 @@ export default function SavedArticlesScreen() {
           style={[styles.backButton, { backgroundColor: colors.background.secondary }]}
           activeOpacity={0.8}
         >
-          <ChevronLeft size={24} color={colors.text.primary} />
+          <ChevronLeft size={24} color={'#FFFFFF'} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Saved Articles</Text>
+        <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>Saved Articles</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -236,14 +236,14 @@ export default function SavedArticlesScreen() {
                     ))}
                   </View>
                   
-                  <Text style={[styles.articleTitle, { color: colors.text.primary }]} numberOfLines={2}>{signal.title}</Text>
-                  <Text style={[styles.articleSummary, { color: colors.text.secondary }]} numberOfLines={2}>{signal.summary}</Text>
+                  <Text style={[styles.articleTitle, { color: '#FFFFFF' }]} numberOfLines={2}>{signal.title}</Text>
+                  <Text style={[styles.articleSummary, { color: '#FFFFFF' }]} numberOfLines={2}>{signal.summary}</Text>
                   
                   <View style={styles.articleMeta}>
-                    <Text style={[styles.source, { color: colors.text.tertiary }]}>{signal.sourceName}</Text>
+                    <Text style={[styles.source, { color: '#FFFFFF' }]}>{signal.sourceName}</Text>
                     <View style={styles.timeContainer}>
-                      <Clock size={11} color={colors.text.tertiary} />
-                      <Text style={[styles.time, { color: colors.text.tertiary }]}>{formatTimeAgo(signal.timestamp)}</Text>
+                      <Clock size={11} color={'#FFFFFF'} />
+                      <Text style={[styles.time, { color: '#FFFFFF' }]}>{formatTimeAgo(signal.timestamp)}</Text>
                     </View>
                   </View>
                 </View>
@@ -265,10 +265,10 @@ export default function SavedArticlesScreen() {
         ) : (
           <View style={styles.emptyState}>
             <View style={[styles.emptyIcon, { backgroundColor: colors.card.secondary }]}> 
-              <Bookmark size={48} color={colors.text.tertiary} />
+              <Bookmark size={48} color={'#FFFFFF'} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text.primary }]}>No Saved Articles</Text>
-            <Text style={[styles.emptyMessage, { color: colors.text.secondary }]}> 
+            <Text style={[styles.emptyTitle, { color: '#FFFFFF' }]}>No Saved Articles</Text>
+            <Text style={[styles.emptyMessage, { color: '#FFFFFF' }]}> 
               Start saving articles to read them later
             </Text>
           </View>
@@ -282,7 +282,7 @@ export default function SavedArticlesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: '#FFFFFF',
     fontFamily: Fonts.bold,
   },
   placeholder: {
@@ -353,14 +353,14 @@ const styles = StyleSheet.create({
   articleTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: '#FFFFFF',
     marginBottom: 8,
     lineHeight: 24,
     fontFamily: Fonts.bold,
   },
   articleSummary: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   source: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: '#FFFFFF',
   },
   timeContainer: {
     flexDirection: 'row',
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 11,
-    color: Colors.text.tertiary,
+    color: '#FFFFFF',
   },
   savedBadge: {
     position: 'absolute',
@@ -437,12 +437,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 15,
-    color: Colors.text.tertiary,
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 22,
   },

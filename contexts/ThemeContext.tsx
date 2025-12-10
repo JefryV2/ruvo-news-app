@@ -20,9 +20,9 @@ const DarkColors: typeof Colors = {
   primary: '#20B2AA', // Turquoise accent for dark theme
   background: {
     ...Colors.background,
-    primary: '#0F0F0F', // Dark background
-    secondary: '#1A1A1A', // Slightly lighter for contrast
-    tertiary: '#222222', // Even lighter for cards
+    primary: '#0A0A0A', // Deeper dark background for better contrast
+    secondary: '#121212', // Slightly lighter for contrast
+    tertiary: '#1E1E1E', // Even lighter for cards
     white: '#1E1E1E', // Card background
     light: '#141414', // Subtle background
     dark: '#000000',
@@ -30,20 +30,20 @@ const DarkColors: typeof Colors = {
   },
   text: {
     ...Colors.text,
-    primary: '#FFFFFF', // Pure white for better contrast in dark mode
-    secondary: '#B0B0B0', // Medium gray
-    tertiary: '#808080', // Light gray
-    inverse: '#0F0F0F', // Dark for light backgrounds
+    primary: '#FFFFFF', // Pure white for maximum contrast in dark mode
+    secondary: '#CCCCCC', // Lighter gray for better readability
+    tertiary: '#AAAAAA', // Medium-light gray
+    inverse: '#0A0A0A', // Dark for light backgrounds
     onDark: '#FFFFFF',
     onLight: '#F0F0F0',
-    muted: '#666666', // Darker muted text
+    muted: '#888888', // More visible muted text
     light: '#1E1E1E', // Dark background equivalent
   },
   card: {
     ...Colors.card,
-    primary: '#1A1A1A',
+    primary: '#121212',
     secondary: '#1E1E1E',
-    elevated: '#222222',
+    elevated: '#252525',
     overlay: 'rgba(0,0,0,0.7)',
     white: '#1E1E1E',
     light: '#1A1A1A',
@@ -51,9 +51,9 @@ const DarkColors: typeof Colors = {
   border: {
     ...Colors.border,
     light: '#2A2A2A',
-    lighter: '#252525',
-    primary: '#333333',
-    dark: '#404040',
+    lighter: '#333333', // Lighter border for better visibility
+    primary: '#404040', // More visible primary border
+    dark: '#555555',
   },
   shadow: {
     sm: 'rgba(0,0,0,0.3)',

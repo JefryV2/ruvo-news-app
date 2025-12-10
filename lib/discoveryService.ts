@@ -1,5 +1,6 @@
 import { supabase, IS_SUPABASE_CONFIGURED } from './supabase';
 import { webzioService } from './webzioService';
+import { newsApiService } from './newsApiService';
 
 const NEWS_API_KEY = process.env.EXPO_PUBLIC_NEWS_API_KEY;
 const NEWS_API_BASE_URL = 'https://newsapi.org/v2';
@@ -80,30 +81,117 @@ export const discoveryService = {
     }
 
     try {
-      let url = `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`;
+      // Try multiple search approaches for better results
+      let articles: any[] = [];
+      let webzioArticles: any[] = [];
+      let newsApiArticles: any[] = [];
+      
+      // Approach 1: Search with the exact query using News API
+      let newsApiUrl = `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=10&apiKey=${NEWS_API_KEY}`;
       
       if (category && category !== 'All') {
-        url += `&category=${category.toLowerCase()}`;
+        newsApiUrl += `&category=${category.toLowerCase()}`;
       }
 
       // Use country parameter for Korean content
       if (language === 'ko') {
-        url += '&sources=bbc-korean,cnn-korean,reuters-korean';
+        newsApiUrl += '&sources=bbc-korean,cnn-korean,reuters-korean';
       }
 
-      const response = await fetch(url);
+      // Add timeout wrapper for fetch requests
+      const fetchWithTimeout = async (url: string, timeout: number = 10000): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to search articles');
+      const newsApiResponse = await fetchWithTimeout(newsApiUrl);
+
+      if (newsApiResponse.ok) {
+        const data = await newsApiResponse.json();
+        articles = data.articles || [];
       }
 
-      const data = await response.json();
-      const articles = data.articles.map((article: any) => this.mapArticleToDiscovery(article, [], language));
+      // Approach 2: Search with Webz.io as an additional source
+      try {
+        webzioArticles = await webzioService.searchNews(query, 8);
+      } catch (webzioError) {
+        console.warn('Webz.io search failed:', webzioError);
+      }
+
+      // Approach 3: Search with NewsAPI service as another source
+      try {
+        newsApiArticles = await newsApiService.searchNews(query, 'publishedAt');
+        // Limit to 7 articles to avoid overwhelming results
+        newsApiArticles = newsApiArticles.slice(0, 7);
+      } catch (newsApiError) {
+        console.warn('NewsAPI service search failed:', newsApiError);
+      }
+
+      // If no results found from News API, try alternative search strategies
+      if (articles.length === 0) {
+        // Approach 4: Try with broader search terms
+        const broadQuery = this.generateBroadQuery(query);
+        const broadUrl = `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(broadQuery)}&sortBy=publishedAt&pageSize=10&apiKey=${NEWS_API_KEY}`;
+        
+        const broadResponse = await fetchWithTimeout(broadUrl);
+        if (broadResponse.ok) {
+          const broadData = await broadResponse.json();
+          articles = broadData.articles || [];
+        }
+      }
+
+      // If still no results, try with just popular sorting
+      if (articles.length === 0) {
+        const popularUrl = `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=popularity&pageSize=10&apiKey=${NEWS_API_KEY}`;
+        const popularResponse = await fetchWithTimeout(popularUrl);
+        if (popularResponse.ok) {
+          const popularData = await popularResponse.json();
+          articles = popularData.articles || [];
+        }
+      }
+
+      // Combine articles from different sources
+      // Webz.io articles are already in Signal format, convert to DiscoveryArticle format
+      const convertedWebzioArticles = webzioArticles.map((article: any) => ({
+        title: article.title || 'Untitled',
+        description: article.summary || article.description || '',
+        url: article.url,
+        urlToImage: article.imageUrl,
+        source: { name: article.sourceName || 'Webz.io' },
+        publishedAt: article.timestamp instanceof Date ? article.timestamp.toISOString() : article.timestamp || new Date().toISOString(),
+      }));
+
+      // Convert NewsAPI service articles to match our format
+      const convertedNewsApiArticles = newsApiArticles.map((article: any) => ({
+        title: article.title || 'Untitled',
+        description: article.summary || article.description || '',
+        url: article.url,
+        urlToImage: article.imageUrl,
+        source: { name: article.sourceName || article.source?.name || 'NewsAPI' },
+        publishedAt: article.timestamp || article.publishedAt || new Date().toISOString(),
+      }));
+
+      // Combine and deduplicate articles from all sources
+      const allArticles = [...articles, ...convertedWebzioArticles, ...convertedNewsApiArticles];
+      const uniqueArticles = this.deduplicateArticles(allArticles);
+      
+      // Map articles to our format
+      const mappedArticles = uniqueArticles.map((article: any) => this.mapArticleToDiscovery(article, [], language));
       
       // Filter articles by language on client side
-      return this.filterArticlesByLanguage(articles, language);
+      return this.filterArticlesByLanguage(mappedArticles, language);
     } catch (error) {
       console.error('Error searching articles:', error);
+      // Return empty array instead of throwing to prevent app crashes
       return [];
     }
   },
@@ -372,4 +460,70 @@ export const discoveryService = {
     
     return defaultImages[category.toLowerCase()] || defaultImages['general'];
   },
+
+  /**
+   * Helper: Generate broader search query for better results
+   */
+  generateBroadQuery(query: string): string {
+    // Add related terms to improve search results
+    const relatedTerms: { [key: string]: string[] } = {
+      'jujitsu': ['jiu-jitsu', 'bjj', 'brazilian jiu-jitsu', 'martial arts', 'grappling', 'submission'],
+      'jiu-jitsu': ['jujitsu', 'bjj', 'brazilian jiu-jitsu', 'martial arts', 'grappling', 'submission'],
+      'bjj': ['jujitsu', 'jiu-jitsu', 'brazilian jiu-jitsu', 'martial arts', 'grappling', 'submission'],
+      'brazilian jiu-jitsu': ['jujitsu', 'jiu-jitsu', 'bjj', 'martial arts', 'grappling', 'submission'],
+      'mma': ['mixed martial arts', 'ufc', 'fighting', 'cage fighting'],
+      'mixed martial arts': ['mma', 'ufc', 'fighting', 'cage fighting'],
+      'boxing': ['boxing gloves', 'heavyweight', 'championship', 'muhammad ali', 'mike tyson'],
+      'karate': ['karate kid', 'martial arts', 'black belt', 'dojo'],
+      'taekwondo': ['tkd', 'korean martial arts', 'olympic sport', 'black belt'],
+      'wrestling': ['wwe', 'professional wrestling', 'grappling', 'freestyle wrestling'],
+      'kickboxing': ['k-1', 'muay thai', 'striking martial art'],
+      // Add more related terms as needed
+    };
+
+    const lowerQuery = query.toLowerCase();
+    if (relatedTerms[lowerQuery]) {
+      return [query, ...relatedTerms[lowerQuery]].join(' OR ');
+    }
+
+    // For other queries, add some general terms
+    return query;
+  },
+
+  /**
+   * Helper: Deduplicate articles based on URL or title
+   */
+  deduplicateArticles(articles: any[]): any[] {
+    const seenUrls = new Set<string>();
+    const seenTitles = new Set<string>();
+    const uniqueArticles: any[] = [];
+
+    articles.forEach(article => {
+      const url = article.url || article.link;
+      const title = article.title?.toLowerCase();
+
+      // Check if we've already seen this article by URL
+      if (url && seenUrls.has(url)) {
+        return;
+      }
+
+      // Check if we've already seen this article by title (less reliable)
+      if (title && seenTitles.has(title)) {
+        return;
+      }
+
+      // Add to our collections
+      if (url) {
+        seenUrls.add(url);
+      }
+      if (title) {
+        seenTitles.add(title);
+      }
+
+      uniqueArticles.push(article);
+    });
+
+    return uniqueArticles;
+  },
+
 };

@@ -5,7 +5,7 @@ const WEBZIO_API_URL = 'https://api.webz.io/newsApiLite';
 
 export const webzioService = {
   /**
-   * Fetch news articles from Webz.io
+   * Fetch news articles from Webz.io with enhanced search capabilities
    */
   async fetchNews(query: string, size: number = 20): Promise<Signal[]> {
     if (!WEBZIO_API_KEY) {
@@ -14,9 +14,46 @@ export const webzioService = {
     }
 
     try {
-      const url = `${WEBZIO_API_URL}?token=${WEBZIO_API_KEY}&q=${encodeURIComponent(query)}&size=${size}&sort=crawled:desc`;
+      // Build a more comprehensive query
+      let searchQuery = query;
       
-      const response = await fetch(url);
+      // For specific terms like martial arts, expand the query
+      const expandedQueries: { [key: string]: string } = {
+        'jujitsu': 'jujitsu OR "jiu-jitsu" OR bjj OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'jiu-jitsu': 'jiu-jitsu OR jujitsu OR bjj OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'bjj': 'bjj OR jujitsu OR "jiu-jitsu" OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'brazilian jiu-jitsu': '"brazilian jiu-jitsu" OR jujitsu OR "jiu-jitsu" OR bjj OR "martial arts" OR grappling',
+        'mma': 'mma OR "mixed martial arts" OR ufc OR fighting OR "cage fighting"',
+        'boxing': 'boxing OR "boxing gloves" OR heavyweight OR championship OR "muhammad ali" OR "mike tyson"',
+        'karate': 'karate OR "karate kid" OR "martial arts" OR "black belt" OR dojo',
+        'taekwondo': 'taekwondo OR tkd OR "korean martial arts" OR "olympic sport" OR "black belt"',
+        'wrestling': 'wrestling OR wwe OR "professional wrestling" OR grappling OR "freestyle wrestling"',
+        'kickboxing': 'kickboxing OR "k-1" OR "muay thai" OR "striking martial art"'
+      };
+
+      const lowerQuery = query.toLowerCase();
+      if (expandedQueries[lowerQuery]) {
+        searchQuery = expandedQueries[lowerQuery];
+      }
+
+      const url = `${WEBZIO_API_URL}?token=${WEBZIO_API_KEY}&q=${encodeURIComponent(searchQuery)}&size=${size}&sort=crawled:desc`;
+      
+      // Add timeout wrapper for fetch requests
+      const fetchWithTimeout = async (url: string, timeout: number = 10000): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
+
+      const response = await fetchWithTimeout(url);
       
       if (!response.ok) {
         throw new Error(`Webz.io API error: ${response.status}`);
@@ -73,11 +110,45 @@ export const webzioService = {
   },
 
   /**
-   * Search news articles
+   * Search news articles with enhanced query expansion
    */
   async searchNews(query: string, size: number = 20): Promise<Signal[]> {
-    return this.fetchNews(query, size);
+    if (!WEBZIO_API_KEY) {
+      console.warn('Webz.io API key not configured');
+      return [];
+    }
+
+    try {
+      // Build a more comprehensive query
+      let searchQuery = query;
+      
+      // For specific terms like martial arts, expand the query
+      const expandedQueries: { [key: string]: string } = {
+        'jujitsu': 'jujitsu OR "jiu-jitsu" OR bjj OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'jiu-jitsu': 'jiu-jitsu OR jujitsu OR bjj OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'bjj': 'bjj OR jujitsu OR "jiu-jitsu" OR "brazilian jiu-jitsu" OR "martial arts" OR grappling',
+        'brazilian jiu-jitsu': '"brazilian jiu-jitsu" OR jujitsu OR "jiu-jitsu" OR bjj OR "martial arts" OR grappling',
+        'mma': 'mma OR "mixed martial arts" OR ufc OR fighting OR "cage fighting"',
+        'boxing': 'boxing OR "boxing gloves" OR heavyweight OR championship OR "muhammad ali" OR "mike tyson"',
+        'karate': 'karate OR "karate kid" OR "martial arts" OR "black belt" OR dojo',
+        'taekwondo': 'taekwondo OR tkd OR "korean martial arts" OR "olympic sport" OR "black belt"',
+        'wrestling': 'wrestling OR wwe OR "professional wrestling" OR grappling OR "freestyle wrestling"',
+        'kickboxing': 'kickboxing OR "k-1" OR "muay thai" OR "striking martial art"'
+      };
+
+      const lowerQuery = query.toLowerCase();
+      if (expandedQueries[lowerQuery]) {
+        searchQuery = expandedQueries[lowerQuery];
+      }
+
+      return this.fetchNews(searchQuery, size);
+    } catch (error) {
+      console.error('Webz.io search error:', error);
+      return [];
+    }
   },
+
+
 
   /**
    * Convert Webz.io posts to Signal format

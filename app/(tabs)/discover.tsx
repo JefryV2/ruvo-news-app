@@ -86,7 +86,7 @@ export default function DiscoverScreen() {
   }, [user?.interests]);
 
   // Search articles when user types in search bar (only when query length > 2)
-  const { data: searchResults = [], isLoading: searchLoading } = useSearchArticles(
+  const { data: searchResults = [], isLoading: searchLoading, refetch: refetchSearch } = useSearchArticles(
     searchQuery.length > 2 ? searchQuery : '',
     undefined,
     language
@@ -116,6 +116,12 @@ export default function DiscoverScreen() {
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch (error) {
       return 'Just now';
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.length > 2) {
+      refetchSearch();
     }
   };
 
@@ -277,6 +283,7 @@ export default function DiscoverScreen() {
               placeholderTextColor={colors.text.tertiary}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -284,6 +291,18 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
             )}
           </View>
+          
+          {/* Search Button */}
+          {searchQuery.length > 2 && (
+            <TouchableOpacity 
+              style={[styles.searchButton, { backgroundColor: colors.primary }]}
+              onPress={handleSearch}
+            >
+              <Text style={[styles.searchButtonText, { color: colors.text.inverse }]}>
+                {t('actions.search')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {searchQuery.length > 2 ? (
@@ -327,7 +346,11 @@ export default function DiscoverScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: colors.text.primary }]}>{t('discover.noResults')}</Text>
-                <Text style={[styles.emptyStateSubtext, { color: colors.text.secondary }]}>{t('discover.tryDifferent')}</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.text.secondary }]}>
+                  {searchQuery.toLowerCase() === 'jujitsu' || searchQuery.toLowerCase() === 'jiu-jitsu' || searchQuery.toLowerCase() === 'bjj'
+                    ? t('discover.tryDifferent') + ': martial arts, grappling, submission'
+                    : t('discover.tryDifferent')}
+                </Text>
               </View>
             )}
           </View>
@@ -599,4 +622,17 @@ const styles = StyleSheet.create({
     height: 80,
     backgroundColor: 'transparent',
   },
+  searchButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  
+  searchButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
 });

@@ -86,7 +86,7 @@ const translations = {
     
     // Discover Screen
     'discover.title': 'Discover',
-    'discover.search': 'Search news...',
+    'discover.searchPlaceholder': 'Search news...',
     'discover.categories': 'Categories',
     'discover.trendingTopics': 'Trending Topics',
     'discover.recommended': 'Recommended for You',
@@ -98,6 +98,8 @@ const translations = {
     'discover.entertainment': 'Entertainment',
     'discover.science': 'Science',
     'discover.politics': 'Politics',
+    'discover.noResults': 'No articles found',
+    'discover.tryDifferent': 'Try a different search term',
     
     // Interest Categories
     'category.tech': 'Technology',
@@ -137,6 +139,7 @@ const translations = {
     'actions.skip': 'Skip',
     'actions.continue': 'Continue',
     'actions.done': 'Done',
+    'actions.search': 'Search',
     
     // Time
     'time.now': 'Now',
@@ -220,7 +223,7 @@ const translations = {
     
     // Discover Screen
     'discover.title': '발견',
-    'discover.search': '뉴스 검색...',
+    'discover.searchPlaceholder': '뉴스 검색...',
     'discover.categories': '카테고리',
     'discover.trendingTopics': '트렌딩 주제',
     'discover.recommended': '추천',
@@ -232,6 +235,8 @@ const translations = {
     'discover.entertainment': '엔터테인먼트',
     'discover.science': '과학',
     'discover.politics': '정치',
+    'discover.noResults': '문서를 찾을 수 없습니다',
+    'discover.tryDifferent': '다른 검색어를 시도해보세요',
     
     // Interest Categories
     'category.tech': '기술',
@@ -271,6 +276,7 @@ const translations = {
     'actions.skip': '건너뛰기',
     'actions.continue': '계속',
     'actions.done': '완료',
+    'actions.search': '검색',
     
     // Time
     'time.now': '지금',

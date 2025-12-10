@@ -413,7 +413,7 @@ export default function ProfileScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
-        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
+        <Text style={[styles.headerTagline, { color: colors.text.primary }]}>Cut the Noise. Catch the Signal.</Text>
       </View>
       
       <View style={styles.topBar}>
@@ -423,7 +423,7 @@ export default function ProfileScreen() {
         >
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>{t('profile.me')}</Text>
+        <Text style={[styles.topTitle, { color: colors.text.primary }]}>{t('profile.me')}</Text>
         <TouchableOpacity style={styles.navIcon} onPress={toggle}>
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
@@ -449,16 +449,16 @@ export default function ProfileScreen() {
           > 
             <UserIcon size={28} color={colors.primary} />
           </Animated.View>
-          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={[styles.username, { color: colors.text.primary }]}>{user?.username || 'John Doe'}</Text>
+          <Text style={[styles.userEmail, { color: colors.text.primary }]}>{user?.email || 'user@example.com'}</Text>
           
           {profileStats && (
             <TouchableOpacity 
-              style={styles.statsButton}
+              style={[styles.statsButton, { backgroundColor: colors.primary + '20' }]}
               onPress={() => setShowStats(!showStats)}
               activeOpacity={0.7}
             >
-              <Text style={styles.statsButtonText}>
+              <Text style={[styles.statsButtonText, { color: colors.text.primary }]}>
                 {showStats ? t('profile.hideStats') : t('profile.viewStats')}
               </Text>
             </TouchableOpacity>
@@ -477,29 +477,29 @@ export default function ProfileScreen() {
         >
           {profileStats && (
             <>
-              <Text style={styles.sectionLabel}>Activity Stats</Text>
+              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Activity Stats</Text>
               <View style={[styles.statsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.statItem}>
                   <Heart size={20} color={colors.alert} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalLikes || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Likes</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Likes</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Bookmark size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalSaved || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Saved</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Saved</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Eye size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalRead || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Read</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Read</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Calendar size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}> 
                     {profileStats.joinedDate ? new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                   </Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Joined</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Joined</Text>
                 </View>
               </View>
             </>
@@ -515,7 +515,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleToggleStatus}>
               <Row 
@@ -543,7 +543,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Library</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Library</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => router.push('/liked-articles')}>
               <Row 
@@ -593,7 +593,7 @@ export default function ProfileScreen() {
                       {signal.title}
                     </Text>
                     <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.secondary }]} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
                       <View style={styles.timeContainer}>
@@ -642,7 +642,7 @@ export default function ProfileScreen() {
                       {signal.title}
                     </Text>
                     <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.secondary }]} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
                       <View style={styles.timeContainer}>
@@ -671,7 +671,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.interests')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
               <Row 
@@ -729,7 +729,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.preferences')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
               <Row 
@@ -776,7 +776,7 @@ export default function ProfileScreen() {
               <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
-                    <Smartphone size={18} color={colors.primary} />
+                    <Smartphone size={18} color={colors.text.primary} />
                     <Text style={[styles.settingText, { color: colors.text.primary }]}>Push Notifications</Text>
                   </View>
                   <Switch
@@ -788,7 +788,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
-                    <Mail size={18} color={colors.primary} />
+                    <Mail size={18} color={colors.text.primary} />
                     <Text style={[styles.settingText, { color: colors.text.primary }]}>Email Notifications</Text>
                   </View>
                   <Switch
@@ -800,7 +800,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
-                    <Smartphone size={18} color={colors.primary} />
+                    <Smartphone size={18} color={colors.text.primary} />
                     <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
                   </View>
                   <Switch
@@ -824,11 +824,11 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Community</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Community</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
               <Row 
-                icon={<UserIcon size={16} color={colors.primary} />} 
+                icon={<UserIcon size={16} color={colors.text.primary} />} 
                 title="Friends" 
                 subtitle={`${friends.length} friends, ${friendRequests.length} requests`}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
@@ -886,7 +886,7 @@ export default function ProfileScreen() {
                   <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
                     <View style={styles.rowLeft}>
                       <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                        <UserIcon size={16} color={colors.primary} />
+                        <UserIcon size={16} color={colors.text.primary} />
                       </View>
                       <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
                         {request.users?.username || 'Unknown User'}
@@ -920,7 +920,7 @@ export default function ProfileScreen() {
                   <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
                     <View style={styles.rowLeft}>
                       <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                        <UserIcon size={16} color={colors.primary} />
+                        <UserIcon size={16} color={colors.text.primary} />
                       </View>
                       <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
                         {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
@@ -952,7 +952,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleAccountSettings}>
               <Row 
@@ -988,8 +988,10 @@ export default function ProfileScreen() {
 }
 
 function Dot() {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.dot} />
+    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
   );
 }
 
@@ -1002,13 +1004,15 @@ type RowProps = {
 };
 
 function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
+  const { colors } = useTheme();
+  
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.iconBubble}>{icon}</View>
         <View>
-          <Text style={[styles.rowTitle, titleStyle]}>{title}</Text>
-          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.rowTitle, { color: colors.text.primary }, titleStyle]}>{title}</Text>
+          {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.text.secondary }]}>{subtitle}</Text> : null}
         </View>
       </View>
       {trailing ? <View>{trailing}</View> : null}
@@ -1018,7 +1022,7 @@ function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: 'transparent', // Will be set via inline style
     // Ensure full height on web to avoid mid-page cutoff
     minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
   },
@@ -1046,7 +1050,7 @@ const styles = StyleSheet.create({
     fontSize: Platform.OS === 'web' ? 24 : 32,
     fontWeight: '800' as const,
     fontFamily: Fonts.bold,
-    color: 'inherit',
+    color: 'inherit', // Will be set via inline style
     letterSpacing: -1,
     marginBottom: 6,
   },
@@ -1054,14 +1058,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400' as const,
     fontFamily: Fonts.regular,
-    color: 'inherit',
+    color: 'inherit', // Will be set via inline style
     letterSpacing: 0.5,
   },
   topTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
     fontFamily: 'PlayfairDisplay_700Bold',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
   },
   scrollView: {
     flex: 1,
@@ -1071,12 +1075,13 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 8,
     paddingBottom: 20,
+    backgroundColor: 'transparent', // Will be set via inline style
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent', // Will be set via inline style
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1084,32 +1089,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700' as const,
     fontFamily: 'PlayfairDisplay_700Bold',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
   },
   userEmail: {
     fontSize: 14,
-    color: Colors.text.tertiary,
+    color: 'inherit', // Will be set via inline style
     marginTop: 4,
   },
   statsButton: {
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: 'transparent', // Will be set via inline style
     borderRadius: 12,
   },
   statsButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: 'inherit', // Will be set via inline style
   },
   statsCard: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent', // Will be set via inline style
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    borderColor: 'transparent', // Will be set via inline style
     paddingVertical: 20,
     paddingHorizontal: 12,
   },
@@ -1120,21 +1125,21 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
     marginTop: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: Colors.text.tertiary,
+    color: 'inherit', // Will be set via inline style
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   settingsCard: {
     marginTop: 12,
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent', // Will be set via inline style
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    borderColor: 'transparent', // Will be set via inline style
     padding: 16,
     gap: 16,
   },
@@ -1152,7 +1157,7 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
   },
   sectionBlock: {
     paddingHorizontal: 16,
@@ -1160,16 +1165,16 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    color: Colors.text.tertiary,
+    color: 'inherit', // Will be set via inline style
     marginBottom: 8,
     letterSpacing: 0.3,
     fontWeight: '600',
   },
   listCard: {
-    backgroundColor: Colors.background.white,
+    backgroundColor: 'transparent', // Will be set via inline style
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border.lighter,
+    borderColor: 'transparent', // Will be set via inline style
     overflow: 'hidden',
   },
   row: {
@@ -1179,7 +1184,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: 'transparent', // Will be set via inline style
   },
   rowLeft: {
     flexDirection: 'row',
@@ -1190,7 +1195,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: 'transparent', // Will be set via inline style
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1198,16 +1203,16 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
+    backgroundColor: 'transparent', // Will be set via inline style
   },
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
   },
   rowSubtitle: {
     fontSize: 12,
-    color: Colors.text.tertiary,
+    color: 'inherit', // Will be set via inline style
     marginTop: 2,
   },
   interestsGrid: {
@@ -1221,17 +1226,17 @@ const styles = StyleSheet.create({
   interestChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: 'transparent', // Will be set via inline style
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
     gap: 6,
     borderWidth: 2,
-    borderColor: Colors.background.secondary,
+    borderColor: 'transparent', // Will be set via inline style
   },
   interestChipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: 'transparent', // Will be set via inline style
+    borderColor: 'transparent', // Will be set via inline style
   },
   interestEmoji: {
     fontSize: 16,
@@ -1239,10 +1244,10 @@ const styles = StyleSheet.create({
   interestText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
   },
   interestTextSelected: {
-    color: Colors.text.inverse,
+    color: 'inherit', // Will be set via inline style
   },
   settingsGroupingOptions: {
     flexDirection: 'row',
@@ -1360,7 +1365,7 @@ const styles = StyleSheet.create({
   articlePreviewTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: 'inherit', // Will be set via inline style
     marginBottom: 4,
     lineHeight: 20,
   },
