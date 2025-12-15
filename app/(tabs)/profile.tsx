@@ -13,6 +13,7 @@ import {
   TextInput,
   Pressable,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -61,6 +62,7 @@ import {
   useExportUserData
 } from '@/lib/hooks';
 import { communityService } from '@/lib/communityService';
+import { showAlert } from '@/lib/alertService';
 
 export default function ProfileScreen() {
   const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
@@ -74,6 +76,7 @@ export default function ProfileScreen() {
   const [isActive, setIsActive] = useState(true);
   const [newKeyword, setNewKeyword] = useState('');
   const [showFriends, setShowFriends] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -290,6 +293,27 @@ export default function ProfileScreen() {
     router.push('/account-settings');
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Invalidate all profile-related queries to force refresh
+      await queryClient.invalidateQueries({ queryKey: ['profile-stats', user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['account-settings'] });
+      await queryClient.invalidateQueries({ queryKey: ['user'] });
+      
+      // Also refresh friends data
+      await refreshFriendsData();
+      
+      // Show success message
+      showAlert('Success', 'Profile data refreshed!');
+    } catch (error) {
+      console.error('Error refreshing profile data:', error);
+      showAlert('Error', 'Failed to refresh profile data. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     // Stagger animations
     Animated.parallel([
@@ -314,6 +338,20 @@ export default function ProfileScreen() {
     ]).start();
   }, []);
 
+  // Auto-refresh profile data when user becomes available
+  useEffect(() => {
+    if (user?.id && !profileStats && !statsLoading) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['profile-stats', user.id] });
+        // Show a subtle notification that data is loading
+        console.log('Auto-refreshing profile data for user:', user.id);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, profileStats, statsLoading, queryClient]);
+  
   // Animate interests section
   useEffect(() => {
     Animated.timing(interestsAnim, {
@@ -424,11 +462,33 @@ export default function ProfileScreen() {
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={[styles.topTitle, { color: colors.text.primary }]}>{t('profile.me')}</Text>
-        <TouchableOpacity style={styles.navIcon} onPress={toggle}>
-          {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity 
+            style={styles.navIcon}
+            onPress={onRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw size={18} color={colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navIcon} onPress={toggle}>
+            {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
+          </TouchableOpacity>
+        </View>
       </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+            title="Refreshing profile data..."
+            titleColor={colors.text.primary}
+          />
+        }
+      >
         <Animated.View 
           style={[
             styles.headerCard,
@@ -452,7 +512,12 @@ export default function ProfileScreen() {
           <Text style={[styles.username, { color: colors.text.primary }]}>{user?.username || 'John Doe'}</Text>
           <Text style={[styles.userEmail, { color: colors.text.primary }]}>{user?.email || 'user@example.com'}</Text>
           
-          {profileStats && (
+          {statsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading profile data...</Text>
+            </View>
+          ) : profileStats ? (
             <TouchableOpacity 
               style={[styles.statsButton, { backgroundColor: colors.primary + '20' }]}
               onPress={() => setShowStats(!showStats)}
@@ -462,7 +527,7 @@ export default function ProfileScreen() {
                 {showStats ? t('profile.hideStats') : t('profile.viewStats')}
               </Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </Animated.View>
 
         <Animated.View 
@@ -762,7 +827,7 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
           </View>
-
+          
           <Animated.View 
             style={[
               {
@@ -772,7 +837,14 @@ export default function ProfileScreen() {
               }
             ]}
           >
-            {accountSettings && (
+            {settingsLoading ? (
+              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading settings...</Text>
+                </View>
+              </View>
+            ) : accountSettings ? (
               <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
@@ -811,7 +883,7 @@ export default function ProfileScreen() {
                   />
                 </View>
               </View>
-            )}
+            ) : null}
           </Animated.View>
         </Animated.View>
 
@@ -879,67 +951,76 @@ export default function ProfileScreen() {
               }
             ]}
           >
-            <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-              <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
-              {friendRequests.length > 0 ? (
-                friendRequests.map((request) => (
-                  <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                    <View style={styles.rowLeft}>
-                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                        <UserIcon size={16} color={colors.text.primary} />
+            {isLoadingFriends ? (
+              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading friends...</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+                <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
+                {friendRequests.length > 0 ? (
+                  friendRequests.map((request) => (
+                    <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                      <View style={styles.rowLeft}>
+                        <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                          <UserIcon size={16} color={colors.text.primary} />
+                        </View>
+                        <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                          {request.users?.username || 'Unknown User'}
+                        </Text>
                       </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
-                        {request.users?.username || 'Unknown User'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity 
+                          style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
+                          onPress={() => handleAcceptFriendRequest(request.user_id)}
+                        >
+                          <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                          onPress={() => handleRejectFriendRequest(request.user_id)}
+                        >
+                          <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TouchableOpacity 
-                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
-                        onPress={() => handleAcceptFriendRequest(request.user_id)}
-                      >
-                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
-                      </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                    No pending friend requests
+                  </Text>
+                )}
+                
+                <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+                {friends.length > 0 ? (
+                  friends.map((friend) => (
+                    <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                      <View style={styles.rowLeft}>
+                        <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                          <UserIcon size={16} color={colors.text.primary} />
+                        </View>
+                        <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                          {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
+                        </Text>
+                      </View>
                       <TouchableOpacity 
                         style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
-                        onPress={() => handleRejectFriendRequest(request.user_id)}
+                        onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
                       >
-                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
+                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
-                  No pending friend requests
-                </Text>
-              )}
-              
-              <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
-              {friends.length > 0 ? (
-                friends.map((friend) => (
-                  <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                    <View style={styles.rowLeft}>
-                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                        <UserIcon size={16} color={colors.text.primary} />
-                      </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
-                        {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
-                      </Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
-                      onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
-                    >
-                      <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              ) : (
-                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
-                  You haven't added any friends yet
-                </Text>
-              )}
-            </View>
+                  ))
+                ) : (
+                  <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                    You haven't added any friends yet
+                  </Text>
+                )}
+              </View>
+            )}
           </Animated.View>
         </Animated.View>
 
@@ -1106,6 +1187,16 @@ const styles = StyleSheet.create({
   statsButtonText: {
     fontSize: 13,
     fontWeight: '600',
+    color: 'inherit', // Will be set via inline style
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  loadingText: {
+    fontSize: 13,
     color: 'inherit', // Will be set via inline style
   },
   statsCard: {

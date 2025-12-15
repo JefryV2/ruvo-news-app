@@ -18,6 +18,9 @@ export const useSignIn = () => {
     mutationFn: (data: SignInData) => authService.signIn(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Invalidate profile-related queries to ensure fresh data on sign in
+      queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['account-settings'] });
     },
   });
 };
@@ -40,6 +43,9 @@ export const useSignInWithGoogle = () => {
     mutationFn: () => authService.signInWithGoogle(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Invalidate profile-related queries to ensure fresh data on sign in
+      queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['account-settings'] });
     },
   });
 };
@@ -451,7 +457,8 @@ export const useProfileStats = (userId: string) => {
     queryKey: ['profile-stats', userId],
     queryFn: () => accountSettingsService.getProfileStats(userId),
     enabled: !!userId,
-    staleTime: 15 * 60 * 1000, // 15 minutes instead of 5
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduced from 15 for quicker initial load
+    retry: 2, // Retry twice on failure
   });
 };
 
@@ -462,7 +469,8 @@ export const useAccountSettings = () => {
     queryKey: ['account-settings', user?.id],
     queryFn: () => accountSettingsService.getAccountSettings(user?.id || ''),
     enabled: !!user?.id,
-    staleTime: 30 * 60 * 1000, // 30 minutes instead of 10
+    staleTime: 10 * 60 * 1000, // 10 minutes - reduced from 30 for quicker initial load
+    retry: 2, // Retry twice on failure
   });
 };
 
