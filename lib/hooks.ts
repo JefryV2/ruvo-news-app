@@ -367,6 +367,19 @@ export const useMarkAllNotificationsAsRead = () => {
   });
 };
 
+export const useDeleteNotification = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      notificationService.deleteNotification(notificationId),
+    onSuccess: (_, notificationId) => {
+      // Update the notifications cache to remove the deleted notification
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
 // Metadata hooks
 export const useInterests = () => {
   return useQuery({

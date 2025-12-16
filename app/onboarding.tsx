@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { INTERESTS } from '@/constants/mockData';
 import LocationPermissionScreen from '@/components/LocationPermissionScreen';
 
@@ -40,6 +41,7 @@ const interestImages: Record<string, any> = {
 type OnboardingStep = 'welcome' | 'location' | 'interests' | 'subcategories' | 'custom' | 'alerts' | 'complete';
 
 export default function OnboardingScreen() {
+  const { colors, mode } = useTheme(); // Get theme colors and mode
   const { completeOnboarding } = useApp();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -53,6 +55,9 @@ export default function OnboardingScreen() {
   const [slideAnim] = useState(new Animated.Value(20));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [glowAnim] = useState(new Animated.Value(0.3));
+
+  // Use system theme for all steps
+  const isDarkStep = mode === 'dark';
 
   React.useEffect(() => {
     fadeAnim.setValue(0);
@@ -613,7 +618,6 @@ export default function OnboardingScreen() {
   );
 
   const stepsOrder: OnboardingStep[] = ['location', 'interests', 'subcategories', 'custom', 'alerts', 'complete'];
-  const isDarkStep = currentStep === 'welcome' || currentStep === 'location' || currentStep === 'complete';
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -790,16 +794,16 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     marginBottom: 24,
   },
+  interestsCount: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginBottom: 12,
+  },
   interestsScroll: {
     flex: 1,
   },
   interestsScrollContent: {
     paddingBottom: 20,
-  },
-  interestsCount: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginBottom: 12,
   },
   interestsGrid: {
     flexDirection: 'row',

@@ -95,6 +95,7 @@ function RootLayoutNav() {
       <Stack.Screen name="account-settings" options={{ headerShown: false }} />
       <Stack.Screen name="liked-articles" options={{ headerShown: false }} />
       <Stack.Screen name="saved-articles" options={{ headerShown: false }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
     </Stack>
   );
 }

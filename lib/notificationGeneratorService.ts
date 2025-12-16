@@ -5,6 +5,7 @@
 
 import { Signal, UserProfile, Notification } from '@/types';
 import { supabase, IS_SUPABASE_CONFIGURED } from './supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface NotificationPreferences {
   pushNotifications: boolean;
@@ -16,6 +17,30 @@ export interface NotificationPreferences {
 }
 
 export class NotificationGeneratorService {
+  /**
+   * Check if we've exceeded our daily notification limit
+   */
+  private static async checkDailyLimit(userId: string): Promise<boolean> {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const key = `daily_notification_count_${userId}_${today}`;
+      
+      const countStr = await AsyncStorage.getItem(key);
+      const count = countStr ? parseInt(countStr, 10) : 0;
+      
+      // Limit to 10 notifications per day per user
+      if (count >= 10) {
+        return false; // Exceeded limit
+      }
+      
+      // Increment count
+      await AsyncStorage.setItem(key, (count + 1).toString());
+      return true; // Within limit
+    } catch (error) {
+      console.error('Error checking daily limit:', error);
+      return true; // Allow if error occurs
+    }
+  }
   /**
    * Generate notifications based on new signals matching user interests
    */
@@ -36,6 +61,8 @@ export class NotificationGeneratorService {
       return [];
     }
 
+    console.log(`Generating notifications for user ${user.username} with ${user.interests.length} interests from ${newSignals.length} signals`);
+    
     const notifications: Notification[] = [];
     const now = new Date();
 
@@ -45,20 +72,48 @@ export class NotificationGeneratorService {
         this.signalMatchesUserInterests(signal, user.interests)
       );
 
-      for (const signal of relevantSignals) {
+      console.log(`Found ${relevantSignals.length} relevant signals out of ${newSignals.length} total signals for user ${user.username}`);
+
+      // Sort signals by relevance score (highest first)
+      const sortedSignals = relevantSignals.sort((a, b) => {
+        const scoreA = (a as any).relevanceScore || 0;
+        const scoreB = (b as any).relevanceScore || 0;
+        return scoreB - scoreA;
+      });
+
+      // Limit to top 3 most relevant signals to reduce notification clutter
+      const topSignals = sortedSignals.slice(0, 3);
+
+      console.log(`Processing top ${topSignals.length} signals for notifications`);
+      
+      for (const signal of topSignals) {
         try {
           // Determine urgency based on relevance score and tags
           const urgency = this.determineUrgency(signal, user.interests);
           
-          // Skip low priority if user has breaking news only enabled
-          if (preferences?.breakingNews && urgency === 'low') {
+          console.log(`Signal ${signal.id} has urgency level: ${urgency}`);
+          
+          // Only create notifications for medium or high urgency
+          // Skip low priority notifications entirely unless they're breaking news
+          if (urgency === 'low' && !(signal.tags && Array.isArray(signal.tags) && signal.tags.some(tag => 
+            tag.toLowerCase().includes('breaking') || 
+            tag.toLowerCase().includes('urgent') ||
+            tag.toLowerCase().includes('critical')
+          ))) {
+            console.log(`Skipping low urgency signal ${signal.id} (not breaking news)`);
+            continue;
+          }
+
+          // Skip medium priority if user has breaking news only enabled
+          if (preferences?.breakingNews && urgency !== 'high') {
+            console.log(`Skipping medium urgency signal ${signal.id} due to breakingNews preference`);
             continue;
           }
 
           const notification: Notification = {
             id: `notif_${signal.id}_${Date.now()}`,
             title: this.generateTitle(signal, user.interests),
-            message: signal.summary || signal.title || 'No content available',
+            message: signal.summary || signal.title || 'New personalized update',
             category: this.determineCategory(signal, user.interests),
             urgency,
             timestamp: now,
@@ -67,12 +122,15 @@ export class NotificationGeneratorService {
           };
 
           notifications.push(notification);
+          console.log(`Created notification for signal ${signal.id} with urgency ${urgency}`);
         } catch (signalError) {
           console.error('Error processing signal:', signalError);
           // Continue with other signals instead of crashing
           continue;
         }
       }
+      
+      console.log(`Generated ${notifications.length} notifications for user ${user.username}`);
     } catch (error) {
       console.error('Error in generateNotificationsForSignals:', error);
     }
@@ -90,27 +148,46 @@ export class NotificationGeneratorService {
         return false;
       }
 
+      // Require minimum relevance score for notifications
+      const relevanceScore = (signal as any).relevanceScore || 0;
+      if (relevanceScore < 0.7) { // Higher threshold for notifications
+        console.log(`Signal ${signal.id} filtered out due to low relevance score: ${relevanceScore}`);
+        return false;
+      }
+
       // Check if signal tags match any user interests
       const signalTags = (signal.tags && Array.isArray(signal.tags)) ? signal.tags.map(t => t.toLowerCase()) : [];
       const interests = userInterests.map(i => i.toLowerCase());
 
+      // Count matches to ensure strong relevance
+      let matchCount = 0;
+      
       for (const interest of interests) {
         // Check tags
         if (signalTags.some(tag => tag.includes(interest) || interest.includes(tag))) {
-          return true;
+          matchCount++;
         }
 
         // Check title and summary
         const content = `${signal.title || ''} ${signal.summary || ''}`.toLowerCase();
         if (content.includes(interest)) {
-          return true;
+          matchCount++;
         }
       }
+      
+      const hasMatch = matchCount >= 1;
+      if (!hasMatch) {
+        console.log(`Signal ${signal.id} filtered out due to no interest matches. Relevance score: ${relevanceScore}`);
+      } else {
+        console.log(`Signal ${signal.id} matched with ${matchCount} interest matches. Relevance score: ${relevanceScore}`);
+      }
+      
+      // Require at least one strong match for notifications
+      return hasMatch;
     } catch (error) {
       console.error('Error in signalMatchesUserInterests:', error);
+      return false;
     }
-
-    return false;
   }
 
   /**
@@ -120,23 +197,30 @@ export class NotificationGeneratorService {
     try {
       const relevanceScore = (signal as any).relevanceScore || 0;
       
-      // High urgency: Very relevant (score > 0.9) or breaking news
-      if (relevanceScore > 0.9 || (signal.tags && Array.isArray(signal.tags) && signal.tags.some(tag => 
-        tag.toLowerCase().includes('breaking') || 
-        tag.toLowerCase().includes('urgent')
-      ))) {
+      // High urgency: Extremely relevant (score > 0.95) AND matches user interests strongly, or breaking news
+      if (relevanceScore > 0.95 && this.signalMatchesUserInterests(signal, userInterests) || 
+          (signal.tags && Array.isArray(signal.tags) && signal.tags.some(tag => 
+            tag.toLowerCase().includes('breaking') || 
+            tag.toLowerCase().includes('urgent') ||
+            tag.toLowerCase().includes('critical')
+          ))) {
         return 'high';
       }
 
-      // Medium urgency: Good relevance (score > 0.7)
-      if (relevanceScore > 0.7) {
+      // Medium urgency: Very good relevance (score > 0.9)
+      if (relevanceScore > 0.9) {
         return 'medium';
+      }
+
+      // Low urgency: Good relevance (score > 0.8)
+      if (relevanceScore > 0.8) {
+        return 'low';
       }
     } catch (error) {
       console.error('Error in determineUrgency:', error);
     }
 
-    // Low urgency: Default
+    // Moderate or low relevance: Don't create notification
     return 'low';
   }
 
@@ -149,13 +233,13 @@ export class NotificationGeneratorService {
       
       if (matchedInterest) {
         const interest = matchedInterest.charAt(0).toUpperCase() + matchedInterest.slice(1);
-        return `${interest} Update`;
+        return `${interest} Alert`;
       }
     } catch (error) {
       console.error('Error in generateTitle:', error);
     }
 
-    return 'New Signal';
+    return 'Personal Alert';
   }
 
   /**
@@ -225,7 +309,10 @@ export class NotificationGeneratorService {
     }
 
     try {
-      const notificationData = notifications.map(notif => ({
+      // Limit to maximum 5 notifications per save to prevent spam
+      const limitedNotifications = notifications.slice(0, 5);
+      
+      const notificationData = limitedNotifications.map(notif => ({
         user_id: userId,
         title: notif.title || 'Untitled',
         message: notif.message || '',
@@ -272,8 +359,8 @@ export class NotificationGeneratorService {
 
       return {
         id: `digest_${Date.now()}`,
-        title: 'Your Daily Digest',
-        message: `${topSignals.length} signals today from your interests: ${Array.isArray(user.interests) ? user.interests.slice(0, 3).join(', ') : ''}`,
+        title: 'Your Personalized Digest',
+        message: `${topSignals.length} important updates today based on your interests: ${Array.isArray(user.interests) ? user.interests.slice(0, 3).join(', ') : ''}`,
         category: 'Digest',
         urgency: 'low',
         timestamp: new Date(),
@@ -291,8 +378,8 @@ export class NotificationGeneratorService {
   static generateBreakingNews(signal: Signal): Notification {
     return {
       id: `breaking_${signal.id}_${Date.now()}`,
-      title: '🔴 Breaking News',
-      message: signal.title || 'No title available',
+      title: '🔴 Breaking News Alert',
+      message: signal.title || 'Important breaking news update',
       category: 'Breaking',
       urgency: 'high',
       timestamp: new Date(),
@@ -309,6 +396,8 @@ export class NotificationGeneratorService {
     newSignals: Signal[],
     preferences?: NotificationPreferences
   ): Promise<Notification[]> {
+    console.log('processNewSignals called with:', { user, newSignals, preferences });
+    
     try {
       // Validate inputs
       if (!user) {
@@ -321,17 +410,28 @@ export class NotificationGeneratorService {
         return [];
       }
 
+      // Check daily limit
+      if (user.id && !(await this.checkDailyLimit(user.id))) {
+        console.log('Daily notification limit reached, skipping notification generation');
+        return [];
+      }
+
+      console.log(`Processing ${newSignals.length} signals for user ${user.username} with ${user.interests.length} interests`);
+      
       const notifications = await this.generateNotificationsForSignals(
         user,
         newSignals,
         preferences
       );
 
+      console.log(`Generated ${notifications.length} personalized notifications`);
+      
       // Save to database if configured
       if (user.id && notifications.length > 0) {
         await this.saveNotifications(user.id, notifications);
       }
 
+      console.log('processNewSignals returning notifications:', notifications);
       return notifications;
     } catch (error) {
       console.error('Error in processNewSignals:', error);
@@ -340,5 +440,7 @@ export class NotificationGeneratorService {
     }
   }
 }
+
+console.log('Exporting NotificationGeneratorService:', NotificationGeneratorService);
 
 export default NotificationGeneratorService;

@@ -47,7 +47,6 @@ export default function AccountSettingsScreen() {
     language: language,
     pushNotifications: true,
     emailNotifications: true,
-    smsNotifications: false,
   });
   
   // Backend hooks
@@ -67,7 +66,6 @@ export default function AccountSettingsScreen() {
         language: accountSettings.language || 'en',
         pushNotifications: accountSettings.pushNotifications ?? true,
         emailNotifications: accountSettings.emailNotifications ?? true,
-        smsNotifications: accountSettings.smsNotifications ?? false,
       });
     }
   }, [accountSettings, user]);
@@ -107,7 +105,6 @@ export default function AccountSettingsScreen() {
         language: formData.language,
         pushNotifications: formData.pushNotifications,
         emailNotifications: formData.emailNotifications,
-        smsNotifications: formData.smsNotifications,
       });
       
       setIsEditing(false);
@@ -340,24 +337,6 @@ export default function AccountSettingsScreen() {
                 thumbColor={Colors.background.white}
               />
             </View>
-            
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Smartphone size={20} color={Colors.primary} />
-                <View>
-                  <Text style={styles.settingTitle}>{t('account.smsNotifications')}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('notifications.smsDesc')}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={formData.smsNotifications}
-                onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
-                trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                thumbColor={Colors.background.white}
-              />
-            </View>
           </View>
         </Animated.View>
 
@@ -379,10 +358,12 @@ export default function AccountSettingsScreen() {
                 <Text style={[styles.actionTitle, { color: colors.text.primary }]}>{t('account.changePassword')}</Text>
               </View>
               <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
-
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionRow}>
+            <TouchableOpacity 
+              style={styles.actionRow}
+              onPress={() => router.push('/privacy-policy')}
+            >
               <View style={styles.actionLeft}>
                 <Eye size={20} color={Colors.primary} />
                 <Text style={styles.actionTitle}>{t('account.privacySettings')}</Text>
@@ -406,8 +387,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
   },
@@ -420,7 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.secondary,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: Fonts.bold,
     color: Colors.text.primary,
@@ -435,15 +416,15 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   cancelButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   cancelButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text.secondary,
     fontFamily: Fonts.semiBold,
@@ -451,26 +432,26 @@ const styles = StyleSheet.create({
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: Colors.primary,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   saveButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text.inverse,
     fontFamily: Fonts.semiBold,
   },
   editButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: Colors.primary,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   editButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text.inverse,
     fontFamily: Fonts.semiBold,
@@ -479,19 +460,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    paddingHorizontal: 16,
-    marginTop: 20,
+    paddingHorizontal: 20,
+    marginTop: 24,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text.primary,
-    marginBottom: 12,
+    marginBottom: 16,
     fontFamily: Fonts.semiBold,
   },
   card: {
     backgroundColor: Colors.background.white,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border.light,
     padding: 16,
@@ -500,7 +481,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.lighter,
     minHeight: 48,
@@ -605,6 +586,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
   bottomSpacer: {
-    height: 140,
+    height: 20,
   },
 });

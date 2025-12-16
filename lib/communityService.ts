@@ -328,10 +328,11 @@ export const communityService = {
       throw new Error('Backend not configured');
     }
     
+    // Delete the friendship regardless of who initiated it
     const { error } = await supabase
       .from('friends')
       .delete()
-      .match({ user_id: userId, friend_id: friendId });
+      .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
     
     if (error) throw error;
   },

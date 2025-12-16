@@ -647,6 +647,30 @@ export const notificationService = {
       // Return 0 instead of throwing to prevent app crash
       return 0;
     }
+  },
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    if (!IS_SUPABASE_CONFIGURED || !supabase) {
+      console.warn('Backend not configured for deleteNotification');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      if (error) {
+        console.error('Error deleting notification:', error);
+        throw error;
+      }
+      
+      console.log('Successfully deleted notification:', notificationId);
+    } catch (error) {
+      console.error('Error in deleteNotification:', error);
+      // Don't throw to prevent app crash
+    }
   }
 };
 
@@ -684,7 +708,6 @@ export const accountSettingsService = {
       return {
         pushNotifications: true,
         emailNotifications: true,
-        smsNotifications: false,
         language: 'en',
         isActive: true
       };
@@ -706,7 +729,6 @@ export const accountSettingsService = {
       return {
         pushNotifications: true,
         emailNotifications: true,
-        smsNotifications: false,
         language: data?.language || 'en',
         isActive: true,
         isPremium: data?.is_premium || false,
@@ -718,7 +740,6 @@ export const accountSettingsService = {
       return {
         pushNotifications: true,
         emailNotifications: true,
-        smsNotifications: false,
         language: 'en',
         isActive: true,
         isPremium: false,

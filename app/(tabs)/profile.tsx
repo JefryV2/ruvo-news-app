@@ -98,6 +98,7 @@ export default function ProfileScreen() {
   const interestsAnim = useRef(new Animated.Value(0)).current;
   const settingsAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
+  const friendsAnim = useRef(new Animated.Value(0)).current;
 
   const userInterestCount = user?.interests?.length || 0;
   
@@ -378,6 +379,15 @@ export default function ProfileScreen() {
       useNativeDriver: true,
     }).start();
   }, [showStats]);
+
+  // Animate friends section
+  useEffect(() => {
+    Animated.timing(friendsAnim, {
+      toValue: showFriends ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showFriends]);
 
   // Load friends and friend requests
   useEffect(() => {
@@ -870,18 +880,6 @@ export default function ProfileScreen() {
                     thumbColor={colors.background.white}
                   />
                 </View>
-                <View style={styles.settingRow}>
-                  <View style={styles.settingLeft}>
-                    <Smartphone size={18} color={colors.text.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
-                  </View>
-                  <Switch
-                    value={accountSettings.smsNotifications}
-                    onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
-                    trackColor={{ false: colors.border.lighter, true: colors.primary }}
-                    thumbColor={colors.background.white}
-                  />
-                </View>
               </View>
             ) : null}
           </Animated.View>
@@ -945,7 +943,7 @@ export default function ProfileScreen() {
           <Animated.View 
             style={[
               {
-                opacity: interestsAnim,
+                opacity: friendsAnim,
                 maxHeight: showFriends ? 500 : 0,
                 overflow: 'hidden',
               }
