@@ -13,7 +13,6 @@ import {
   TextInput,
   Pressable,
   Platform,
-  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -49,10 +48,7 @@ import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { INTERESTS } from '@/constants/mockData';
-import { authService } from '@/lib/authService';
-import { useQueryClient } from '@tanstack/react-query';
 import { 
   useProfileStats, 
   useAccountSettings, 
@@ -62,21 +58,18 @@ import {
   useExportUserData
 } from '@/lib/hooks';
 import { communityService } from '@/lib/communityService';
-import { showAlert } from '@/lib/alertService';
 
 export default function ProfileScreen() {
   const { user, signals, updateUserInterests, setEchoControlEnabled, echoControlEnabled, setEchoControlGrouping, echoControlGrouping, setCustomKeywords, customKeywords } = useApp();
   const { t } = useLanguage();
   const { mode, colors, toggle } = useTheme();
   const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
   const [showInterests, setShowInterests] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [newKeyword, setNewKeyword] = useState('');
   const [showFriends, setShowFriends] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
@@ -98,7 +91,6 @@ export default function ProfileScreen() {
   const interestsAnim = useRef(new Animated.Value(0)).current;
   const settingsAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
-  const friendsAnim = useRef(new Animated.Value(0)).current;
 
   const userInterestCount = user?.interests?.length || 0;
   
@@ -115,33 +107,35 @@ export default function ProfileScreen() {
     updateUserInterests(newInterests);
   };
 
-  const handleLogout = async () => {
-    console.log('handleLogout function called - bypassing alert');
-    // Directly execute logout without Alert
-    try {
-      console.log('Initiating logout process');
-      await signOutMutation.mutateAsync();
-      console.log('Logout mutation successful, navigating to sign-in');
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      // Fallback direct signOut
-      try {
-        await authService.signOut();
-        console.log('Fallback signOut successful');
-      } catch (fallbackErr) {
-        console.error('Fallback signOut error:', fallbackErr);
-      }
-    } finally {
-      // Always clear local session and navigate to sign-in
-      try {
-        await AsyncStorage.removeItem('supabase_session');
-      } catch {}
-      try {
-        queryClient.clear();
-      } catch {}
-      router.replace('/auth/sign-in');
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Initiating logout process');
+              await signOutMutation.mutateAsync();
+              console.log('Logout mutation successful, navigating to sign-in');
+            } catch (error: any) {
+              console.error('Logout error:', error);
+              // Even if there's an error, still try to navigate to sign-in
+            } finally {
+              // Always navigate to sign-in screen
+              setTimeout(() => {
+                router.replace('/auth/sign-in');
+              }, 150);
+            }
+          },
+        },
+      ]
+    );
   };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -294,27 +288,6 @@ export default function ProfileScreen() {
     router.push('/account-settings');
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Invalidate all profile-related queries to force refresh
-      await queryClient.invalidateQueries({ queryKey: ['profile-stats', user?.id] });
-      await queryClient.invalidateQueries({ queryKey: ['account-settings'] });
-      await queryClient.invalidateQueries({ queryKey: ['user'] });
-      
-      // Also refresh friends data
-      await refreshFriendsData();
-      
-      // Show success message
-      showAlert('Success', 'Profile data refreshed!');
-    } catch (error) {
-      console.error('Error refreshing profile data:', error);
-      showAlert('Error', 'Failed to refresh profile data. Please try again.');
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   useEffect(() => {
     // Stagger animations
     Animated.parallel([
@@ -339,20 +312,6 @@ export default function ProfileScreen() {
     ]).start();
   }, []);
 
-  // Auto-refresh profile data when user becomes available
-  useEffect(() => {
-    if (user?.id && !profileStats && !statsLoading) {
-      // Small delay to ensure UI is ready
-      const timer = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['profile-stats', user.id] });
-        // Show a subtle notification that data is loading
-        console.log('Auto-refreshing profile data for user:', user.id);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [user?.id, profileStats, statsLoading, queryClient]);
-  
   // Animate interests section
   useEffect(() => {
     Animated.timing(interestsAnim, {
@@ -379,15 +338,6 @@ export default function ProfileScreen() {
       useNativeDriver: true,
     }).start();
   }, [showStats]);
-
-  // Animate friends section
-  useEffect(() => {
-    Animated.timing(friendsAnim, {
-      toValue: showFriends ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [showFriends]);
 
   // Load friends and friend requests
   useEffect(() => {
@@ -450,7 +400,7 @@ export default function ProfileScreen() {
       const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
       if (seconds < 60) return `${seconds}s ago`;
       if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86600) return `${Math.floor(seconds / 3600)}h ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
       return `${Math.floor(seconds / 86400)}d ago`;
     } catch {
       return 'Just now';
@@ -461,44 +411,20 @@ export default function ProfileScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
-        <Text style={[styles.headerTagline, { color: colors.text.primary }]}>Cut the Noise. Catch the Signal.</Text>
+        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
       </View>
       
       <View style={styles.topBar}>
-        <TouchableOpacity 
-          style={styles.navIcon}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.navIcon}>
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: colors.text.primary }]}>{t('profile.me')}</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity 
-            style={styles.navIcon}
-            onPress={onRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw size={18} color={colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navIcon} onPress={toggle}>
-            {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.topTitle}>{t('profile.me')}</Text>
+        <TouchableOpacity style={styles.navIcon} onPress={toggle}>
+          {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
+        </TouchableOpacity>
       </View>
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-            title="Refreshing profile data..."
-            titleColor={colors.text.primary}
-          />
-        }
-      >
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
         <Animated.View 
           style={[
             styles.headerCard,
@@ -519,25 +445,20 @@ export default function ProfileScreen() {
           > 
             <UserIcon size={28} color={colors.primary} />
           </Animated.View>
-          <Text style={[styles.username, { color: colors.text.primary }]}>{user?.username || 'John Doe'}</Text>
-          <Text style={[styles.userEmail, { color: colors.text.primary }]}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
           
-          {statsLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading profile data...</Text>
-            </View>
-          ) : profileStats ? (
+          {profileStats && (
             <TouchableOpacity 
-              style={[styles.statsButton, { backgroundColor: colors.primary + '20' }]}
+              style={styles.statsButton}
               onPress={() => setShowStats(!showStats)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.statsButtonText, { color: colors.text.primary }]}>
+              <Text style={styles.statsButtonText}>
                 {showStats ? t('profile.hideStats') : t('profile.viewStats')}
               </Text>
             </TouchableOpacity>
-          ) : null}
+          )}
         </Animated.View>
 
         <Animated.View 
@@ -552,29 +473,29 @@ export default function ProfileScreen() {
         >
           {profileStats && (
             <>
-              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Activity Stats</Text>
+              <Text style={styles.sectionLabel}>Activity Stats</Text>
               <View style={[styles.statsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.statItem}>
                   <Heart size={20} color={colors.alert} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalLikes || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Likes</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Likes</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Bookmark size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalSaved || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Saved</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Saved</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Eye size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalRead || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Read</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Read</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Calendar size={20} color={colors.primary} />
                   <Text style={[styles.statValue, { color: colors.text.primary }]}> 
                     {profileStats.joinedDate ? new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                   </Text>
-                  <Text style={[styles.statLabel, { color: colors.text.primary }]}>Joined</Text>
+                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Joined</Text>
                 </View>
               </View>
             </>
@@ -590,7 +511,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.account')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleToggleStatus}>
               <Row 
@@ -618,7 +539,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Library</Text>
+          <Text style={styles.sectionLabel}>Library</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => router.push('/liked-articles')}>
               <Row 
@@ -668,7 +589,7 @@ export default function ProfileScreen() {
                       {signal.title}
                     </Text>
                     <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.secondary }]} numberOfLines={1}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
                       <View style={styles.timeContainer}>
@@ -717,7 +638,7 @@ export default function ProfileScreen() {
                       {signal.title}
                     </Text>
                     <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.secondary }]} numberOfLines={1}>
+                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
                       <View style={styles.timeContainer}>
@@ -746,7 +667,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.interests')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
               <Row 
@@ -804,7 +725,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.preferences')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
               <Row 
@@ -837,7 +758,7 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
           </View>
-          
+
           <Animated.View 
             style={[
               {
@@ -847,18 +768,11 @@ export default function ProfileScreen() {
               }
             ]}
           >
-            {settingsLoading ? (
-              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading settings...</Text>
-                </View>
-              </View>
-            ) : accountSettings ? (
+            {accountSettings && (
               <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
-                    <Smartphone size={18} color={colors.text.primary} />
+                    <Smartphone size={18} color={colors.primary} />
                     <Text style={[styles.settingText, { color: colors.text.primary }]}>Push Notifications</Text>
                   </View>
                   <Switch
@@ -870,7 +784,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingRow}>
                   <View style={styles.settingLeft}>
-                    <Mail size={18} color={colors.text.primary} />
+                    <Mail size={18} color={colors.primary} />
                     <Text style={[styles.settingText, { color: colors.text.primary }]}>Email Notifications</Text>
                   </View>
                   <Switch
@@ -880,8 +794,20 @@ export default function ProfileScreen() {
                     thumbColor={colors.background.white}
                   />
                 </View>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingLeft}>
+                    <Smartphone size={18} color={colors.primary} />
+                    <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
+                  </View>
+                  <Switch
+                    value={accountSettings.smsNotifications}
+                    onValueChange={(value) => handleToggleSetting('smsNotifications', value)}
+                    trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                    thumbColor={colors.background.white}
+                  />
+                </View>
               </View>
-            ) : null}
+            )}
           </Animated.View>
         </Animated.View>
 
@@ -894,11 +820,11 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Community</Text>
+          <Text style={styles.sectionLabel}>Community</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
               <Row 
-                icon={<UserIcon size={16} color={colors.text.primary} />} 
+                icon={<UserIcon size={16} color={colors.primary} />} 
                 title="Friends" 
                 subtitle={`${friends.length} friends, ${friendRequests.length} requests`}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
@@ -943,82 +869,73 @@ export default function ProfileScreen() {
           <Animated.View 
             style={[
               {
-                opacity: friendsAnim,
+                opacity: interestsAnim,
                 maxHeight: showFriends ? 500 : 0,
                 overflow: 'hidden',
               }
             ]}
           >
-            {isLoadingFriends ? (
-              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Loading friends...</Text>
-                </View>
-              </View>
-            ) : (
-              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-                <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
-                {friendRequests.length > 0 ? (
-                  friendRequests.map((request) => (
-                    <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                      <View style={styles.rowLeft}>
-                        <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                          <UserIcon size={16} color={colors.text.primary} />
-                        </View>
-                        <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
-                          {request.users?.username || 'Unknown User'}
-                        </Text>
+            <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+              <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
+              {friendRequests.length > 0 ? (
+                friendRequests.map((request) => (
+                  <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                        <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity 
-                          style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
-                          onPress={() => handleAcceptFriendRequest(request.user_id)}
-                        >
-                          <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
-                          onPress={() => handleRejectFriendRequest(request.user_id)}
-                        >
-                          <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
-                        </TouchableOpacity>
-                      </View>
+                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                        {request.users?.username || 'Unknown User'}
+                      </Text>
                     </View>
-                  ))
-                ) : (
-                  <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
-                    No pending friend requests
-                  </Text>
-                )}
-                
-                <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
-                {friends.length > 0 ? (
-                  friends.map((friend) => (
-                    <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                      <View style={styles.rowLeft}>
-                        <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
-                          <UserIcon size={16} color={colors.text.primary} />
-                        </View>
-                        <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
-                          {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
-                        </Text>
-                      </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity 
+                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
+                        onPress={() => handleAcceptFriendRequest(request.user_id)}
+                      >
+                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity 
                         style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
-                        onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
+                        onPress={() => handleRejectFriendRequest(request.user_id)}
                       >
-                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
+                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
                       </TouchableOpacity>
                     </View>
-                  ))
-                ) : (
-                  <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
-                    You haven't added any friends yet
-                  </Text>
-                )}
-              </View>
-            )}
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                  No pending friend requests
+                </Text>
+              )}
+              
+              <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+              {friends.length > 0 ? (
+                friends.map((friend) => (
+                  <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                        <UserIcon size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                        {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                      onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
+                    >
+                      <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                  You haven't added any friends yet
+                </Text>
+              )}
+            </View>
           </Animated.View>
         </Animated.View>
 
@@ -1031,7 +948,7 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>{t('profile.account')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
           <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
             <TouchableOpacity onPress={handleAccountSettings}>
               <Row 
@@ -1047,18 +964,14 @@ export default function ProfileScreen() {
                 titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => {
-                console.log('Logout button pressed');
-                handleLogout();
-              }}
-            >
+            <TouchableOpacity onPress={handleLogout}>
               <Row 
                 icon={<LogOut size={16} color={colors.alert} />} 
                 title={t('profile.logout')} 
                 titleStyle={{ color: colors.alert }}
               />
-            </TouchableOpacity>          </View>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </ScrollView>
       <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
@@ -1067,10 +980,8 @@ export default function ProfileScreen() {
 }
 
 function Dot() {
-  const { colors } = useTheme();
-  
   return (
-    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+    <View style={styles.dot} />
   );
 }
 
@@ -1083,25 +994,24 @@ type RowProps = {
 };
 
 function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
-  const { colors } = useTheme();
-  
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.iconBubble}>{icon}</View>
         <View>
-          <Text style={[styles.rowTitle, { color: colors.text.primary }, titleStyle]}>{title}</Text>
-          {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.text.secondary }]}>{subtitle}</Text> : null}
+          <Text style={[styles.rowTitle, titleStyle]}>{title}</Text>
+          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
       {trailing ? <View>{trailing}</View> : null}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.primary,
     // Ensure full height on web to avoid mid-page cutoff
     minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
   },
@@ -1110,7 +1020,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   navIcon: {
     width: 36,
@@ -1122,29 +1032,29 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: Platform.OS === 'web' ? 24 : 32,
+    fontSize: Platform.OS === 'web' ? 28 : 36,
     fontWeight: '800' as const,
     fontFamily: Fonts.bold,
-    color: 'inherit', // Will be set via inline style
+    color: 'inherit',
     letterSpacing: -1,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   headerTagline: {
     fontSize: 16,
     fontWeight: '400' as const,
     fontFamily: Fonts.regular,
-    color: 'inherit', // Will be set via inline style
+    color: 'inherit',
     letterSpacing: 0.5,
   },
   topTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
     fontFamily: 'PlayfairDisplay_700Bold',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
   },
   scrollView: {
     flex: 1,
@@ -1154,13 +1064,12 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 8,
     paddingBottom: 20,
-    backgroundColor: 'transparent', // Will be set via inline style
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1168,42 +1077,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700' as const,
     fontFamily: 'PlayfairDisplay_700Bold',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
   },
   userEmail: {
     fontSize: 14,
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.tertiary,
     marginTop: 4,
   },
   statsButton: {
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.primary + '20',
     borderRadius: 12,
   },
   statsButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: 'inherit', // Will be set via inline style
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: 'inherit', // Will be set via inline style
+    color: Colors.primary,
   },
   statsCard: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.white,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'transparent', // Will be set via inline style
+    borderColor: Colors.border.lighter,
     paddingVertical: 20,
     paddingHorizontal: 12,
   },
@@ -1214,21 +1113,21 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
     marginTop: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   settingsCard: {
     marginTop: 12,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.white,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'transparent', // Will be set via inline style
+    borderColor: Colors.border.lighter,
     padding: 16,
     gap: 16,
   },
@@ -1246,7 +1145,7 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 15,
     fontWeight: '500',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
   },
   sectionBlock: {
     paddingHorizontal: 16,
@@ -1254,16 +1153,16 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.tertiary,
     marginBottom: 8,
     letterSpacing: 0.3,
     fontWeight: '600',
   },
   listCard: {
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent', // Will be set via inline style
+    borderColor: Colors.border.lighter,
     overflow: 'hidden',
   },
   row: {
@@ -1273,7 +1172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'transparent', // Will be set via inline style
+    borderBottomColor: Colors.border.lighter,
   },
   rowLeft: {
     flexDirection: 'row',
@@ -1284,7 +1183,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1292,16 +1191,16 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.primary,
   },
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
   },
   rowSubtitle: {
     fontSize: 12,
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.tertiary,
     marginTop: 2,
   },
   interestsGrid: {
@@ -1315,17 +1214,17 @@ const styles = StyleSheet.create({
   interestChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.background.secondary,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
     gap: 6,
     borderWidth: 2,
-    borderColor: 'transparent', // Will be set via inline style
+    borderColor: Colors.background.secondary,
   },
   interestChipSelected: {
-    backgroundColor: 'transparent', // Will be set via inline style
-    borderColor: 'transparent', // Will be set via inline style
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   interestEmoji: {
     fontSize: 16,
@@ -1333,10 +1232,10 @@ const styles = StyleSheet.create({
   interestText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
   },
   interestTextSelected: {
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.inverse,
   },
   settingsGroupingOptions: {
     flexDirection: 'row',
@@ -1454,7 +1353,7 @@ const styles = StyleSheet.create({
   articlePreviewTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'inherit', // Will be set via inline style
+    color: Colors.text.primary,
     marginBottom: 4,
     lineHeight: 20,
   },

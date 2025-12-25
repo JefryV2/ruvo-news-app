@@ -13,6 +13,7 @@
       }
     },
     "preview": {
+      "developmentClient": false,
       "distribution": "internal",
       "node": "22.11.0",
       "env": {
