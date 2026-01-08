@@ -201,13 +201,13 @@ export default function LocationPermissionScreen({
 
         <View style={styles.buttonGroup}>
         <TouchableOpacity
-          style={[styles.button, styles.primaryButton]}
+          style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary }]}
           onPress={handleRequestPermission}
           disabled={isRequesting}
             activeOpacity={0.85}
         >
-            <Text style={styles.primaryButtonText}>{isRequesting ? 'Requesting…' : 'Allow Location Access'}</Text>
-            <ArrowRight size={18} color={Colors.text.inverse} />
+            <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>{isRequesting ? 'Requesting…' : 'Allow Location Access'}</Text>
+            <ArrowRight size={18} color={colors.text.inverse} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.button, styles.linkButton]} onPress={onSkip} activeOpacity={0.85}>
@@ -263,7 +263,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 0,
+    justifyContent: 'space-between',
   },
   heroCard: {
     borderRadius: 28,
@@ -347,7 +348,8 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
   buttonGroup: {
-    marginTop: 28,
+    marginTop: 16,
+    marginBottom: 20,
     gap: 16,
   },
   button: {

@@ -71,6 +71,395 @@ export default function ProfileScreen() {
   const [newKeyword, setNewKeyword] = useState('');
   const [showFriends, setShowFriends] = useState(false);
   
+  // Create dynamic styles based on theme
+  const dynamicStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background.primary,
+      // Ensure full height on web to avoid mid-page cutoff
+      minHeight: (Platform.OS === 'web' ? (undefined as any) : undefined),
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    navIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 16,
+    },
+    headerTitle: {
+      fontSize: Platform.OS === 'web' ? 28 : 36,
+      fontWeight: '800' as const,
+      fontFamily: Fonts.bold,
+      color: colors.text.primary,
+      letterSpacing: -1,
+      marginBottom: 8,
+    },
+    headerTagline: {
+      fontSize: 16,
+      fontWeight: '400' as const,
+      fontFamily: Fonts.regular,
+      color: colors.text.secondary,
+      letterSpacing: 0.5,
+    },
+    topTitle: {
+      fontSize: 18,
+      fontWeight: '700' as const,
+      fontFamily: 'PlayfairDisplay_700Bold',
+      color: colors.text.primary,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    headerCard: {
+      alignItems: 'center',
+      gap: 10,
+      paddingTop: 8,
+      paddingBottom: 20,
+    },
+    avatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: colors.card.secondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    username: {
+      fontSize: 20,
+      fontWeight: '700' as const,
+      fontFamily: 'PlayfairDisplay_700Bold',
+      color: colors.text.primary,
+    },
+    userEmail: {
+      fontSize: 14,
+      color: colors.text.tertiary,
+      marginTop: 4,
+    },
+    statsButton: {
+      marginTop: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primary + '20',
+      borderRadius: 12,
+    },
+    statsButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    statsCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: colors.card.secondary,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border.lighter,
+      paddingVertical: 20,
+      paddingHorizontal: 12,
+    },
+    statItem: {
+      alignItems: 'center',
+      gap: 6,
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text.primary,
+      marginTop: 4,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: colors.text.tertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    settingsCard: {
+      marginTop: 12,
+      backgroundColor: colors.card.secondary,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border.lighter,
+      padding: 16,
+      gap: 16,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    settingLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      flex: 1,
+    },
+    settingText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.text.primary,
+    },
+    sectionBlock: {
+      paddingHorizontal: 16,
+      marginBottom: 18,
+    },
+    sectionLabel: {
+      fontSize: 12,
+      color: colors.text.tertiary,
+      marginBottom: 8,
+      letterSpacing: 0.3,
+      fontWeight: '600',
+    },
+    listCard: {
+      backgroundColor: colors.card.secondary,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border.lighter,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.lighter,
+    },
+    rowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    iconBubble: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primary + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+    rowTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text.primary,
+    },
+    rowSubtitle: {
+      fontSize: 12,
+      color: colors.text.tertiary,
+      marginTop: 2,
+    },
+    interestsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 12,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+    },
+    interestChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.background.tertiary,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      gap: 6,
+      borderWidth: 2,
+      borderColor: colors.border.light,
+    },
+    interestChipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    interestEmoji: {
+      fontSize: 16,
+    },
+    interestText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text.primary,
+    },
+    interestTextSelected: {
+      color: colors.text.inverse,
+    },
+    settingsGroupingOptions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
+    },
+    settingsGroupingOption: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: colors.background.secondary,
+    },
+    settingsGroupingOptionSelected: {
+      backgroundColor: colors.primary,
+    },
+    settingsGroupingOptionText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text.primary,
+    },
+    settingsGroupingOptionTextSelected: {
+      color: colors.text.inverse,
+    },
+    settingsKeywordSection: {
+      padding: 16,
+      backgroundColor: colors.background.secondary,
+      borderRadius: 12,
+      marginTop: 12,
+    },
+    settingsKeywordInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+      marginBottom: 12,
+    },
+    settingsKeywordInput: {
+      flex: 1,
+      backgroundColor: colors.background.white,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 14,
+      color: colors.text.primary,
+      borderWidth: 1,
+      borderColor: colors.border.lighter,
+    },
+    settingsKeywordAddButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginLeft: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    settingsKeywordAddButtonText: {
+      color: colors.text.inverse,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    settingsKeywordList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    settingsKeywordChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      gap: 6,
+    },
+    settingsKeywordChipText: {
+      color: colors.text.inverse,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    settingsKeywordChipRemove: {
+      color: colors.text.inverse,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    sectionLink: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    articlesPreviewContainer: {
+      backgroundColor: colors.card.secondary,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border.lighter,
+      padding: 12,
+    },
+    articlePreviewCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.lighter,
+    },
+    articlePreviewContent: {
+      flex: 1,
+      marginRight: 12,
+    },
+    articlePreviewTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: 4,
+      lineHeight: 20,
+    },
+    articlePreviewMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    articlePreviewSource: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.text.tertiary,
+      flex: 1,
+    },
+    timeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    articlePreviewTime: {
+      fontSize: 11,
+      color: colors.text.tertiary,
+    },
+    likedBadgeSmall: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.card.light,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    savedBadgeSmall: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.card.light,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
+  
   // Backend hooks
   const { data: profileStats, isLoading: statsLoading } = useProfileStats(user?.id || '');
   const { data: accountSettings, isLoading: settingsLoading } = useAccountSettings();
@@ -408,26 +797,26 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RUVO</Text>
-        <Text style={[styles.headerTagline, { color: colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
+    <View style={[dynamicStyles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}>
+      <View style={dynamicStyles.header}>
+        <Text style={dynamicStyles.headerTitle}>RUVO</Text>
+        <Text style={dynamicStyles.headerTagline}>Cut the Noise. Catch the Signal.</Text>
       </View>
       
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.navIcon}>
+      <View style={dynamicStyles.topBar}>
+        <TouchableOpacity style={dynamicStyles.navIcon}>
           <ChevronLeft size={22} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>{t('profile.me')}</Text>
-        <TouchableOpacity style={styles.navIcon} onPress={toggle}>
+        <Text style={dynamicStyles.topTitle}>{t('profile.me')}</Text>
+        <TouchableOpacity style={dynamicStyles.navIcon} onPress={toggle}>
           {mode === 'dark' ? <Sun size={18} color={colors.text.primary} /> : <Moon size={18} color={colors.text.primary} />}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
+      <ScrollView style={dynamicStyles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
         <Animated.View 
           style={[
-            styles.headerCard,
+            dynamicStyles.headerCard,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
@@ -436,25 +825,24 @@ export default function ProfileScreen() {
         >
           <Animated.View 
             style={[
-              styles.avatar,
+              dynamicStyles.avatar,
               {
                 transform: [{ scale: avatarScale }],
-                backgroundColor: colors.card.secondary,
               },
             ]}
           > 
             <UserIcon size={28} color={colors.primary} />
           </Animated.View>
-          <Text style={styles.username}>{user?.username || 'John Doe'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={dynamicStyles.username}>{user?.username || 'John Doe'}</Text>
+          <Text style={dynamicStyles.userEmail}>{user?.email || 'user@example.com'}</Text>
           
           {profileStats && (
             <TouchableOpacity 
-              style={styles.statsButton}
+              style={dynamicStyles.statsButton}
               onPress={() => setShowStats(!showStats)}
               activeOpacity={0.7}
             >
-              <Text style={styles.statsButtonText}>
+              <Text style={dynamicStyles.statsButtonText}>
                 {showStats ? t('profile.hideStats') : t('profile.viewStats')}
               </Text>
             </TouchableOpacity>
@@ -463,7 +851,7 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: statsAnim,
               maxHeight: showStats ? 200 : 0,
@@ -473,29 +861,29 @@ export default function ProfileScreen() {
         >
           {profileStats && (
             <>
-              <Text style={styles.sectionLabel}>Activity Stats</Text>
-              <View style={[styles.statsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
-                <View style={styles.statItem}>
+              <Text style={dynamicStyles.sectionLabel}>Activity Stats</Text>
+              <View style={dynamicStyles.statsCard}> 
+                <View style={dynamicStyles.statItem}>
                   <Heart size={20} color={colors.alert} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalLikes || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Likes</Text>
+                  <Text style={dynamicStyles.statValue}>{profileStats.totalLikes || 0}</Text>
+                  <Text style={dynamicStyles.statLabel}>Likes</Text>
                 </View>
-                <View style={styles.statItem}>
+                <View style={dynamicStyles.statItem}>
                   <Bookmark size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalSaved || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Saved</Text>
+                  <Text style={dynamicStyles.statValue}>{profileStats.totalSaved || 0}</Text>
+                  <Text style={dynamicStyles.statLabel}>Saved</Text>
                 </View>
-                <View style={styles.statItem}>
+                <View style={dynamicStyles.statItem}>
                   <Eye size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>{profileStats.totalRead || 0}</Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Read</Text>
+                  <Text style={dynamicStyles.statValue}>{profileStats.totalRead || 0}</Text>
+                  <Text style={dynamicStyles.statLabel}>Read</Text>
                 </View>
-                <View style={styles.statItem}>
+                <View style={dynamicStyles.statItem}>
                   <Calendar size={20} color={colors.primary} />
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}> 
+                  <Text style={dynamicStyles.statValue}> 
                     {profileStats.joinedDate ? new Date(profileStats.joinedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                   </Text>
-                  <Text style={[styles.statLabel, { color: colors.text.tertiary }]}>Joined</Text>
+                  <Text style={dynamicStyles.statLabel}>Joined</Text>
                 </View>
               </View>
             </>
@@ -504,20 +892,22 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>{t('profile.account')}</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={handleToggleStatus}>
               <Row 
                 icon={<Dot />} 
                 title={t('profile.activeStatus')} 
                 subtitle={isActive ? t('profile.online') : t('profile.offline')} 
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<Switch
                   value={isActive}
                   onValueChange={handleToggleStatus}
@@ -526,26 +916,28 @@ export default function ProfileScreen() {
                 />}
               />
             </TouchableOpacity>
-            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} trailing={<Info size={16} color={colors.text.secondary} />} />
+            <Row icon={<Dot />} title={t('profile.username')} subtitle={user?.username ? `${t('profile.anonymousUrl')}/${user.username}` : `${t('profile.anonymousUrl')}/username`} textColor={colors.text.primary} subtitleColor={colors.text.tertiary} trailing={<Info size={16} color={colors.text.secondary} />} />
           </View>
         </Animated.View>
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Library</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>Library</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={() => router.push('/liked-articles')}>
               <Row 
                 icon={<Heart size={16} color={colors.alert} />} 
                 title="Liked Articles" 
                 subtitle={`${profileStats?.totalLikes || 0} articles`}
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -554,6 +946,8 @@ export default function ProfileScreen() {
                 icon={<Bookmark size={16} color={colors.primary} />} 
                 title="Saved Articles" 
                 subtitle={`${profileStats?.totalSaved || 0} articles`}
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -564,43 +958,43 @@ export default function ProfileScreen() {
         {likedSignals.length > 0 && (
           <Animated.View 
             style={[
-              styles.sectionBlock,
+              dynamicStyles.sectionBlock,
               {
                 opacity: fadeAnim,
                 transform: [{ translateY: slideAnim }],
               },
             ]}
           >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Liked</Text>
+            <View style={dynamicStyles.sectionHeader}>
+              <Text style={dynamicStyles.sectionLabel}>Recently Liked</Text>
               <TouchableOpacity onPress={() => router.push('/liked-articles')}>
-                <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
+                <Text style={dynamicStyles.sectionLink}>See all</Text>
               </TouchableOpacity>
             </View>
-            <View style={[styles.articlesPreviewContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+            <View style={dynamicStyles.articlesPreviewContainer}>
               {likedSignals.map((signal) => (
                 <TouchableOpacity
                   key={signal.id}
-                  style={styles.articlePreviewCard}
+                  style={dynamicStyles.articlePreviewCard}
                   onPress={() => router.push(`/article-detail?id=${signal.id}`)}
                 >
-                  <View style={styles.articlePreviewContent}>
-                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                  <View style={dynamicStyles.articlePreviewContent}>
+                    <Text style={dynamicStyles.articlePreviewTitle} numberOfLines={2}>
                       {signal.title}
                     </Text>
-                    <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                    <View style={dynamicStyles.articlePreviewMeta}>
+                      <Text style={dynamicStyles.articlePreviewSource} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
-                      <View style={styles.timeContainer}>
+                      <View style={dynamicStyles.timeContainer}>
                         <Clock size={11} color={colors.text.tertiary} />
-                        <Text style={[styles.articlePreviewTime, { color: colors.text.tertiary }]}>
+                        <Text style={dynamicStyles.articlePreviewTime}>
                           {formatTimeAgo(signal.timestamp)}
                         </Text>
                       </View>
                     </View>
                   </View>
-                  <View style={[styles.likedBadgeSmall, { backgroundColor: colors.card.light }]}>
+                  <View style={dynamicStyles.likedBadgeSmall}>
                     <Heart size={12} color={colors.alert} fill={colors.alert} />
                   </View>
                 </TouchableOpacity>
@@ -613,43 +1007,43 @@ export default function ProfileScreen() {
         {savedSignals.length > 0 && (
           <Animated.View 
             style={[
-              styles.sectionBlock,
+              dynamicStyles.sectionBlock,
               {
                 opacity: fadeAnim,
                 transform: [{ translateY: slideAnim }],
               },
             ]}
           >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.text.primary }]}>Recently Saved</Text>
+            <View style={dynamicStyles.sectionHeader}>
+              <Text style={dynamicStyles.sectionLabel}>Recently Saved</Text>
               <TouchableOpacity onPress={() => router.push('/saved-articles')}>
-                <Text style={[styles.sectionLink, { color: colors.primary }]}>See all</Text>
+                <Text style={dynamicStyles.sectionLink}>See all</Text>
               </TouchableOpacity>
             </View>
-            <View style={[styles.articlesPreviewContainer, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
+            <View style={dynamicStyles.articlesPreviewContainer}>
               {savedSignals.map((signal) => (
                 <TouchableOpacity
                   key={signal.id}
-                  style={styles.articlePreviewCard}
+                  style={dynamicStyles.articlePreviewCard}
                   onPress={() => router.push(`/article-detail?id=${signal.id}`)}
                 >
-                  <View style={styles.articlePreviewContent}>
-                    <Text style={[styles.articlePreviewTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                  <View style={dynamicStyles.articlePreviewContent}>
+                    <Text style={dynamicStyles.articlePreviewTitle} numberOfLines={2}>
                       {signal.title}
                     </Text>
-                    <View style={styles.articlePreviewMeta}>
-                      <Text style={[styles.articlePreviewSource, { color: colors.text.tertiary }]} numberOfLines={1}>
+                    <View style={dynamicStyles.articlePreviewMeta}>
+                      <Text style={dynamicStyles.articlePreviewSource} numberOfLines={1}>
                         {signal.sourceName}
                       </Text>
-                      <View style={styles.timeContainer}>
+                      <View style={dynamicStyles.timeContainer}>
                         <Clock size={11} color={colors.text.tertiary} />
-                        <Text style={[styles.articlePreviewTime, { color: colors.text.tertiary }]}>
+                        <Text style={dynamicStyles.articlePreviewTime}>
                           {formatTimeAgo(signal.timestamp)}
                         </Text>
                       </View>
                     </View>
                   </View>
-                  <View style={[styles.savedBadgeSmall, { backgroundColor: colors.card.light }]}>
+                  <View style={dynamicStyles.savedBadgeSmall}>
                     <Bookmark size={12} color={colors.primary} fill={colors.primary} />
                   </View>
                 </TouchableOpacity>
@@ -660,20 +1054,22 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.interests')}</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>{t('profile.interests')}</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={() => setShowInterests(!showInterests)}>
               <Row 
                 icon={<Heart size={16} color={colors.primary} />} 
                 title={t('profile.interests')} 
                 subtitle={`${userInterestCount} ${t('profile.selected')}`}
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -688,23 +1084,23 @@ export default function ProfileScreen() {
               }
             ]}
           >
-            <View style={styles.interestsGrid}>
+            <View style={dynamicStyles.interestsGrid}>
               {INTERESTS.map((interest) => {
                 const isSelected = user?.interests?.includes(interest.id);
                 return (
                   <Pressable
                     key={interest.id}
-                    style={[styles.interestChip, 
+                    style={[dynamicStyles.interestChip,
                       { backgroundColor: colors.background.tertiary, borderColor: colors.border.light },
-                      isSelected && [styles.interestChipSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                      isSelected && [dynamicStyles.interestChipSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
                     onPress={() => toggleInterest(interest.id)}
                     android_ripple={{ color: colors.primary + '40' }}
                   >
-                    <Text style={styles.interestEmoji}>{interest.emoji}</Text>
-                    <Text style={[styles.interestText, 
+                    <Text style={dynamicStyles.interestEmoji}>{interest.emoji}</Text>
+                    <Text style={[dynamicStyles.interestText, 
                       { color: colors.text.primary },
-                      isSelected && styles.interestTextSelected, 
+                      isSelected && dynamicStyles.interestTextSelected,
                       isSelected && { color: colors.text.inverse }
                     ]}>
                       {interest.name}
@@ -718,19 +1114,21 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.preferences')}</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>{t('profile.preferences')}</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
               <Row 
                 icon={<Bell size={16} color={colors.primary} />} 
                 title={t('profile.notifications')} 
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -738,11 +1136,15 @@ export default function ProfileScreen() {
               icon={<Globe size={16} color={colors.primary} />} 
               title={t('profile.language')} 
               subtitle={accountSettings?.language === 'en' ? 'English' : '한국어'}
+              textColor={colors.text.primary}
+              subtitleColor={colors.text.tertiary}
             />
             <Row 
               icon={<TrendingUp size={16} color={colors.primary} />} 
               title="Echo Control" 
               subtitle={echoControlEnabled ? "Enabled" : "Disabled"}
+              textColor={colors.text.primary}
+              subtitleColor={colors.text.tertiary}
               trailing={<Switch
                 value={echoControlEnabled}
                 onValueChange={handleToggleEchoControl}
@@ -754,6 +1156,8 @@ export default function ProfileScreen() {
               <Row 
                 icon={<Clock size={16} color={colors.primary} />} 
                 title="Screen Time" 
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -769,11 +1173,11 @@ export default function ProfileScreen() {
             ]}
           >
             {accountSettings && (
-              <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
-                <View style={styles.settingRow}>
-                  <View style={styles.settingLeft}>
+              <View style={dynamicStyles.settingsCard}> 
+                <View style={dynamicStyles.settingRow}>
+                  <View style={dynamicStyles.settingLeft}>
                     <Smartphone size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Push Notifications</Text>
+                    <Text style={dynamicStyles.settingText}>Push Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.pushNotifications}
@@ -782,10 +1186,10 @@ export default function ProfileScreen() {
                     thumbColor={colors.background.white}
                   />
                 </View>
-                <View style={styles.settingRow}>
-                  <View style={styles.settingLeft}>
+                <View style={dynamicStyles.settingRow}>
+                  <View style={dynamicStyles.settingLeft}>
                     <Mail size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>Email Notifications</Text>
+                    <Text style={dynamicStyles.settingText}>Email Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.emailNotifications}
@@ -794,10 +1198,10 @@ export default function ProfileScreen() {
                     thumbColor={colors.background.white}
                   />
                 </View>
-                <View style={styles.settingRow}>
-                  <View style={styles.settingLeft}>
+                <View style={dynamicStyles.settingRow}>
+                  <View style={dynamicStyles.settingLeft}>
                     <Smartphone size={18} color={colors.primary} />
-                    <Text style={[styles.settingText, { color: colors.text.primary }]}>SMS Notifications</Text>
+                    <Text style={dynamicStyles.settingText}>SMS Notifications</Text>
                   </View>
                   <Switch
                     value={accountSettings.smsNotifications}
@@ -813,55 +1217,63 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>Community</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>Community</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={() => setShowFriends(!showFriends)}>
               <Row 
                 icon={<UserIcon size={16} color={colors.primary} />} 
                 title="Friends" 
                 subtitle={`${friends.length} friends, ${friendRequests.length} requests`}
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity 
-            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            style={[dynamicStyles.listCard, { marginTop: 12 }]}
             onPress={handleAddFriend}
           >
             <Row 
               icon={<Plus size={16} color={colors.primary} />} 
               title="Add Friend" 
+              textColor={colors.text.primary}
+              subtitleColor={colors.text.tertiary}
               trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            style={[dynamicStyles.listCard, { marginTop: 12 }]}
             onPress={refreshFriendsData}
           >
             <Row 
               icon={<RefreshCw size={16} color={colors.primary} />} 
               title="Refresh Friends" 
+              textColor={colors.text.primary}
+              subtitleColor={colors.text.tertiary}
               trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter, marginTop: 12 }]}
+            style={[dynamicStyles.listCard, { marginTop: 12 }]}
             onPress={() => router.push('/friend-requests')}
           >
             <Row 
               icon={<MessageCircle size={16} color={colors.primary} />} 
               title="Friend Requests" 
               subtitle={`${friendRequests.length} pending requests`}
+              textColor={colors.text.primary}
+              subtitleColor={colors.text.tertiary}
               trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
             />
           </TouchableOpacity>
@@ -875,58 +1287,58 @@ export default function ProfileScreen() {
               }
             ]}
           >
-            <View style={[styles.settingsCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}>
-              <Text style={[styles.settingText, { color: colors.text.primary, marginBottom: 12 }]}>Friend Requests</Text>
+            <View style={dynamicStyles.settingsCard}>
+              <Text style={[dynamicStyles.settingText, { marginBottom: 12 }]}>Friend Requests</Text>
               {friendRequests.length > 0 ? (
                 friendRequests.map((request) => (
-                  <View key={request.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                    <View style={styles.rowLeft}>
-                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                  <View key={request.id} style={dynamicStyles.row}>
+                    <View style={dynamicStyles.rowLeft}>
+                      <View style={dynamicStyles.iconBubble}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                      <Text style={dynamicStyles.rowTitle}>
                         {request.users?.username || 'Unknown User'}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <TouchableOpacity 
-                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.primary, paddingHorizontal: 12 }]}
+                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
                         onPress={() => handleAcceptFriendRequest(request.user_id)}
                       >
-                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Accept</Text>
+                        <Text style={dynamicStyles.settingsKeywordAddButtonText}>Accept</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
                         onPress={() => handleRejectFriendRequest(request.user_id)}
                       >
-                        <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Reject</Text>
+                        <Text style={dynamicStyles.settingsKeywordAddButtonText}>Reject</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 ))
               ) : (
-                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                <Text style={[dynamicStyles.rowSubtitle, { textAlign: 'center', padding: 16 }]}>
                   No pending friend requests
                 </Text>
               )}
               
-              <Text style={[styles.settingText, { color: colors.text.primary, marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+              <Text style={[dynamicStyles.settingText, { marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
               {friends.length > 0 ? (
                 friends.map((friend) => (
-                  <View key={friend.id} style={[styles.row, { borderBottomColor: colors.border.lighter }]}>
-                    <View style={styles.rowLeft}>
-                      <View style={[styles.iconBubble, { backgroundColor: colors.primary + '20' }]}>
+                  <View key={friend.id} style={dynamicStyles.row}>
+                    <View style={dynamicStyles.rowLeft}>
+                      <View style={dynamicStyles.iconBubble}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={[styles.rowTitle, { color: colors.text.primary }]}>
+                      <Text style={dynamicStyles.rowTitle}>
                         {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
                       </Text>
                     </View>
                     <TouchableOpacity 
-                      style={[styles.settingsKeywordAddButton, { backgroundColor: colors.alert, paddingHorizontal: 12 }]}
+                      style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
                       onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
                     >
-                      <Text style={[styles.settingsKeywordAddButtonText, { color: colors.text.inverse }]}>Remove</Text>
+                      <Text style={dynamicStyles.settingsKeywordAddButtonText}>Remove</Text>
                     </TouchableOpacity>
                   </View>
                 ))
@@ -941,19 +1353,21 @@ export default function ProfileScreen() {
 
         <Animated.View 
           style={[
-            styles.sectionBlock,
+            dynamicStyles.sectionBlock,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
-          <View style={[styles.listCard, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+          <Text style={dynamicStyles.sectionLabel}>{t('profile.account')}</Text>
+          <View style={dynamicStyles.listCard}> 
             <TouchableOpacity onPress={handleAccountSettings}>
               <Row 
                 icon={<SettingsIcon size={16} color={colors.primary} />} 
                 title={t('profile.accountSettings')} 
+                textColor={colors.text.primary}
+                subtitleColor={colors.text.tertiary}
                 trailing={<ChevronRight size={16} color={colors.text.secondary} />} 
               />
             </TouchableOpacity>
@@ -961,6 +1375,8 @@ export default function ProfileScreen() {
               <Row 
                 icon={<Trash2 size={16} color={colors.alert} />} 
                 title={t('profile.deleteAccount')} 
+                textColor={colors.alert}
+                subtitleColor={colors.text.tertiary}
                 titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
@@ -968,6 +1384,8 @@ export default function ProfileScreen() {
               <Row 
                 icon={<LogOut size={16} color={colors.alert} />} 
                 title={t('profile.logout')} 
+                textColor={colors.alert}
+                subtitleColor={colors.text.tertiary}
                 titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
@@ -991,16 +1409,18 @@ type RowProps = {
   subtitle?: string;
   trailing?: React.ReactNode;
   titleStyle?: any;
+  textColor?: string;
+  subtitleColor?: string;
 };
 
-function Row({ icon, title, subtitle, trailing, titleStyle }: RowProps) {
+function Row({ icon, title, subtitle, trailing, titleStyle, textColor, subtitleColor }: RowProps) {
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.iconBubble}>{icon}</View>
         <View>
-          <Text style={[styles.rowTitle, titleStyle]}>{title}</Text>
-          {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.rowTitle, titleStyle, { color: textColor }]}>{title}</Text>
+          {subtitle ? <Text style={[styles.rowSubtitle, { color: subtitleColor }]}>{subtitle}</Text> : null}
         </View>
       </View>
       {trailing ? <View>{trailing}</View> : null}
@@ -1039,7 +1459,7 @@ const styles = StyleSheet.create({
     fontSize: Platform.OS === 'web' ? 28 : 36,
     fontWeight: '800' as const,
     fontFamily: Fonts.bold,
-    color: 'inherit',
+    color: Colors.text.primary,
     letterSpacing: -1,
     marginBottom: 8,
   },
@@ -1047,7 +1467,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400' as const,
     fontFamily: Fonts.regular,
-    color: 'inherit',
+    color: Colors.text.secondary,
     letterSpacing: 0.5,
   },
   topTitle: {
@@ -1330,6 +1750,7 @@ const styles = StyleSheet.create({
   sectionLink: {
     fontSize: 14,
     fontWeight: '600',
+    color: Colors.primary,
   },
   articlesPreviewContainer: {
     backgroundColor: Colors.background.white,

@@ -152,7 +152,7 @@ const NotificationCard = React.memo(({
               <Text style={[styles.notificationTime, { color: colors.text.tertiary, opacity: notif.read ? 0.7 : 1 }]}>{formatTimeAgo(notif.timestamp)}</Text>
             </View>
           </View>
-          <Text style={[styles.notificationMessage, { color: colors.text.secondary, opacity: notif.read ? 0.7 : 1 }]} numberOfLines={3}>{notif.message} <Text style={{ fontStyle: 'italic', fontSize: 13, opacity: notif.read ? 0.7 : 1 }}>— Based on your interests</Text></Text>
+          <Text style={[styles.notificationMessage, { color: colors.text.secondary, opacity: notif.read ? 0.7 : 1 }]} numberOfLines={3}>{notif.message} <Text style={[styles.interestNote, { color: colors.text.tertiary, opacity: notif.read ? 0.7 : 1 }]}>— Based on your interests</Text></Text>
           {!notif.read && (
             <TouchableOpacity 
               style={[styles.markRead, { backgroundColor: colors.primary }]} 
@@ -314,22 +314,22 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: Fonts.RubikBold,
+    fontFamily: Fonts.bold,
     marginBottom: 4,
   },
   headerTagline: {
     fontSize: 16,
-    fontFamily: Fonts.RubikMedium,
+    fontFamily: Fonts.semiBold,
     marginBottom: 2,
   },
   headerSubtitle: {
     fontSize: 14,
-    fontFamily: Fonts.RubikRegular,
+    fontFamily: Fonts.regular,
     marginBottom: 8,
   },
   headerInfo: {
     fontSize: 13,
-    fontFamily: Fonts.RubikLight,
+    fontFamily: Fonts.regular,
   },
   filtersWrapper: {
     paddingHorizontal: 20,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    fontFamily: Fonts.RubikMedium,
+    fontFamily: Fonts.semiBold,
   },
   listWrapper: {
     flex: 1,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-    fontFamily: Fonts.RubikSemiBold,
+    fontFamily: Fonts.semiBold,
     flex: 1,
     paddingRight: 8,
   },
@@ -416,13 +416,18 @@ const styles = StyleSheet.create({
   },
   notificationTime: {
     fontSize: 12,
-    fontFamily: Fonts.RubikRegular,
+    fontFamily: Fonts.regular,
   },
   notificationMessage: {
     fontSize: 14,
-    fontFamily: Fonts.RubikRegular,
+    fontFamily: Fonts.regular,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  interestNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
   markRead: {
     alignSelf: 'flex-start',
@@ -432,7 +437,7 @@ const styles = StyleSheet.create({
   },
   markReadText: {
     fontSize: 12,
-    fontFamily: Fonts.RubikMedium,
+    fontFamily: Fonts.semiBold,
   },
   notificationActions: {
     justifyContent: 'space-between',
@@ -459,13 +464,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: Fonts.RubikSemiBold,
+    fontFamily: Fonts.semiBold,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
-    fontFamily: Fonts.RubikRegular,
+    fontFamily: Fonts.regular,
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: 300,

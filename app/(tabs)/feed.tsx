@@ -245,10 +245,10 @@ export default function FeedScreen() {
       />
       <View style={styles.slideContent}>
         {item.tags?.[0] && (
-          <View style={[styles.slideTag, { backgroundColor: 'rgba(0,0,0,0.35)' }]}><Text style={[styles.slideTagText, { color: colors.text.inverse }]}>{item.tags[0]}</Text></View>
+          <View style={[styles.slideTag, { backgroundColor: 'rgba(0,0,0,0.35)' }]}><Text style={[styles.slideTagText, { color: colors.text.onDark }]}>{item.tags[0]}</Text></View>
         )}
-        <Text numberOfLines={2} style={[styles.slideTitle, { color: colors.text.inverse }]}>{item.title}</Text>
-        <Text style={[styles.slideMeta, { color: '#E6F3F0' }]}>{item.sourceName} · {formatTimeAgo(item.timestamp)}</Text>
+        <Text numberOfLines={2} style={[styles.slideTitle, { color: colors.text.onDark }]}>{item.title}</Text>
+        <Text style={[styles.slideMeta, { color: colors.text.onDark }]}>{item.sourceName} · {formatTimeAgo(item.timestamp)}</Text>
       </View>
     </Pressable>
   );

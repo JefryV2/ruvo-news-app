@@ -30,6 +30,7 @@ import { Fonts } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+
 import { useAccountSettings, useUpdateAccountSettings, useUpdateUser } from '@/lib/hooks';
 
 export default function AccountSettingsScreen() {
@@ -122,7 +123,6 @@ export default function AccountSettingsScreen() {
         language: accountSettings.language || 'en',
         pushNotifications: accountSettings.pushNotifications ?? true,
         emailNotifications: accountSettings.emailNotifications ?? true,
-        smsNotifications: accountSettings.smsNotifications ?? false,
       });
     }
     setIsEditing(false);
@@ -139,68 +139,70 @@ export default function AccountSettingsScreen() {
     setIsEditing(true);
   };
 
+  const dynamicStyles = createStyles(colors);
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}> 
+    <View style={[dynamicStyles.container, { paddingTop: insets.top, backgroundColor: colors.background.primary }]}> 
       <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background.primary} translucent={true} />
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.lighter }]}> 
+      <View style={[dynamicStyles.header, { backgroundColor: colors.background.primary, borderBottomColor: colors.border.lighter }]}> 
         <TouchableOpacity 
-          style={[styles.backButton, { backgroundColor: colors.background.secondary }]}
+          style={[dynamicStyles.backButton, { backgroundColor: colors.background.secondary }]}
           onPress={() => router.back()}
         >
           <ChevronLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>{t('account.title')}</Text>
-        <View style={styles.headerRight}>
+        <Text style={[dynamicStyles.headerTitle, { color: colors.text.primary }]}>{t('account.title')}</Text>
+        <View style={dynamicStyles.headerRight}>
           {isEditing ? (
-            <View style={styles.headerActions}>
+            <View style={dynamicStyles.headerActions}>
               <TouchableOpacity 
-                style={[styles.cancelButton, { backgroundColor: colors.background.secondary }]}
+                style={[dynamicStyles.cancelButton, { backgroundColor: colors.background.secondary }]}
                 onPress={handleCancel}
               >
-                <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
+                <Text style={[dynamicStyles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                style={[dynamicStyles.saveButton, { backgroundColor: colors.primary }]}
                 onPress={handleSave}
                 disabled={updateSettings.isPending}
               >
                 <Save size={16} color={colors.text.inverse} />
-                <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>{t('common.save')}</Text>
+                <Text style={[dynamicStyles.saveButtonText, { color: colors.text.inverse }]}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity 
-              style={[styles.editButton, { backgroundColor: colors.background.secondary }]}
+              style={[dynamicStyles.editButton, { backgroundColor: colors.background.secondary }]}
               onPress={() => setIsEditing(true)}
             >
-              <Text style={[styles.editButtonText, { color: colors.text.primary }]}>{t('common.edit')}</Text>
+              <Text style={[dynamicStyles.editButtonText, { color: colors.text.primary }]}>{t('common.edit')}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 28 }}>
+      <ScrollView style={dynamicStyles.scrollView} contentContainerStyle={{ paddingBottom: 28 }}>
         {/* Profile Information */}
         <Animated.View 
           style={[
-            styles.section,
+            dynamicStyles.section,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.profile')}</Text>
-          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
-            <View style={styles.infoRow}>
-              <View style={styles.infoLeft}>
+          <Text style={[dynamicStyles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.profile')}</Text>
+          <View style={[dynamicStyles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+            <View style={dynamicStyles.infoRow}>
+              <View style={dynamicStyles.infoLeft}>
                 <User size={20} color={colors.primary} />
-                <Text style={[styles.infoLabel, { color: colors.text.primary }]}>{t('account.username')}</Text>
+                <Text style={[dynamicStyles.infoLabel, { color: colors.text.primary }]}>{t('account.username')}</Text>
               </View>
               {isEditing ? (
                 <TextInput
-                  style={[styles.textInput, { 
+                  style={[dynamicStyles.textInput, { 
                     color: colors.text.primary, 
                     backgroundColor: colors.background.white, 
                     borderColor: colors.border.lighter 
@@ -214,18 +216,18 @@ export default function AccountSettingsScreen() {
                   placeholderTextColor={colors.text.tertiary}
                 />
               ) : (
-                <Text style={styles.infoValue}>{formData.username}</Text>
+                <Text style={dynamicStyles.infoValue}>{formData.username}</Text>
               )}
             </View>
             
-            <View style={styles.infoRow}>
-              <View style={styles.infoLeft}>
-                <Mail size={20} color={Colors.primary} />
-                <Text style={styles.infoLabel}>{t('account.email')}</Text>
+            <View style={dynamicStyles.infoRow}>
+              <View style={dynamicStyles.infoLeft}>
+                <Mail size={20} color={colors.primary} />
+                <Text style={dynamicStyles.infoLabel}>{t('account.email')}</Text>
               </View>
               {isEditing ? (
                 <TextInput
-                  style={[styles.textInput, { 
+                  style={[dynamicStyles.textInput, { 
                     color: colors.text.primary, 
                     backgroundColor: colors.background.white, 
                     borderColor: colors.border.lighter 
@@ -241,48 +243,48 @@ export default function AccountSettingsScreen() {
                   autoCapitalize="none"
                 />
               ) : (
-                <Text style={styles.infoValue}>{formData.email}</Text>
+                <Text style={dynamicStyles.infoValue}>{formData.email}</Text>
               )}
             </View>
             
-            <View style={styles.infoRow}>
-              <View style={styles.infoLeft}>
-                <Globe size={20} color={Colors.primary} />
-                <Text style={styles.infoLabel}>{t('account.language')}</Text>
+            <View style={dynamicStyles.infoRow}>
+              <View style={dynamicStyles.infoLeft}>
+                <Globe size={20} color={colors.primary} />
+                <Text style={dynamicStyles.infoLabel}>{t('account.language')}</Text>
               </View>
               {isEditing ? (
-                <View style={styles.languageSelector}>
+                <View style={dynamicStyles.languageSelector}>
                   <TouchableOpacity
                     style={[
-                      styles.languageOption,
+                      dynamicStyles.languageOption,
                       { borderColor: colors.border.lighter },
-                      formData.language === 'en' && [styles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                      formData.language === 'en' && [dynamicStyles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
                     onPress={() => handleLanguageChange('en')}
                   >
                     <Text style={[
-                      styles.languageText,
+                      dynamicStyles.languageText,
                       { color: colors.text.primary },
-                      formData.language === 'en' && [styles.languageTextSelected, { color: colors.text.inverse }]
+                      formData.language === 'en' && [dynamicStyles.languageTextSelected, { color: colors.text.inverse }]
                     ]}>English</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
-                      styles.languageOption,
+                      dynamicStyles.languageOption,
                       { borderColor: colors.border.lighter },
-                      formData.language === 'ko' && [styles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                      formData.language === 'ko' && [dynamicStyles.languageOptionSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
                     ]}
                     onPress={() => handleLanguageChange('ko')}
                   >
                     <Text style={[
-                      styles.languageText,
+                      dynamicStyles.languageText,
                       { color: colors.text.primary },
-                      formData.language === 'ko' && [styles.languageTextSelected, { color: colors.text.inverse }]
+                      formData.language === 'ko' && [dynamicStyles.languageTextSelected, { color: colors.text.inverse }]
                     ]}>한국어</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <Text style={styles.infoValue}>
+                <Text style={dynamicStyles.infoValue}>
                   {formData.language === 'en' ? 'English' : '한국어'}
                 </Text>
               )}
@@ -293,21 +295,21 @@ export default function AccountSettingsScreen() {
         {/* Notification Settings */}
         <Animated.View 
           style={[
-            styles.section,
+            dynamicStyles.section,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-                <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.notifications')}</Text>
-          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
+                <Text style={[dynamicStyles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.notifications')}</Text>
+          <View style={[dynamicStyles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+            <View style={dynamicStyles.settingRow}>
+              <View style={dynamicStyles.settingLeft}>
                 <Bell size={20} color={colors.primary} />
                 <View>
-                  <Text style={[styles.settingTitle, { color: colors.text.primary }]}>{t('account.pushNotifications')}</Text>
-                  <Text style={[styles.settingDescription, { color: colors.text.secondary }]}> 
+                  <Text style={[dynamicStyles.settingTitle, { color: colors.text.primary }]}>{t('account.pushNotifications')}</Text>
+                  <Text style={[dynamicStyles.settingDescription, { color: colors.text.secondary }]}> 
                     {t('notifications.pushDesc')}
                   </Text>
                 </View>
@@ -320,12 +322,12 @@ export default function AccountSettingsScreen() {
               />
             </View>
             
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Mail size={20} color={Colors.primary} />
+            <View style={dynamicStyles.settingRow}>
+              <View style={dynamicStyles.settingLeft}>
+                <Mail size={20} color={colors.primary} />
                 <View>
-                  <Text style={styles.settingTitle}>{t('account.emailNotifications')}</Text>
-                  <Text style={styles.settingDescription}>
+                  <Text style={dynamicStyles.settingTitle}>{t('account.emailNotifications')}</Text>
+                  <Text style={dynamicStyles.settingDescription}>
                     {t('notifications.emailDesc')}
                   </Text>
                 </View>
@@ -333,8 +335,8 @@ export default function AccountSettingsScreen() {
               <Switch
                 value={formData.emailNotifications}
                 onValueChange={(value) => handleToggleSetting('emailNotifications', value)}
-                trackColor={{ false: Colors.border.lighter, true: Colors.primary }}
-                thumbColor={Colors.background.white}
+                trackColor={{ false: colors.border.lighter, true: colors.primary }}
+                thumbColor={colors.background.white}
               />
             </View>
           </View>
@@ -343,42 +345,42 @@ export default function AccountSettingsScreen() {
         {/* Privacy & Security */}
         <Animated.View 
           style={[
-            styles.section,
+            dynamicStyles.section,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.privacy')}</Text>
-          <View style={[styles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
-            <TouchableOpacity style={styles.actionRow}>
-              <View style={styles.actionLeft}>
+          <Text style={[dynamicStyles.sectionTitle, { color: colors.text.tertiary }]}>{t('account.privacy')}</Text>
+          <View style={[dynamicStyles.card, { backgroundColor: colors.card.secondary, borderColor: colors.border.lighter }]}> 
+            <TouchableOpacity style={dynamicStyles.actionRow}>
+              <View style={dynamicStyles.actionLeft}>
                 <Shield size={20} color={colors.primary} />
-                <Text style={[styles.actionTitle, { color: colors.text.primary }]}>{t('account.changePassword')}</Text>
+                <Text style={[dynamicStyles.actionTitle, { color: colors.text.primary }]}>{t('account.changePassword')}</Text>
               </View>
-              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
+              <ChevronLeft size={16} color={colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.actionRow}
+              style={dynamicStyles.actionRow}
               onPress={() => router.push('/privacy-policy')}
             >
-              <View style={styles.actionLeft}>
-                <Eye size={20} color={Colors.primary} />
-                <Text style={styles.actionTitle}>{t('account.privacySettings')}</Text>
+              <View style={dynamicStyles.actionLeft}>
+                <Eye size={20} color={colors.primary} />
+                <Text style={dynamicStyles.actionTitle}>{t('account.privacySettings')}</Text>
               </View>
-              <ChevronLeft size={16} color={Colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
+              <ChevronLeft size={16} color={colors.text.secondary} style={{ transform: [{ rotate: '180deg' }] as any }} />
             </TouchableOpacity>
           </View>
         </Animated.View>
       </ScrollView>
-      <View style={styles.bottomSpacer} />
+      <View style={dynamicStyles.bottomSpacer} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
+    borderBottomColor: colors.border.light,
   },
   backButton: {
     width: 36,
@@ -398,13 +400,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: colors.background.secondary,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     fontFamily: Fonts.bold,
-    color: Colors.text.primary,
+    color: colors.text.primary,
     flex: 1,
     textAlign: 'center',
     marginHorizontal: 8,
@@ -426,7 +428,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.secondary,
+    color: colors.text.secondary,
     fontFamily: Fonts.semiBold,
   },
   saveButton: {
@@ -435,25 +437,25 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 12,
   },
   saveButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.inverse,
+    color: colors.text.inverse,
     fontFamily: Fonts.semiBold,
   },
   editButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 12,
   },
   editButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.inverse,
+    color: colors.text.inverse,
     fontFamily: Fonts.semiBold,
   },
   scrollView: {
@@ -466,15 +468,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: colors.text.primary,
     marginBottom: 16,
     fontFamily: Fonts.semiBold,
   },
   card: {
-    backgroundColor: Colors.background.white,
+    backgroundColor: colors.background.white,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.border.light,
+    borderColor: colors.border.light,
     padding: 16,
   },
   infoRow: {
@@ -483,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: colors.border.lighter,
     minHeight: 48,
   },
   infoLeft: {
@@ -495,24 +497,24 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.text.primary,
+    color: colors.text.primary,
     fontFamily: Fonts.regular,
   },
   infoValue: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: colors.text.secondary,
     fontFamily: Fonts.regular,
   },
   textInput: {
     fontSize: 15,
-    color: Colors.text.primary,
+    color: colors.text.primary,
     fontFamily: Fonts.regular,
     borderWidth: 1,
-    borderColor: Colors.border.light,
+    borderColor: colors.border.light,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: colors.background.secondary,
     minWidth: 100,
     maxWidth: 150,
     textAlign: 'right',
@@ -526,19 +528,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border.light,
+    borderColor: colors.border.light,
   },
   languageOptionSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   languageText: {
     fontSize: 14,
-    color: Colors.text.primary,
+    color: colors.text.primary,
     fontFamily: Fonts.regular,
   },
   languageTextSelected: {
-    color: Colors.text.inverse,
+    color: colors.text.inverse,
   },
   settingRow: {
     flexDirection: 'row',
@@ -546,7 +548,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: colors.border.lighter,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -557,12 +559,12 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.text.primary,
+    color: colors.text.primary,
     fontFamily: Fonts.regular,
   },
   settingDescription: {
     fontSize: 13,
-    color: Colors.text.secondary,
+    color: colors.text.secondary,
     marginTop: 2,
     fontFamily: Fonts.regular,
   },
@@ -572,7 +574,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.lighter,
+    borderBottomColor: colors.border.lighter,
   },
   actionLeft: {
     flexDirection: 'row',
@@ -582,10 +584,11 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.text.primary,
+    color: colors.text.primary,
     fontFamily: Fonts.regular,
   },
   bottomSpacer: {
     height: 20,
   },
 });
+

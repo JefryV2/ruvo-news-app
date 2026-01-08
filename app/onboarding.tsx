@@ -298,8 +298,8 @@ export default function OnboardingScreen() {
         <Animated.View style={[styles.websiteContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           {/* Main Content - Centered like website */}
           <View style={styles.websiteMainContent}>
-            <Text style={styles.ruvoHeading}>RUVO</Text>
-            <Text style={styles.websiteTagline}>Cut the Noise. Catch the Signal.</Text>
+            <Text style={[styles.ruvoHeading, { color: colors.text.inverse }]}>RUVO</Text>
+            <Text style={[styles.websiteTagline, { color: colors.text.onDark }]}>Cut the Noise. Catch the Signal.</Text>
           </View>
         </Animated.View>
       </View>
@@ -308,8 +308,8 @@ export default function OnboardingScreen() {
 
   const renderSubcategories = () => (
     <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.interestsTitle}>Refine your interests</Text>
-      <Text style={styles.interestsSubtitle}>Choose specific topics you care about (optional)</Text>
+      <Text style={[styles.interestsTitle, { color: colors.text.primary }]}>Refine your interests</Text>
+      <Text style={[styles.interestsSubtitle, { color: colors.text.secondary }]}>Choose specific topics you care about (optional)</Text>
       
       <ScrollView style={styles.interestsScroll} showsVerticalScrollIndicator={false}>
         {selectedInterests.map((interestId) => {
@@ -321,7 +321,7 @@ export default function OnboardingScreen() {
           return (
             <View key={interestId} style={styles.subcategorySection}>
               <View style={styles.subcategoryHeader}>
-                <Text style={styles.subcategoryTitle}>{interest.name}</Text>
+                <Text style={[styles.subcategoryTitle, { color: colors.text.primary }]}>{interest.name}</Text>
               </View>
               
               <View style={styles.subcategoriesGrid}>
@@ -330,11 +330,11 @@ export default function OnboardingScreen() {
                   return (
                     <TouchableOpacity
                       key={sub}
-                      style={[styles.subcategoryChip, isSelected && styles.subcategoryChipActive]}
+                      style={[styles.subcategoryChip, isSelected && styles.subcategoryChipActive, isSelected && { backgroundColor: colors.accent, borderColor: colors.accent, shadowColor: colors.accent }]}
                       onPress={() => toggleSubcategory(interestId, sub)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.subcategoryText, isSelected && styles.subcategoryTextActive]}>
+                      <Text style={[styles.subcategoryText, isSelected && styles.subcategoryTextActive, isSelected && { color: colors.text.inverse }]}>
                         {sub}
                       </Text>
                     </TouchableOpacity>
@@ -355,8 +355,8 @@ export default function OnboardingScreen() {
       style={{ flex: 1 }}
     >
       <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <Text style={styles.interestsTitle}>Your unique interests</Text>
-        <Text style={styles.interestsSubtitle}>Add any topics we might have missed</Text>
+        <Text style={[styles.interestsTitle, { color: colors.text.primary }]}>Your unique interests</Text>
+        <Text style={[styles.interestsSubtitle, { color: colors.text.secondary }]}>Add any topics we might have missed</Text>
         
         <View style={styles.customInputContainer}>
           <TextInput
@@ -395,9 +395,9 @@ export default function OnboardingScreen() {
             </View>
           ) : (
             <View style={styles.emptyCustomState}>
-              <Text style={styles.emptyCustomText}>💡</Text>
-              <Text style={styles.emptyCustomSubtext}>No custom interests yet</Text>
-              <Text style={styles.emptyCustomHint}>Add topics that matter to you</Text>
+              <Text style={[styles.emptyCustomText, { color: colors.text.secondary }]}>💡</Text>
+              <Text style={[styles.emptyCustomSubtext, { color: colors.text.primary }]}>No custom interests yet</Text>
+              <Text style={[styles.emptyCustomHint, { color: colors.text.tertiary }]}>Add topics that matter to you</Text>
             </View>
           )}
         </ScrollView>
@@ -408,9 +408,9 @@ export default function OnboardingScreen() {
   const renderInterests = () => {
     return (
       <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <Text style={styles.interestsTitle}>What interests you?</Text>
-        <Text style={styles.interestsSubtitle}>Pick your topics. We'll handle the rest.</Text>
-        <Text style={styles.interestsCount}>Selected: {selectedInterests.length}</Text>
+        <Text style={[styles.interestsTitle, { color: colors.text.primary }]}>What interests you?</Text>
+        <Text style={[styles.interestsSubtitle, { color: colors.text.secondary }]}>Pick your topics. We'll handle the rest.</Text>
+        <Text style={[styles.interestsCount, { color: colors.text.secondary }]}>Selected: {selectedInterests.length}</Text>
 
         <ScrollView 
           style={styles.interestsScroll} 
@@ -493,14 +493,14 @@ export default function OnboardingScreen() {
 
   const renderAlerts = () => (
     <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.alertsTitle}>Stay informed</Text>
-      <Text style={styles.alertsSubtitle}>Only get notified about what matters</Text>
+      <Text style={[styles.alertsTitle, { color: colors.text.primary }]}>Stay informed</Text>
+      <Text style={[styles.alertsSubtitle, { color: colors.text.secondary }]}>Only get notified about what matters</Text>
       
       <View style={styles.notificationOptions}>
-        <View style={styles.notificationCard}>
+        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>
           <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>Push Notifications</Text>
-            <Text style={styles.notificationDesc}>Get timely updates on your curated feed</Text>
+            <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Push Notifications</Text>
+            <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Get timely updates on your curated feed</Text>
           </View>
           <TouchableOpacity 
             onPress={() => setPushEnabled(!pushEnabled)} 
@@ -511,10 +511,10 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={styles.notificationCard}>
+        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>  
           <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>Daily Digest</Text>
-            <Text style={styles.notificationDesc}>Morning summary of your top stories</Text>
+            <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Daily Digest</Text>
+            <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Morning summary of your top stories</Text>
           </View>
           <TouchableOpacity 
             activeOpacity={0.8} 
@@ -524,10 +524,10 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={styles.notificationCard}>
+        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>  
           <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>Breaking News</Text>
-            <Text style={styles.notificationDesc}>Urgent updates on major events</Text>
+            <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Breaking News</Text>
+            <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Urgent updates on major events</Text>
           </View>
           <TouchableOpacity 
             activeOpacity={0.8} 
@@ -538,8 +538,8 @@ export default function OnboardingScreen() {
         </View>
       </View>
       
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>💡 You can adjust these anytime in Settings</Text>
+      <View style={[styles.infoBox, { backgroundColor: colors.card.light }]}>  
+        <Text style={[styles.infoText, { color: colors.text.secondary }]}>💡 You can adjust these anytime in Settings</Text>
       </View>
     </Animated.View>
   );
@@ -569,20 +569,18 @@ export default function OnboardingScreen() {
         <View style={styles.completeBadge}>
           <Text style={styles.completeBadgeEmoji}>👏</Text>
         </View>
-        <Text style={styles.completeKickerDark}>PERSONALIZED SIGNAL READY</Text>
-        <Text style={styles.completeTitleDark}>You’re all set</Text>
-        <Text style={styles.completeBodyDark}>
-          We’ve tuned your feed across {selectedInterests.length || '0'} interests. Keep the signal high and the noise low.
-        </Text>
+        <Text style={[styles.completeKickerDark, { color: colors.text.secondary }]}>PERSONALIZED SIGNAL READY</Text>
+        <Text style={[styles.completeTitleDark, { color: colors.text.primary }]}>You're all set</Text>
+        <Text style={[styles.completeBodyDark, { color: colors.text.secondary }]}>We've tuned your feed across {selectedInterests.length || '0'} interests. Keep the signal high and the noise low.</Text>
         
         <View style={styles.completeSummary}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabelDark}>Focus areas</Text>
-            <Text style={styles.summaryValueDark}>{selectedInterests.length || 0}</Text>
+            <Text style={[styles.summaryLabelDark, { color: colors.text.tertiary }]}>Focus areas</Text>
+            <Text style={[styles.summaryValueDark, { color: colors.text.primary }]}>{selectedInterests.length || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabelDark}>Smart alerts</Text>
-            <Text style={styles.summaryValueMuted}>Customize next</Text>
+            <Text style={[styles.summaryValueMuted, { color: colors.text.tertiary }]}>Customize next</Text>
           </View>
         </View>
         
@@ -595,24 +593,22 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={styles.askRuvoCardDark}>
-          <Text style={styles.askRuvoLabel}>Ask Ruvo anything</Text>
-          <Text style={styles.askRuvoDescriptionDark}>
-            Activate alerts with natural language prompts:
-          </Text>
-          <Text style={styles.askRuvoExample}>“Notify me about BTS news.”</Text>
-          <Text style={styles.askRuvoExample}>“Alert me when Apple releases products.”</Text>
-          <Text style={styles.askRuvoExample}>“Track EV policy updates in Europe.”</Text>
+          <Text style={[styles.askRuvoLabel, { color: colors.text.primary }]}>Ask Ruvo anything</Text>
+          <Text style={[styles.askRuvoDescriptionDark, { color: colors.text.secondary }]}>Activate alerts with natural language prompts:</Text>
+          <Text style={[styles.askRuvoExample, { color: colors.text.tertiary }]}>"Notify me about BTS news."</Text>
+          <Text style={[styles.askRuvoExample, { color: colors.text.tertiary }]}>"Alert me when Apple releases products."</Text>
+          <Text style={[styles.askRuvoExample, { color: colors.text.tertiary }]}>"Track EV policy updates in Europe."</Text>
         </View>
         
-        <TouchableOpacity style={styles.primaryCTA} onPress={handleNext} activeOpacity={0.9}>
-          <Text style={styles.primaryCTAText}>Start exploring</Text>
+        <TouchableOpacity style={[styles.primaryCTA, { backgroundColor: colors.primary }]} onPress={handleNext} activeOpacity={0.9}>
+          <Text style={[styles.primaryCTAText, { color: colors.text.inverse }]}>Start exploring</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryCTA} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.secondaryCTAText}>Set up smart alerts later</Text>
+          <Text style={[styles.secondaryCTAText, { color: colors.text.tertiary }]}>Set up smart alerts later</Text>
         </TouchableOpacity>
 
-        <Text style={styles.completeFooterDark}>Welcome to mindful information.</Text>
+        <Text style={[styles.completeFooterDark, { color: colors.text.tertiary }]}>Welcome to mindful information.</Text>
       </ScrollView>
     </Animated.View>
   );
@@ -684,13 +680,14 @@ export default function OnboardingScreen() {
         <TouchableOpacity 
           style={[
             currentStep === 'welcome' ? styles.getStartedButton : styles.continueButton,
+            { backgroundColor: colors.accent },
             !canProceed() && styles.continueButtonDisabled
           ]}
           onPress={handleNext}
           disabled={!canProceed()}
           activeOpacity={0.8}
         >
-          <Text style={currentStep === 'welcome' ? styles.getStartedButtonText : styles.continueButtonText}>
+          <Text style={currentStep === 'welcome' ? [styles.getStartedButtonText, { color: '#000000' }] : [styles.continueButtonText, { color: '#000000' }]}>  
             {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
           </Text>
         </TouchableOpacity>
@@ -702,14 +699,12 @@ export default function OnboardingScreen() {
           {currentStep !== 'complete' && (
           <View style={styles.footer}>
             <TouchableOpacity 
-              style={[styles.continueButton, !canProceed() && styles.continueButtonDisabled]}
+              style={[styles.continueButton, { backgroundColor: colors.accent }, !canProceed() && styles.continueButtonDisabled]}
               onPress={handleNext}
               disabled={!canProceed()}
               activeOpacity={0.8}
             >
-              <Text style={styles.continueButtonText}>
-                  Continue
-              </Text>
+              <Text style={[styles.continueButtonText, { color: '#000000' }]}>Continue</Text>
             </TouchableOpacity>
           </View>
           )}
@@ -1132,7 +1127,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   primaryCTA: {
-    height: 56,
+    height: 48,
     borderRadius: 18,
     backgroundColor: Colors.text.inverse,
     alignItems: 'center',
@@ -1242,14 +1237,15 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   continueButton: {
-    backgroundColor: Colors.text.primary,
+    backgroundColor: Colors.accent,
     borderRadius: 16,
-    height: 56,
+    height: 48,
+    minWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 4,
   },
@@ -1259,19 +1255,20 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text.inverse,
+    color: '#000000',
   },
   getStartedButton: {
     backgroundColor: Colors.accent,
-    borderRadius: 28,
-    height: 56,
+    borderRadius: 24,
+    height: 48,
+    minWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 30,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
   },
   getStartedButtonText: {
     fontSize: 18,
@@ -1312,8 +1309,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.background.secondary,
   },
   subcategoryChipActive: {
-    backgroundColor: Colors.text.primary,
-    borderColor: Colors.text.primary,
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 5,
   },
   subcategoryText: {
     fontSize: 14,

@@ -155,23 +155,29 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       )
     );
     
-    // Merge with user interactions from database
-    const withUserState = unique.map(signal => {
+    // Merge with user interactions from database and ensure consistent Signal interface
+    const withUserState = unique.map((signal: any) => {
       const interaction = userInteractions[signal.id];
-      if (interaction) {
-        // Signal has user interaction in database - use that state
-        return {
-          ...signal,
-          liked: interaction.liked || false,
-          saved: interaction.saved || false,
-        };
-      }
-      // No interaction yet - default to false
-      return {
-        ...signal,
-        liked: (signal as any).liked || false,
-        saved: (signal as any).saved || false,
+      
+      // Normalize signal to ensure it conforms to Signal interface
+      const normalizedSignal: Signal = {
+        id: signal.id,
+        title: signal.title,
+        summary: signal.summary,
+        content: signal.content,
+        sourceId: signal.sourceId || signal.source_id || signal.source_url || '',
+        sourceName: signal.sourceName || signal.source_name || signal.source || '',
+        verified: signal.verified || false,
+        tags: signal.tags || [],
+        url: signal.url || signal.link || signal.article_url || '',
+        relevanceScore: signal.relevanceScore || signal.relevance_score || 0,
+        timestamp: signal.timestamp || signal.created_at || signal.publishedAt || new Date(),
+        imageUrl: signal.imageUrl || signal.image_url || signal.image || undefined,
+        saved: interaction?.saved || signal.saved || false,
+        liked: interaction?.liked || signal.liked || false,
       };
+      
+      return normalizedSignal;
     });
     
     // Sort by relevance score and timestamp
@@ -417,16 +423,22 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, [user?.id, dismissSignalMutation]);
 
   const markNotificationRead = useCallback((notificationId: string) => {
+    // Optimistically update the notification to read in local state
+    setGeneratedNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+    
+    // Also update in dbNotifications if it's there by invalidating the query
     markNotificationReadMutation.mutate(notificationId);
   }, [markNotificationReadMutation]);
 
   const deleteNotification = useCallback((notificationId: string) => {
-    // Optimistically remove the notification from state
+    // Optimistically remove the notification from generated notifications state
     setGeneratedNotifications(prev => prev.filter(notif => notif.id !== notificationId));
     
-    // Also remove from dbNotifications if it's there
-    // Note: This is just UI update, the actual deletion happens in the mutation
-    
+    // The mutation will handle the database deletion and invalidate the query
     deleteNotificationMutation.mutate(notificationId);
   }, [deleteNotificationMutation]);
 
