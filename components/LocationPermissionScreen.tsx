@@ -35,7 +35,7 @@ export default function LocationPermissionScreen({
   fullscreen = false,
 }: LocationPermissionProps) {
   const [isRequesting, setIsRequesting] = useState(false);
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
 
   const handleRequestPermission = async () => {
     setIsRequesting(true);
@@ -109,20 +109,21 @@ export default function LocationPermissionScreen({
     },
   ];
 
-  const backgroundColor = fullscreen ? '#050505' : colors.background.primary;
+  const isDarkMode = mode === 'dark';
+  const backgroundColor = fullscreen ? (isDarkMode ? '#050505' : colors.background.primary) : colors.background.primary;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'bottom']}>
       {fullscreen && (
         <View style={styles.gradientBackground} pointerEvents="none">
           <LinearGradient
-            colors={['rgba(32,178,170,0.25)', 'rgba(0,0,0,0)']}
+            colors={mode === 'dark' ? ['rgba(32,178,170,0.25)', 'rgba(0,0,0,0)'] : ['rgba(32,178,170,0.1)', 'rgba(0,0,0,0)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gradientBlobOne}
           />
           <LinearGradient
-            colors={['rgba(255,255,255,0.08)', 'rgba(0,0,0,0)']}
+            colors={mode === 'dark' ? ['rgba(255,255,255,0.08)', 'rgba(0,0,0,0)'] : ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0)']}
             start={{ x: 0, y: 1 }}
             end={{ x: 1, y: 0 }}
             style={styles.gradientBlobTwo}
@@ -146,12 +147,12 @@ export default function LocationPermissionScreen({
           style={[
             styles.heroCard,
             {
-              borderColor: 'rgba(255,255,255,0.05)',
-              backgroundColor: 'rgba(255,255,255,0.02)',
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : colors.border.lighter,
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.02)' : colors.card.primary,
             },
           ]}
         >
-          <View style={[styles.heroBadge, { backgroundColor: `${colors.primary}18` }]}>
+          <View style={[styles.heroBadge, { backgroundColor: mode === 'dark' ? `${colors.primary}18` : `${colors.primary}25` }]}>
             <MapPin size={30} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.text.primary }]}>Get Local News</Text>
@@ -167,12 +168,12 @@ export default function LocationPermissionScreen({
               style={[
                 styles.benefitCard,
                 {
-                  backgroundColor: 'rgba(255,255,255,0.015)',
-                  borderColor: 'rgba(255,255,255,0.05)',
+                  backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.015)' : colors.card.primary,
+                  borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : colors.border.lighter,
                 },
               ]}
             >
-              <View style={[styles.benefitIconWrap, { backgroundColor: `${colors.primary}12` }]}>
+              <View style={[styles.benefitIconWrap, { backgroundColor: mode === 'dark' ? `${colors.primary}12` : `${colors.primary}20` }]}>
                 <Icon size={18} color={colors.primary} />
             </View>
               <View style={{ flex: 1 }}>
@@ -187,8 +188,8 @@ export default function LocationPermissionScreen({
           style={[
             styles.privacyNote,
             {
-              backgroundColor: 'rgba(255,255,255,0.015)',
-              borderColor: 'rgba(255,255,255,0.07)',
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.015)' : colors.card.primary,
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.07)' : colors.border.lighter,
             },
           ]}
         >

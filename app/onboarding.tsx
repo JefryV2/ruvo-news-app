@@ -242,7 +242,7 @@ export default function OnboardingScreen() {
           ]} 
         >
           <LinearGradient
-            colors={['rgba(93, 202, 218, 0.4)', 'rgba(93, 202, 218, 0.2)', 'rgba(93, 202, 218, 0)']}  
+            colors={isDarkStep ? ['rgba(93, 202, 218, 0.4)', 'rgba(93, 202, 218, 0.2)', 'rgba(93, 202, 218, 0)'] : ['rgba(93, 202, 218, 0.2)', 'rgba(93, 202, 218, 0.1)', 'rgba(93, 202, 218, 0)']}  
             style={styles.orbGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -265,7 +265,7 @@ export default function OnboardingScreen() {
           ]} 
         >
           <LinearGradient
-            colors={['rgba(127, 234, 255, 0.5)', 'rgba(127, 234, 255, 0.3)', 'rgba(127, 234, 255, 0)']}  
+            colors={isDarkStep ? ['rgba(127, 234, 255, 0.5)', 'rgba(127, 234, 255, 0.3)', 'rgba(127, 234, 255, 0)'] : ['rgba(127, 234, 255, 0.3)', 'rgba(127, 234, 255, 0.15)', 'rgba(127, 234, 255, 0)']}  
             style={styles.orbGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -288,7 +288,7 @@ export default function OnboardingScreen() {
           ]} 
         >
           <LinearGradient
-            colors={['rgba(0, 191, 255, 0.6)', 'rgba(0, 191, 255, 0.4)', 'rgba(0, 191, 255, 0)']}  
+            colors={isDarkStep ? ['rgba(0, 191, 255, 0.6)', 'rgba(0, 191, 255, 0.4)', 'rgba(0, 191, 255, 0)'] : ['rgba(0, 191, 255, 0.4)', 'rgba(0, 191, 255, 0.2)', 'rgba(0, 191, 255, 0)']}  
             style={styles.orbGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -298,8 +298,8 @@ export default function OnboardingScreen() {
         <Animated.View style={[styles.websiteContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           {/* Main Content - Centered like website */}
           <View style={styles.websiteMainContent}>
-            <Text style={[styles.ruvoHeading, { color: colors.text.inverse }]}>RUVO</Text>
-            <Text style={[styles.websiteTagline, { color: colors.text.onDark }]}>Cut the Noise. Catch the Signal.</Text>
+            <Text style={[styles.ruvoHeading, { color: isDarkStep ? colors.text.inverse : colors.text.primary }]}>RUVO</Text>
+            <Text style={[styles.websiteTagline, { color: isDarkStep ? colors.text.onDark : colors.text.secondary }]}>Cut the Noise. Catch the Signal.</Text>
           </View>
         </Animated.View>
       </View>
@@ -497,7 +497,7 @@ export default function OnboardingScreen() {
       <Text style={[styles.alertsSubtitle, { color: colors.text.secondary }]}>Only get notified about what matters</Text>
       
       <View style={styles.notificationOptions}>
-        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>
+        <View style={[styles.notificationCard, { backgroundColor: isDarkStep ? colors.card.primary : colors.card.light }]}>
           <View style={styles.notificationContent}>
             <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Push Notifications</Text>
             <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Get timely updates on your curated feed</Text>
@@ -511,7 +511,7 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>  
+        <View style={[styles.notificationCard, { backgroundColor: isDarkStep ? colors.card.primary : colors.card.light }]}>  
           <View style={styles.notificationContent}>
             <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Daily Digest</Text>
             <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Morning summary of your top stories</Text>
@@ -524,7 +524,7 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
         
-        <View style={[styles.notificationCard, { backgroundColor: colors.card.primary }]}>  
+        <View style={[styles.notificationCard, { backgroundColor: isDarkStep ? colors.card.primary : colors.card.light }]}>  
           <View style={styles.notificationContent}>
             <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>Breaking News</Text>
             <Text style={[styles.notificationDesc, { color: colors.text.secondary }]}>Urgent updates on major events</Text>
@@ -545,16 +545,16 @@ export default function OnboardingScreen() {
   );
 
   const renderComplete = () => (
-    <Animated.View style={[styles.stepContainer, styles.completeContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+    <Animated.View style={[styles.stepContainer, styles.completeContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }], backgroundColor: colors.background.primary }]}>
       <View style={styles.completeGradient} pointerEvents="none">
         <LinearGradient
-          colors={['rgba(32,178,170,0.35)', 'rgba(0,0,0,0)']}
+          colors={isDarkStep ? ['rgba(32,178,170,0.35)', 'rgba(0,0,0,0)'] : ['rgba(32,178,170,0.15)', 'rgba(0,0,0,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.completeBlobOne}
         />
         <LinearGradient
-          colors={['rgba(255,255,255,0.1)', 'rgba(0,0,0,0)']}
+          colors={isDarkStep ? ['rgba(255,255,255,0.1)', 'rgba(0,0,0,0)'] : ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0)']}
           start={{ x: 1, y: 1 }}
           end={{ x: 0, y: 0 }}
           style={styles.completeBlobTwo}
@@ -566,33 +566,41 @@ export default function OnboardingScreen() {
         contentContainerStyle={styles.completeScrollContent}
         bounces={false}
       >
-        <View style={styles.completeBadge}>
+        <View style={[styles.completeBadge, { backgroundColor: isDarkStep ? 'rgba(255,255,255,0.05)' : Colors.background.secondary }]}>
           <Text style={styles.completeBadgeEmoji}>👏</Text>
         </View>
-        <Text style={[styles.completeKickerDark, { color: colors.text.secondary }]}>PERSONALIZED SIGNAL READY</Text>
+        <Text style={[styles.completeKickerDark, { color: colors.text.tertiary }]}>PERSONALIZED SIGNAL READY</Text>
         <Text style={[styles.completeTitleDark, { color: colors.text.primary }]}>You're all set</Text>
         <Text style={[styles.completeBodyDark, { color: colors.text.secondary }]}>We've tuned your feed across {selectedInterests.length || '0'} interests. Keep the signal high and the noise low.</Text>
         
-        <View style={styles.completeSummary}>
+        <View style={[styles.completeSummary, { 
+          backgroundColor: isDarkStep ? 'rgba(255,255,255,0.02)' : Colors.card.primary,
+          borderColor: isDarkStep ? 'rgba(255,255,255,0.08)' : Colors.border.lighter
+        }]}>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabelDark, { color: colors.text.tertiary }]}>Focus areas</Text>
             <Text style={[styles.summaryValueDark, { color: colors.text.primary }]}>{selectedInterests.length || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabelDark}>Smart alerts</Text>
+            <Text style={[styles.summaryLabelDark, { color: colors.text.tertiary }]}>Smart alerts</Text>
             <Text style={[styles.summaryValueMuted, { color: colors.text.tertiary }]}>Customize next</Text>
           </View>
         </View>
         
         <View style={styles.featuresRowDark}>
           {['Curated', 'Smart', 'Fast'].map((label) => (
-            <View key={label} style={styles.featureChip}>
-              <Text style={styles.featureChipText}>{label}</Text>
+            <View key={label} style={[styles.featureChip, { 
+              borderColor: isDarkStep ? 'rgba(255,255,255,0.1)' : Colors.border.lighter
+            }]}>  
+              <Text style={[styles.featureChipText, { color: isDarkStep ? 'rgba(255,255,255,0.7)' : Colors.text.secondary }]}>{label}</Text>
           </View>
           ))}
         </View>
 
-        <View style={styles.askRuvoCardDark}>
+        <View style={[styles.askRuvoCardDark, { 
+          backgroundColor: isDarkStep ? 'rgba(255,255,255,0.02)' : Colors.card.light,
+          borderColor: isDarkStep ? 'rgba(255,255,255,0.07)' : Colors.border.lighter
+        }]}>  
           <Text style={[styles.askRuvoLabel, { color: colors.text.primary }]}>Ask Ruvo anything</Text>
           <Text style={[styles.askRuvoDescriptionDark, { color: colors.text.secondary }]}>Activate alerts with natural language prompts:</Text>
           <Text style={[styles.askRuvoExample, { color: colors.text.tertiary }]}>"Notify me about BTS news."</Text>
@@ -687,7 +695,7 @@ export default function OnboardingScreen() {
           disabled={!canProceed()}
           activeOpacity={0.8}
         >
-          <Text style={currentStep === 'welcome' ? [styles.getStartedButtonText, { color: '#000000' }] : [styles.continueButtonText, { color: '#000000' }]}>  
+          <Text style={currentStep === 'welcome' ? [styles.getStartedButtonText, { color: isDarkStep ? '#000000' : '#FFFFFF' }] : [styles.continueButtonText, { color: isDarkStep ? '#000000' : '#FFFFFF' }]}>  
             {currentStep === 'welcome' ? 'Get Started' : currentStep === 'complete' ? 'Start Exploring' : 'Continue'}
           </Text>
         </TouchableOpacity>
@@ -704,7 +712,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
               activeOpacity={0.8}
             >
-              <Text style={[styles.continueButtonText, { color: '#000000' }]}>Continue</Text>
+              <Text style={[styles.continueButtonText, { color: isDarkStep ? '#000000' : '#FFFFFF' }]}>Continue</Text>
             </TouchableOpacity>
           </View>
           )}
@@ -814,7 +822,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border.lighter,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: Colors.card.primary,
   },
   interestCardBackground: {
     position: 'absolute',
@@ -986,7 +994,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   infoBox: {
-    backgroundColor: 'rgba(32, 178, 170, 0.1)',
+    backgroundColor: Colors.card.light,
     borderRadius: 12,
     padding: 16,
   },
@@ -999,7 +1007,6 @@ const styles = StyleSheet.create({
   // Complete Step
   completeContainer: {
     flex: 1,
-    backgroundColor: '#050505',
     borderRadius: 32,
     overflow: 'hidden',
   },
@@ -1043,14 +1050,12 @@ const styles = StyleSheet.create({
   completeKickerDark: {
     fontSize: 13,
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.55)',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   completeTitleDark: {
     fontSize: 32,
     fontWeight: '800',
-    color: Colors.text.inverse,
     textAlign: 'center',
     fontFamily: Fonts.bold,
   },
@@ -1058,7 +1063,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.75)',
   },
   completeSummary: {
     borderRadius: 24,
@@ -1076,16 +1080,13 @@ const styles = StyleSheet.create({
   },
   summaryLabelDark: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
   },
   summaryValueDark: {
     fontSize: 16,
-    color: Colors.text.inverse,
     fontWeight: '700',
   },
   summaryValueMuted: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
   },
   featuresRowDark: {
     flexDirection: 'row',
@@ -1101,7 +1102,6 @@ const styles = StyleSheet.create({
   },
   featureChipText: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
   },
   askRuvoCardDark: {
     borderRadius: 24,
@@ -1112,18 +1112,15 @@ const styles = StyleSheet.create({
   },
   askRuvoLabel: {
     fontSize: 15,
-    color: Colors.text.inverse,
     fontWeight: '700',
     marginBottom: 6,
   },
   askRuvoDescriptionDark: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
     marginBottom: 12,
   },
   askRuvoExample: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
     marginBottom: 4,
   },
   primaryCTA: {
@@ -1136,7 +1133,6 @@ const styles = StyleSheet.create({
   primaryCTAText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#050505',
     fontFamily: Fonts.bold,
     letterSpacing: -0.2,
   },
@@ -1146,12 +1142,10 @@ const styles = StyleSheet.create({
   },
   secondaryCTAText: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.65)',
     fontFamily: Fonts.semiBold,
   },
   completeFooterDark: {
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.5)',
     fontSize: 13,
     marginTop: 12,
   },
@@ -1162,7 +1156,7 @@ const styles = StyleSheet.create({
   },
   websiteBackground: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: Colors.background.primary,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -1292,7 +1286,6 @@ const styles = StyleSheet.create({
   subcategoryTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.text.primary,
     fontFamily: Fonts.bold,
   },
   subcategoriesGrid: {
@@ -1320,7 +1313,6 @@ const styles = StyleSheet.create({
   subcategoryText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text.primary,
   },
   subcategoryTextActive: {
     color: Colors.text.inverse,
@@ -1335,13 +1327,13 @@ const styles = StyleSheet.create({
   customInput: {
     flex: 1,
     height: 52,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: Colors.card.primary,
     borderRadius: 16,
     paddingHorizontal: 16,
     fontSize: 16,
     color: Colors.text.primary,
     borderWidth: 2,
-    borderColor: Colors.background.secondary,
+    borderColor: Colors.border.lighter,
   },
   addButton: {
     backgroundColor: Colors.text.primary,
