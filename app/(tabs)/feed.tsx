@@ -33,6 +33,41 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_SLIDE_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 const CAROUSEL_SPACING = 12;
 
+const VerticalActionButtons = ({ signal, toggleSignalLike, toggleSignalSave, dismissSignal }: { signal: Signal, toggleSignalLike: (id: string) => void, toggleSignalSave: (id: string) => void, dismissSignal: (id: string) => void }) => (
+  <View style={styles.verticalActionsContainer}>
+    <TouchableOpacity 
+      style={[styles.verticalReactionButton, { backgroundColor: signal.liked ? 'rgba(255, 59, 48, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} 
+      activeOpacity={0.7} 
+      onPress={() => toggleSignalLike(signal.id)}
+    >
+      <Heart 
+        size={18} 
+        color={signal.liked ? '#FFFFFF' : '#666666'} 
+        fill={signal.liked ? '#FF3B30' : 'transparent'} 
+      />
+    </TouchableOpacity>
+
+    <TouchableOpacity 
+      style={[styles.verticalReactionButton, { backgroundColor: signal.saved ? 'rgba(0, 122, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} 
+      activeOpacity={0.7} 
+      onPress={() => toggleSignalSave(signal.id)}
+    >
+      <Bookmark 
+        size={18} 
+        color={signal.saved ? '#FFFFFF' : '#666666'} 
+        fill={signal.saved ? '#007AFF' : 'transparent'} 
+      />
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={[styles.verticalReactionButton, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]} 
+      activeOpacity={0.7} 
+      onPress={() => dismissSignal(signal.id)}>
+      <X size={18} color="#666666" />
+    </TouchableOpacity>
+  </View>
+);
+
 export default function FeedScreen() {
   const { signals, toggleSignalLike, toggleSignalSave, dismissSignal, refreshSignals, echoControlEnabled, echoControlGrouping, customKeywords, isLoading } = useApp();
   const { t } = useLanguage();
@@ -190,33 +225,42 @@ export default function FeedScreen() {
 
         </TouchableOpacity>
         
-        <View style={styles.reactionsRow}>
+        <View style={styles.verticalActionsContainer}>
           <TouchableOpacity 
-            style={[styles.reactionPill, { backgroundColor: colors.card.white }]} 
-            activeOpacity={0.9} 
+            style={[styles.verticalReactionButton, { backgroundColor: signal.liked ? 'rgba(255, 59, 48, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} 
+            activeOpacity={0.7} 
             onPress={() => {
               console.log('Like button pressed for signal:', signal.id, 'Current liked state:', signal.liked);
               toggleSignalLike(signal.id);
             }}
           >
-            <Heart size={18} color={signal.liked ? colors.alert : colors.text.tertiary} fill={signal.liked ? colors.alert : 'transparent'} />
-            <Text style={[styles.reactionText, { color: signal.liked ? colors.alert : colors.text.tertiary }]}>{signal.liked ? 1 : 0}</Text>
+            <Heart 
+              size={18} 
+              color={signal.liked ? '#FFFFFF' : '#666666'} 
+              fill={signal.liked ? '#FF3B30' : 'transparent'} 
+            />
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.reactionPill, { backgroundColor: colors.card.white }]} 
-            activeOpacity={0.9} 
+            style={[styles.verticalReactionButton, { backgroundColor: signal.saved ? 'rgba(0, 122, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]} 
+            activeOpacity={0.7} 
             onPress={() => {
               console.log('Save button pressed for signal:', signal.id, 'Current saved state:', signal.saved);
               toggleSignalSave(signal.id);
             }}
           >
-            <Bookmark size={18} color={signal.saved ? colors.primary : colors.text.tertiary} fill={signal.saved ? colors.primary : 'transparent'} />
-            <Text style={[styles.reactionText, { color: signal.saved ? colors.primary : colors.text.tertiary }]}>{signal.saved ? 1 : 0}</Text>
+            <Bookmark 
+              size={18} 
+              color={signal.saved ? '#FFFFFF' : '#666666'} 
+              fill={signal.saved ? '#007AFF' : 'transparent'} 
+            />
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.morePill, { backgroundColor: colors.card.white }]} activeOpacity={0.8} onPress={() => dismissSignal(signal.id)}>
-            <X size={18} color={colors.text.tertiary} />
+          <TouchableOpacity 
+            style={[styles.verticalReactionButton, { backgroundColor: 'rgba(255, 255, 255, 0.8)' }]} 
+            activeOpacity={0.7} 
+            onPress={() => dismissSignal(signal.id)}>
+            <X size={18} color="#666666" />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -495,6 +539,97 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: 16,
   },
+  modernCard: {
+    backgroundColor: Colors.card.primary,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
+  modernCardContent: {
+    padding: 16,
+  },
+  modernCardImageContainer: {
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: Colors.card.secondary,
+  },
+  modernCardImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+  },
+  modernCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modernTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginVertical: 12,
+  },
+  modernTag: {
+    backgroundColor: Colors.card.light,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  modernTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+  },
+  verticalActionsContainer: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 16,
+    zIndex: 10,
+  },
+  newCard: {
+    backgroundColor: Colors.card.primary,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+    marginBottom: 20,
+    marginHorizontal: 12,
+  },
+  newCardContent: {
+    padding: 18,
+  },
+  newCardImageContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: Colors.card.secondary,
+  },
+  newCardImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+  },
+  newCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
   card: {
     backgroundColor: 'transparent',
     borderRadius: 16,
@@ -597,31 +732,41 @@ const styles = StyleSheet.create({
     color: 'inherit',
     letterSpacing: -0.1,
   },
+
   reactionsRow: {
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  reactionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
-    backgroundColor: 'transparent',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    alignSelf: 'flex-start',
   },
-  morePill: {
-    marginLeft: 'auto',
-    backgroundColor: 'transparent',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
+
   reactionText: {
     color: 'inherit',
     fontWeight: '700',
+    fontSize: 14,
+  },
+  verticalReactionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  reactionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+    marginHorizontal: 2,
   },
   expandedContent: {
     marginTop: 12,

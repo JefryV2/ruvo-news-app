@@ -107,7 +107,8 @@ export default function CommunityScreen() {
       setSharedArticles(articles);
       
       // Get unique user IDs from shared articles
-      const userIds = [...new Set(articles.map(article => article.user_id))];
+      const userIdSet = new Set(articles.map(article => article.user_id));
+      const userIds = Array.from(userIdSet);
       console.log('User IDs to fetch:', userIds);
       console.log('Number of unique user IDs:', userIds.length);
       

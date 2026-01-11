@@ -250,7 +250,8 @@ export const webzioService = {
     if (text.includes('science') || text.includes('research')) tags.push('Science');
 
     // Remove duplicates and limit to 5 tags
-    return [...new Set(tags)].slice(0, 5);
+    const uniqueTags = Array.from(new Set(tags));
+    return uniqueTags.slice(0, 5);
   },
 
   /**

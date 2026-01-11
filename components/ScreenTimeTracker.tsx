@@ -9,11 +9,16 @@ import {
   AppStateStatus,
   BackHandler,
   Platform,
+  Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import Colors from '@/constants/colors';
 import { screenTimeService } from '@/lib/screenTimeService';
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
+
+// Import expo-application for app closing functionality
+import * as Application from 'expo-application';
 
 interface ScreenTimeTrackerProps {
   children: React.ReactNode;
@@ -114,12 +119,30 @@ export default function ScreenTimeTracker({ children }: ScreenTimeTrackerProps) 
 
   const handleCloseApp = () => {
     setShowLimitWarning(false);
-    // Exit the app
+    
     if (Platform.OS === 'android') {
+      // Android: Use BackHandler to exit app
       BackHandler.exitApp();
+    } else if (Platform.OS === 'ios') {
+      // iOS: On iOS, we cannot programmatically close the app due to Apple's restrictions
+      // The best we can do is to minimize the app by going to background
+      // Using Linking to App-Prefs is not ideal as it takes user away from the app
+      // Instead, we'll just let the app stay open but with the warning closed
+      // iOS doesn't allow apps to close themselves programmatically
+      
+      // expo-application doesn't have a method to close the app on iOS
+      // iOS apps cannot be programmatically closed due to platform restrictions
+      // We'll just close the modal and let the user decide what to do
     } else {
-      // For iOS and web, we'll just minimize the app or show a message
-      // since we can't actually close the app
+      // Web: Try to close the window
+      if (typeof window !== 'undefined') {
+        // For web, try to close the window/tab
+        // Note: This will only work if the window was opened by JavaScript
+        window.close();
+        
+        // Fallback: redirect to a blank page or the root to effectively "close" the app
+        window.location.href = 'about:blank';
+      }
     }
   };
 

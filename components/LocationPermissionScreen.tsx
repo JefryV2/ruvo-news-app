@@ -14,6 +14,8 @@ import {
   Alert,
   Linking,
   ScrollView,
+  Platform,
+  ToastAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, ArrowRight, Shield, TrendingUp, Globe } from 'lucide-react-native';
@@ -49,6 +51,18 @@ export default function LocationPermissionScreen({
         const location = await GeolocationService.getCurrentLocation();
         
         if (location) {
+          // Provide feedback to user about successful location access
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Location access granted successfully!', ToastAndroid.SHORT);
+          } else if (Platform.OS === 'web') {
+            // For web, we can show an alert
+            setTimeout(() => {
+              Alert.alert(
+                'Location Granted',
+                'Location access has been granted successfully!'
+              );
+            }, 300);
+          }
           onPermissionGranted(location);
         } else {
           Alert.alert(
@@ -58,13 +72,20 @@ export default function LocationPermissionScreen({
           );
         }
       } else {
-        // Permission denied
+        // Permission denied - show appropriate alert based on the situation
         if (permissionResult.canAskAgain) {
           Alert.alert(
             'Location Permission Denied',
             'Ruvo works better with location access to show you relevant regional news. You can enable it later in Settings.',
             [
-              { text: 'Skip', onPress: onSkip },
+              { text: 'Skip', onPress: () => {
+                if (Platform.OS === 'android') {
+                  ToastAndroid.show('Location access declined. You can still use Ruvo without location features.', ToastAndroid.LONG);
+                } else if (Platform.OS === 'web') {
+                  Alert.alert('Location Skipped', 'You can still use Ruvo without location features.');
+                }
+                onSkip();
+              }},
               { text: 'Settings', onPress: () => Linking.openSettings() }
             ]
           );
@@ -73,7 +94,14 @@ export default function LocationPermissionScreen({
             'Location Permission Blocked',
             'Location access has been permanently denied. You can enable it in your device Settings > Privacy > Location Services.',
             [
-              { text: 'Skip', onPress: onSkip },
+              { text: 'Skip', onPress: () => {
+                if (Platform.OS === 'android') {
+                  ToastAndroid.show('Location access declined. You can still use Ruvo without location features.', ToastAndroid.LONG);
+                } else if (Platform.OS === 'web') {
+                  Alert.alert('Location Skipped', 'You can still use Ruvo without location features.');
+                }
+                onSkip();
+              }},
               { text: 'Open Settings', onPress: () => Linking.openSettings() }
             ]
           );

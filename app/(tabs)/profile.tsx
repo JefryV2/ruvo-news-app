@@ -213,7 +213,7 @@ export default function ProfileScreen() {
     },
     sectionBlock: {
       paddingHorizontal: 16,
-      marginBottom: 18,
+      // marginBottom is handled dynamically in the component
     },
     sectionLabel: {
       fontSize: 12,
@@ -237,6 +237,7 @@ export default function ProfileScreen() {
       paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: colors.border.lighter,
+      backgroundColor: colors.background.primary,
     },
     rowLeft: {
       flexDirection: 'row',
@@ -480,6 +481,7 @@ export default function ProfileScreen() {
   const interestsAnim = useRef(new Animated.Value(0)).current;
   const settingsAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
+  const friendsAnim = useRef(new Animated.Value(0)).current;
 
   const userInterestCount = user?.interests?.length || 0;
   
@@ -496,36 +498,33 @@ export default function ProfileScreen() {
     updateUserInterests(newInterests);
   };
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Initiating logout process');
-              await signOutMutation.mutateAsync();
-              console.log('Logout mutation successful, navigating to sign-in');
-            } catch (error: any) {
-              console.error('Logout error:', error);
-              // Even if there's an error, still try to navigate to sign-in
-            } finally {
-              // Always navigate to sign-in screen
-              setTimeout(() => {
-                router.replace('/auth/sign-in');
-              }, 150);
-            }
-          },
-        },
-      ]
-    );
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      console.log('Initiating logout process');
+      await signOutMutation.mutateAsync();
+      console.log('Logout mutation successful, navigating to sign-in');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      // Even if there's an error, still try to navigate to sign-in
+    } finally {
+      // Always navigate to sign-in screen
+      router.replace('/auth/sign-in');
+      setShowLogoutConfirm(false);
+    }
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleDeleteAccount = () => {
+    console.log('Delete account button pressed');
     Alert.alert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone.',
@@ -535,6 +534,7 @@ export default function ProfileScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
+            console.log('First confirmation accepted');
             Alert.alert(
               'Confirm Deletion',
               'This will permanently delete all your data. Are you absolutely sure?',
@@ -544,12 +544,15 @@ export default function ProfileScreen() {
                   text: 'Delete Permanently',
                   style: 'destructive',
                   onPress: async () => {
+                    console.log('Final confirmation accepted, attempting to delete account');
                     try {
                       if (user?.id) {
                         await deleteAccountMutation.mutateAsync(user.id);
+                        console.log('Account deletion successful, navigating to sign-in');
                         router.replace('/auth/sign-in');
                       }
                     } catch (error: any) {
+                      console.error('Delete account error:', error);
                       Alert.alert('Error', error.message || 'Failed to delete account');
                     }
                   },
@@ -728,6 +731,15 @@ export default function ProfileScreen() {
     }).start();
   }, [showStats]);
 
+  // Animate friends section
+  useEffect(() => {
+    Animated.timing(friendsAnim, {
+      toValue: showFriends ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showFriends]);
+
   // Load friends and friend requests
   useEffect(() => {
     const loadFriendsData = async () => {
@@ -813,7 +825,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={dynamicStyles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : 28 }}>
+      <ScrollView style={dynamicStyles.scrollView} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 120 : (Platform.OS === 'android' ? 10 : 28) }}>
         <Animated.View 
           style={[
             dynamicStyles.headerCard,
@@ -856,6 +868,7 @@ export default function ProfileScreen() {
               opacity: statsAnim,
               maxHeight: showStats ? 200 : 0,
               overflow: 'hidden',
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             }
           ]}
         >
@@ -896,6 +909,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -926,6 +940,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -1058,6 +1073,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -1118,6 +1134,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -1221,6 +1238,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -1281,34 +1299,34 @@ export default function ProfileScreen() {
           <Animated.View 
             style={[
               {
-                opacity: interestsAnim,
+                opacity: friendsAnim,
                 maxHeight: showFriends ? 500 : 0,
                 overflow: 'hidden',
               }
             ]}
           >
-            <View style={dynamicStyles.settingsCard}>
-              <Text style={[dynamicStyles.settingText, { marginBottom: 12 }]}>Friend Requests</Text>
+            <View style={[dynamicStyles.settingsCard, { backgroundColor: colors.background.primary }]}>
+              <Text style={[dynamicStyles.settingText, { marginBottom: 12, color: colors.text.primary }]}>Friend Requests</Text>
               {friendRequests.length > 0 ? (
                 friendRequests.map((request) => (
-                  <View key={request.id} style={dynamicStyles.row}>
+                  <View key={request.id} style={[dynamicStyles.row, { backgroundColor: colors.background.primary }]}> 
                     <View style={dynamicStyles.rowLeft}>
                       <View style={dynamicStyles.iconBubble}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={dynamicStyles.rowTitle}>
+                      <Text style={[dynamicStyles.rowTitle, { color: colors.text.primary }]}> 
                         {request.users?.username || 'Unknown User'}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <TouchableOpacity 
-                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
+                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12, backgroundColor: colors.primary }]}
                         onPress={() => handleAcceptFriendRequest(request.user_id)}
                       >
                         <Text style={dynamicStyles.settingsKeywordAddButtonText}>Accept</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
+                        style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12, backgroundColor: colors.primary }]}
                         onPress={() => handleRejectFriendRequest(request.user_id)}
                       >
                         <Text style={dynamicStyles.settingsKeywordAddButtonText}>Reject</Text>
@@ -1317,25 +1335,25 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={[dynamicStyles.rowSubtitle, { textAlign: 'center', padding: 16 }]}>
+                <Text style={[dynamicStyles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16, backgroundColor: colors.background.primary }]}>
                   No pending friend requests
                 </Text>
               )}
               
-              <Text style={[dynamicStyles.settingText, { marginTop: 16, marginBottom: 12 }]}>Your Friends</Text>
+              <Text style={[dynamicStyles.settingText, { marginTop: 16, marginBottom: 12, color: colors.text.primary }]}>Your Friends</Text>
               {friends.length > 0 ? (
                 friends.map((friend) => (
-                  <View key={friend.id} style={dynamicStyles.row}>
+                  <View key={friend.id} style={[dynamicStyles.row, { backgroundColor: colors.background.primary }]}> 
                     <View style={dynamicStyles.rowLeft}>
                       <View style={dynamicStyles.iconBubble}>
                         <UserIcon size={16} color={colors.primary} />
                       </View>
-                      <Text style={dynamicStyles.rowTitle}>
+                      <Text style={[dynamicStyles.rowTitle, { color: colors.text.primary }]}> 
                         {friend.user_id === user?.id ? (friend.friend_user?.username || 'Unknown User') : (friend.user_user?.username || 'Unknown User')}
                       </Text>
                     </View>
                     <TouchableOpacity 
-                      style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12 }]}
+                      style={[dynamicStyles.settingsKeywordAddButton, { paddingHorizontal: 12, backgroundColor: colors.primary }]}
                       onPress={() => handleRemoveFriend(friend.user_id === user?.id ? friend.friend_id : friend.user_id)}
                     >
                       <Text style={dynamicStyles.settingsKeywordAddButtonText}>Remove</Text>
@@ -1343,7 +1361,7 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={[styles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16 }]}>
+                <Text style={[dynamicStyles.rowSubtitle, { color: colors.text.tertiary, textAlign: 'center', padding: 16, backgroundColor: colors.background.primary }]}>
                   You haven't added any friends yet
                 </Text>
               )}
@@ -1357,6 +1375,7 @@ export default function ProfileScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
             },
           ]}
         >
@@ -1380,7 +1399,23 @@ export default function ProfileScreen() {
                 titleStyle={{ color: colors.alert }}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout}>
+          </View>
+        </Animated.View>
+        
+        {/* Logout button outside the list card */}
+        <Animated.View 
+          style={[
+            dynamicStyles.sectionBlock,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+              marginTop: 12,
+              marginBottom: Platform.OS === 'android' ? 10 : 18,
+            },
+          ]}
+        >
+          <TouchableOpacity onPress={handleLogout}>
+            <View style={[dynamicStyles.listCard, { borderColor: colors.alert, borderWidth: 2, backgroundColor: colors.background.primary }]}> 
               <Row 
                 icon={<LogOut size={16} color={colors.alert} />} 
                 title={t('profile.logout')} 
@@ -1388,11 +1423,36 @@ export default function ProfileScreen() {
                 subtitleColor={colors.text.tertiary}
                 titleStyle={{ color: colors.alert }}
               />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
         </Animated.View>
+        
       </ScrollView>
-      <View style={{ height: (Platform.OS === 'web' ? 0 : 140 + insets.bottom), backgroundColor: colors.background.primary }} />
+      <View style={{ height: (Platform.OS === 'web' ? 0 : (Platform.OS === 'android' ? 100 : 140) + insets.bottom), backgroundColor: colors.background.primary }} />
+      
+      {/* Logout Confirmation Modal - positioned outside ScrollView */}
+      {showLogoutConfirm && (
+        <View style={logoutConfirmModalStyles.container} pointerEvents="box-none">
+          <View style={[logoutConfirmModalStyles.modal, { backgroundColor: colors.background.primary, borderColor: colors.border.lighter }]}> 
+            <Text style={[logoutConfirmModalStyles.title, { color: colors.text.primary }]}>Confirm Logout</Text>
+            <Text style={[logoutConfirmModalStyles.message, { color: colors.text.secondary }]}>Are you sure you want to logout?</Text>
+            <View style={logoutConfirmModalStyles.buttonContainer}>
+              <TouchableOpacity 
+                style={[logoutConfirmModalStyles.button, logoutConfirmModalStyles.cancelButton, { backgroundColor: colors.background.secondary }]}
+                onPress={cancelLogout}
+              >
+                <Text style={[logoutConfirmModalStyles.buttonText, { color: colors.text.primary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[logoutConfirmModalStyles.button, logoutConfirmModalStyles.confirmButton, { backgroundColor: colors.alert }]}
+                onPress={confirmLogout}
+              >
+                <Text style={[logoutConfirmModalStyles.buttonText, { color: colors.text.inverse }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1569,7 +1629,7 @@ const styles = StyleSheet.create({
   },
   sectionBlock: {
     paddingHorizontal: 16,
-    marginBottom: 18,
+    // marginBottom is handled dynamically in the component
   },
   sectionLabel: {
     fontSize: 12,
@@ -1813,6 +1873,66 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.white,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+});
+
+// Styles for logout confirmation modal
+const logoutConfirmModalStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 15,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    opacity: 0.8,
+  },
+  confirmButton: {
+    opacity: 1,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

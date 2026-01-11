@@ -155,7 +155,8 @@ export class AIRequestParser {
       .split(/\s+/)
       .filter(word => word.length > 2 && !stopWords.includes(word));
 
-    return [...new Set(words)]; // Remove duplicates
+    const uniqueWords = Array.from(new Set(words)); // Remove duplicates
+    return uniqueWords;
   }
 
   /**
@@ -181,7 +182,8 @@ export class AIRequestParser {
         matches.push(...match.map(m => this.capitalize(m)));
       }
     }
-    return [...new Set(matches)]; // Remove duplicates
+    const uniqueMatches = Array.from(new Set(matches)); // Remove duplicates
+    return uniqueMatches;
   }
 
   /**
